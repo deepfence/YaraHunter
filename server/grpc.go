@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/deepfence/SecretScanner/core"
-	"github.com/deepfence/SecretScanner/output"
-	"github.com/deepfence/SecretScanner/scan"
+	"github.com/deepfence/IOCScanner/core"
+	"github.com/deepfence/IOCScanner/output"
+	"github.com/deepfence/IOCScanner/scan"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
 	"google.golang.org/grpc"
 )

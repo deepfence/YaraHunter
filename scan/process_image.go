@@ -21,7 +21,6 @@ import (
 
 	"github.com/deepfence/IOCScanner/output"
 	"github.com/deepfence/IOCScanner/core"
-	"github.com/deepfence/SecretScanner/signature"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
 )

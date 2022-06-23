@@ -13,9 +13,9 @@ import (
 	"strconv"
 
 	"github.com/Jeffail/tunny"
-	"github.com/deepfence/SecretScanner/core"
-	"github.com/deepfence/SecretScanner/output"
-	"github.com/deepfence/SecretScanner/scan"
+	"github.com/deepfence/IOCScanner/core"
+	"github.com/deepfence/IOCScanner/output"
+	"github.com/deepfence/IOCScanner/scan"
 )
 
 const (

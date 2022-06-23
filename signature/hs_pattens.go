@@ -2,7 +2,7 @@ package signature
 
 import (
 	"fmt"
-	"github.com/deepfence/SecretScanner/core"
+	"github.com/deepfence/IOCScanner/core"
 	"github.com/flier/gohs/hyperscan"
 	"os"
 )
