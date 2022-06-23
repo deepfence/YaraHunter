@@ -27,19 +27,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	yr "github.com/hillu/go-yara/v4"
-	"github.com/spf13/afero"
-	"github.com/deepfence/IacScanner/core"
-	"github.com/deepfence/IacScanner/output"
-	"github.com/deepfence/IacScanner/scan"
-	"github.com/deepfence/IacScanner/server"
-	"github.com/deepfence/IacScanner/signature"
+
+	"github.com/deepfence/IOCScanner/core"
+	"github.com/deepfence/IOCScanner/output"
+	"github.com/deepfence/IOCScanner/scan"
+	"github.com/deepfence/IOCScanner/server"
+	"github.com/deepfence/IOCScanner/signature"
 	"github.com/fatih/color"
-	
+	yr "github.com/hillu/go-yara/v4"
 )
 
 const (
-	PLUGIN_NAME = "IocScanner"
+	PLUGIN_NAME = "IOCScanner"
 )
 
 var (

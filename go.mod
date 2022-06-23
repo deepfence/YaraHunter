@@ -1,4 +1,4 @@
-module github.com/deepfence/SecretScanner
+module github.com/deepfence/IOCScanner
 
 go 1.18
 

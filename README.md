@@ -1,10 +1,10 @@
-# IocScanner
+# IOCScanner
 
 
 
 $ ./IOCScanner --help
 
-Usage of ./IacScanner:
+Usage of ./IOCScanner:
   -config-path string
     	Searches for config.yaml from given directory. If not set, tries to find it from IOCScanner binary's and current directory
   -debug-level string
