@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/deepfence/IOCcanner/core"
-	"github.com/deepfence/IOCcanner/output"
+	"github.com/deepfence/IOCScanner/core"
+	"github.com/deepfence/IOCScanner/output"
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
@@ -15,13 +15,13 @@ import (
 )
 
 var (
-	containerTarFileName   = "save-output.tar"
+	containerTarFileName = "save-output.tar"
 )
 
 type ContainerScan struct {
-	containerId     string
-	tempDir         string
-	namespace       string
+	containerId string
+	tempDir     string
+	namespace   string
 	numIOC      uint
 }
 
@@ -47,17 +47,17 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 		fmt.Println("Error: Could not detect container runtime")
 		os.Exit(1)
 	}
-	err = containerRuntimeInterface.ExtractFileSystemContainer(containerScan.containerId, containerScan.namespace, containerScan.tempDir + ".tar", endpoint)
+	err = containerRuntimeInterface.ExtractFileSystemContainer(containerScan.containerId, containerScan.namespace, containerScan.tempDir+".tar", endpoint)
 
 	if err != nil {
 		return err
 	}
 	runCommand("mkdir", containerScan.tempDir)
-	_, stdErr, retVal := runCommand("tar", "-xf", containerScan.tempDir + ".tar", "-C"+containerScan.tempDir)
+	_, stdErr, retVal := runCommand("tar", "-xf", containerScan.tempDir+".tar", "-C"+containerScan.tempDir)
 	if retVal != 0 {
 		return errors.New(stdErr)
 	}
-	runCommand("rm", containerScan.tempDir + ".tar")
+	runCommand("rm", containerScan.tempDir+".tar")
 	return nil
 }
 
@@ -85,7 +85,7 @@ func (containerScan *ContainerScan) scan() ([]output.SecretFound, error) {
 }
 
 type ContainerExtractionResult struct {
-	IOC []output.SecretFound
+	IOC         []output.SecretFound
 	ContainerId string
 }
 

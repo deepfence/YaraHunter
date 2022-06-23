@@ -6,8 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+
 	// "strings"
-	"github.com/deepfence/IOCcanner/core"
+	"github.com/deepfence/IOCScanner/core"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
 	"github.com/fatih/color"
 )
@@ -39,15 +40,15 @@ type IOCOutput interface {
 type JsonDirIOCOutput struct {
 	Timestamp time.Time
 	DirName   string `json:"Directory Name"`
-	IOC   []IOCFound
+	IOC       []IOCFound
 }
 
 type JsonImageIOCOutput struct {
-	Timestamp 	time.Time
-	ImageName 	string `json:"Image Name"`
-	ImageId   	string `json:"Image ID"`
+	Timestamp   time.Time
+	ImageName   string `json:"Image Name"`
+	ImageId     string `json:"Image ID"`
 	ContainerId string `json:"Container ID"`
-	IOC   	[]IOCFound
+	IOC         []IOCFound
 }
 
 func (imageOutput *JsonImageIOCOutput) SetImageName(imageName string) {

@@ -23,10 +23,10 @@ type Options struct {
 	ImageName       *string
 	MultipleMatch   *bool
 	MaxMultiMatch   *uint
-	MaxIOC      *uint
+	MaxIOC          *uint
 	ContainerId     *string
 	ContainerNS     *string
-	Quiet			*bool
+	Quiet           *bool
 }
 
 func ParseOptions() (*Options, error) {
@@ -37,16 +37,16 @@ func ParseOptions() (*Options, error) {
 		TempDirectory:   flag.String("temp-directory", os.TempDir(), "Directory to process and store repositories/matches"),
 		Local:           flag.String("local", "", "Specify local directory (absolute path) which to scan. Scans only given directory recursively."),
 		HostMountPath:   flag.String("host-mount-path", "", "If scanning the host, specify the host mount path for path exclusions to work correctly."),
-		ConfigPath:      flag.String("config-path", "", "Searches for config.yaml from given directory. If not set, tries to find it from IOCcanner binary's and current directory"),
+		ConfigPath:      flag.String("config-path", "", "Searches for config.yaml from given directory. If not set, tries to find it from IOCScanner binary's and current directory"),
 		OutputPath:      flag.String("output-path", ".", "Output directory where json file will be stored. If not set, it will output to current directory"),
 		JsonFilename:    flag.String("json-filename", "", "Output json file name. If not set, it will automatically create a filename based on image or dir name"),
 		ImageName:       flag.String("image-name", "", "Name of the image along with tag to scan for IOC"),
 		MultipleMatch:   flag.Bool("multi-match", false, "Output multiple matches of same pattern in one file. By default, only one match of a pattern is output for a file for better performance"),
 		MaxMultiMatch:   flag.Uint("max-multi-match", 3, "Maximum number of matches of same pattern in one file. This is used only when multi-match option is enabled."),
-		MaxIOC:      flag.Uint("max-IOC", 1000, "Maximum number of IOC to find in one container image or file system."),
+		MaxIOC:          flag.Uint("max-IOC", 1000, "Maximum number of IOC to find in one container image or file system."),
 		ContainerId:     flag.String("container-id", "", "Id of existing container ID"),
 		ContainerNS:     flag.String("container-ns", "", "Namespace of existing container to scan, empty for docker runtime"),
-		Quiet: 			 flag.Bool("quiet", false, "Don't display any output in stdout"),
+		Quiet:           flag.Bool("quiet", false, "Don't display any output in stdout"),
 	}
 	flag.Parse()
 	return options, nil
