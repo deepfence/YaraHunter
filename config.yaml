@@ -1,0 +1,19 @@
+# Iac Scanner Configuration File
+
+blacklisted_strings: [] # skip matches containing any of these strings (case sensitive)
+blacklisted_extensions: [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".psd", ".xcf", ".zip", ".tar.gz", ".ttf", ".lock"] 
+# need to confirm as windows hides file extensions
+blacklisted_paths: [] 
+
+report: spyre.log
+evidence-collector:
+  # disabled: true
+  # default: spyre_$hostname_$datetime.zip
+  file: spyre.zip
+  password: infected
+  max-size: 1G
+# hostname: some-random-host
+# max-file-size: 32M
+# proc-ignore-names: ["chrome.exe"]
+# paths: ["D:\\"]
+# high-priority: true
