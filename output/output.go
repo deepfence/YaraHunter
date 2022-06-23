@@ -9,7 +9,6 @@ import (
 
 	// "strings"
 	"github.com/deepfence/IOCScanner/core"
-	pb "github.com/deepfence/agent-plugins-grpc/proto"
 	"github.com/fatih/color"
 )
 
