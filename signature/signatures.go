@@ -33,7 +33,7 @@ type HsInputOutputData struct {
 	inputDataLowerCase []byte
 	completeFilename   string
 	layerID            string
-	secretsFound       *[]output.SecretFound
+	secretsFound       *[]output.IOCFound
 	numSecrets         *uint
 	matchedRuleSet     map[uint]uint // Indicates if any rules macthed in the last iteration
 }
@@ -99,8 +99,8 @@ func MatchSimpleSignatures(path string, filename string, extension string, layer
 // []output.SecretFound - List of all secrets found
 // Error - Errors if any. Otherwise, returns nil
 func MatchPatternSignatures(contents []byte, path string, filename string, extension string, layerID string,
-	numSecrets *uint, matchedRuleSet map[uint]uint) ([]output.SecretFound, error) {
-	var tempSecretsFound []output.SecretFound
+	numSecrets *uint, matchedRuleSet map[uint]uint) ([]output.IOCFound, error) {
+	var tempSecretsFound []output.IOCFound
 	var hsIOData HsInputOutputData
 	var matchingPart string
 	var matchingStr []byte
@@ -249,12 +249,12 @@ func addToSignatures(signature core.ConfigSignature, Signatures *[]core.ConfigSi
 // @returns
 // []output.SecretFound - List of all secrets found
 func matchString(part string, input string, completeFilename string, layerID string,
-	numSecrets *uint) []output.SecretFound {
-	var tempSecretsFound []output.SecretFound
+	numSecrets *uint) []output.IOCFound {
+	var tempSecretsFound []output.IOCFound
 
 	for _, signature := range simpleSignatureMap[part] {
 		// Don't report secrets if number of secrets exceeds MAX value
-		if *numSecrets >= *core.GetSession().Options.MaxSecrets {
+		if *numSecrets >= *core.GetSession().Options.MaxIOC {
 			core.GetSession().Log.Debug("MAX secrets exceeded: %d", *numSecrets)
 			return tempSecretsFound
 		}
@@ -269,7 +269,7 @@ func matchString(part string, input string, completeFilename string, layerID str
 			core.GetSession().Log.Info("Sensitive file %s found with matching %s of %s\n",
 				completeFilename, part, color.RedString(input))
 
-			secret := output.SecretFound{
+			secret := output.IOCFound{
 				LayerID: layerID,
 				RuleID:  signature.ID, RuleName: signature.Name,
 				PartToMatch: signature.Part, Match: signature.Match, Regex: signature.Regex,
@@ -303,7 +303,7 @@ func processHsRegexMatch(id uint, from, to uint64, flags uint, context interface
 	secrets := hsIOData.secretsFound
 
 	// Don't report secrets if number of secrets exceeds MAX value
-	if *hsIOData.numSecrets >= *core.GetSession().Options.MaxSecrets {
+	if *hsIOData.numSecrets >= *core.GetSession().Options.MaxIOC {
 		core.GetSession().Log.Debug("MAX secrets exceeded: %d", *hsIOData.numSecrets)
 		return nil
 	}
@@ -390,7 +390,7 @@ func getStartOfLargeRegexMatch(sid int, from, to int, hsIOData HsInputOutputData
 // @returns
 // output.SecretFound - secret found
 // Error - Errors if any. Otherwise, returns nil
-func printMatchedSignatures(sid int, from, to int, hsIOData HsInputOutputData) (output.SecretFound, error) {
+func printMatchedSignatures(sid int, from, to int, hsIOData HsInputOutputData) (output.IOCFound, error) {
 	inputData := hsIOData.inputData
 	completeFilename := hsIOData.completeFilename
 	layerID := hsIOData.layerID
@@ -413,14 +413,14 @@ func printMatchedSignatures(sid int, from, to int, hsIOData HsInputOutputData) (
 	end = Min(end, to+50)
 
 	if !(0 <= start && start <= from && from <= to && to <= end && end <= len(inputData)) {
-		return output.SecretFound{}, errors.New("index out of bound while printing matched signatures")
+		return output.IOCFound{}, errors.New("index out of bound while printing matched signatures")
 	}
 
 	coloredMatch := fmt.Sprintf("%s%s%s\n", inputData[start:from], color.RedString(string(inputData[from:to])), inputData[to:end])
 	//core.GetSession().Log.Info("%s%s%s\n", inputData[start:from], color.RedString(string(inputData[from:to])), inputData[to:end])
 	core.GetSession().Log.Info(coloredMatch)
 
-	secret := output.SecretFound{
+	secret := output.IOCFound{
 		LayerID: layerID,
 		RuleID:  sid, RuleName: signatureIDMap[sid].Name,
 		PartToMatch: signatureIDMap[sid].Part, Match: signatureIDMap[sid].Match, Regex: signatureIDMap[sid].Regex,

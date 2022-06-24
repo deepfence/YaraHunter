@@ -3,14 +3,11 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/deepfence/IOCScanner/core"
+	"github.com/fatih/color"
 	"io/ioutil"
 	"os"
 	"time"
-
-	// "strings"
-	"github.com/deepfence/IOCScanner/core"
-	pb "github.com/deepfence/agent-plugins-grpc/proto"
-	"github.com/fatih/color"
 )
 
 const (
@@ -40,7 +37,7 @@ type IOCOutput interface {
 type JsonDirIOCOutput struct {
 	Timestamp time.Time
 	DirName   string `json:"Directory Name"`
-	IOC   []IOCFound
+	IOC       []IOCFound
 }
 
 type JsonImageIOCOutput struct {
@@ -188,36 +185,4 @@ func removeFirstLastChar(input string) string {
 		return input
 	}
 	return input[1 : len(input)-1]
-}
-
-func IOCToIOCInfos(out []IOCFound) []*pb.IOCInfo {
-	res := make([]*pb.IOCInfo, 0)
-	for _, v := range out {
-		res = append(res, IOCToIOCInfo(v))
-	}
-	return res
-}
-
-func IOCToIOCInfo(out IOCFound) *pb.IOCInfo {
-	return &pb.IOCInfo{
-		ImageLayerId: out.LayerID,
-		Rule: &pb.MatchRule{
-			Id:               int32(out.RuleID),
-			Name:             out.RuleName,
-			Part:             out.PartToMatch,
-			StringToMatch:    out.Match,
-			SignatureToMatch: out.Regex,
-		},
-		Match: &pb.Match{
-			StartingIndex:         int64(out.PrintBufferStartIndex),
-			RelativeStartingIndex: int64(out.MatchFromByte),
-			RelativeEndingIndex:   int64(out.MatchToByte),
-			FullFilename:          out.CompleteFilename,
-			MatchedContent:        jsonMarshal(out.MatchedContents),
-		},
-		Severity: &pb.Severity{
-			Level: out.Severity,
-			Score: float32(out.SeverityScore),
-		},
-	}
 }
