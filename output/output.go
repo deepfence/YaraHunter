@@ -9,6 +9,7 @@ import (
 
 	// "strings"
 	"github.com/deepfence/IOCScanner/core"
+	pb "github.com/deepfence/agent-plugins-grpc/proto"
 	"github.com/fatih/color"
 )
 
@@ -39,7 +40,7 @@ type IOCOutput interface {
 type JsonDirIOCOutput struct {
 	Timestamp time.Time
 	DirName   string `json:"Directory Name"`
-	IOC       []IOCFound
+	IOC   []IOCFound
 }
 
 type JsonImageIOCOutput struct {
