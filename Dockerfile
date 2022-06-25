@@ -6,7 +6,6 @@ RUN apt-get update  \
     autoconf \
     gcc-multilib \
     gcc-mingw-w64 \
-    gcc-mingw-w64-i686 \
     automake \
     libtool \
     libtool \
@@ -22,8 +21,6 @@ RUN apt-get update  \
     yara \
     g++-multilib \
     libc6-dev-i386 
-
-
 
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
@@ -58,8 +55,7 @@ RUN apt-get update && apt-get -qq -y --no-install-recommends install libgcc-s1 d
     yara \
     && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.18.0/nerdctl-0.18.0-linux-amd64.tar.gz \
     && tar Cxzvvf /usr/local/bin nerdctl-0.18.0-linux-amd64.tar.gz \
-    && rm nerdctl-0.18.0-linux-amd64.tar.gz \
-    && apt-get remove -y  curl  
+    && rm nerdctl-0.18.0-linux-amd64.tar.gz
 WORKDIR /home/deepfence/usr
 COPY --from=builder /home/deepfence/src/IOCScanner/IOCScanner .
 COPY --from=builder /home/deepfence/src/IOCScanner/config.yaml .
@@ -69,4 +65,3 @@ WORKDIR /home/deepfence/output
 
 ENTRYPOINT ["/home/deepfence/usr/IOCScanner", "-config-path", "/home/deepfence/usr", "-quiet"]
 CMD ["-h"]
-
