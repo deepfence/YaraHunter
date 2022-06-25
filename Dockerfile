@@ -1,33 +1,60 @@
-FROM golang:1.18-alpine3.15 AS builder
+FROM golang:1.18.3-bullseye AS builder
 MAINTAINER DeepFence
 
-RUN apk update  \
-    && apk add --upgrade gcc musl-dev pkgconfig g++ make git protoc \
-    && apk add hyperscan-dev --repository=https://dl-cdn.alpinelinux.org/alpine/v3.13/community
-ENV PKG_CONFIG_PATH=/usr/local/include/hs/ \
-    CGO_CFLAGS="-I/usr/local/include/hyperscan/src" \
-    LD_LIBRARY_PATH=/usr/local/lib:/usr/local/include/hs/lib:$LD_LIBRARY_PATH
+RUN apt-get update  \
+    && apt-get -qq -y --no-install-recommends install  musl-dev git protobuf-compiler \
+    autoconf \
+    automake \
+    libtool \
+    libtool \
+    pkg-config \
+    ca-certificates \
+    wget \
+    patch \
+    sed \
+    git-core \
+    moreutils \
+    zip \
+    git \
+    yara 
+
+
 
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 
+
 WORKDIR /home/deepfence/src/IOCScanner
 COPY . .
 RUN make clean
-RUN make
+RUN make 3rdparty-all 
 
-FROM alpine:3.15
+FROM debian:bullseye
 MAINTAINER DeepFence
 LABEL deepfence.role=system
 
 ENV MGMT_CONSOLE_URL=deepfence-internal-router \
     MGMT_CONSOLE_PORT=443
-RUN apk update && apk add --no-cache --upgrade curl tar libstdc++ libgcc docker skopeo python3 py3-pip bash \
-    && apk add hyperscan --repository=https://dl-cdn.alpinelinux.org/alpine/v3.13/community \
+RUN apt-get update && apt-get -qq -y --no-install-recommends install libgcc-s1 docker skopeo python3 python3-pip curl \
+    gcc-multilib \
+    gcc-mingw-w64 \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    ca-certificates \
+    wget \
+    patch \
+    sed \
+    git-core \
+    moreutils \
+    zip \
+    git \
+    yara \
     && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.18.0/nerdctl-0.18.0-linux-amd64.tar.gz \
     && tar Cxzvvf /usr/local/bin nerdctl-0.18.0-linux-amd64.tar.gz \
     && rm nerdctl-0.18.0-linux-amd64.tar.gz \
-    && apk del curl
+    && apt-get remove curl 
 WORKDIR /home/deepfence/usr
 COPY --from=builder /home/deepfence/src/IOCScanner/IOCScanner .
 COPY --from=builder /home/deepfence/src/IOCScanner/config.yaml .
@@ -37,3 +64,4 @@ WORKDIR /home/deepfence/output
 
 ENTRYPOINT ["/home/deepfence/usr/IOCScanner", "-config-path", "/home/deepfence/usr", "-quiet"]
 CMD ["-h"]
+
