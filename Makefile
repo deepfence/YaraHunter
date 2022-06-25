@@ -25,7 +25,7 @@ include 3rdparty.mk
 $(foreach arch,$(ARCHS),\
 	$(if $(findstring $(3rdparty_NATIVE_ARCH),$(arch)),,\
 		$(eval _build/$(arch)/%: private export CC=$(arch)-gcc))\
-	$(eval _build/$(arch)/%: private export PKG_CONFIG_PATH=$(CURDIR)/_3rdparty/tgt/$(arch)/lib/pkgconfig)\
+	$(eval _build/$(arch)/%: private export PKG_CONFIG_PATH=$(PWD)/_3rdparty/tgt/$(arch)/lib/pkgconfig)\
 	$(eval _build/$(arch)/%: private export GOOS=\
 		$(or $(if $(findstring linux,$(arch)),linux),\
 		     $(if $(findstring mingw,$(arch)),windows),\

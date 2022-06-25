@@ -32,7 +32,6 @@ import (
 	"github.com/deepfence/IOCScanner/output"
 	"github.com/deepfence/IOCScanner/scan"
 	"github.com/deepfence/IOCScanner/server"
-	"github.com/deepfence/IOCScanner/signature"
 	"github.com/fatih/color"
 	yr "github.com/hillu/go-yara/v4"
 )
@@ -73,7 +72,7 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 	jsonImageIOCOutput.SetImageId(res.ImageId)
 	jsonImageIOCOutput.PrintJsonHeader()
 	jsonImageIOCOutput.PrintJsonFooter()
-	jsonImageIOCOutput.SetIOC(res.IOC)
+	jsonImageIOCOutput.SetIOC(res.IOCs)
 
 	return &jsonImageIOCOutput, nil
 }
@@ -177,19 +176,13 @@ func runOnce() {
 }
 
 func main() {
-	// Process and store the read signatures
-	signature.ProcessSignatures(session.Config.Signatures)
-
-	// Build Hyperscan database for fast scanning
-	signature.BuildHsDb()
-
 	flag.Parse()
 
 	if *socketPath != "" {
-		err := server.RunServer(*socketPath, PLUGIN_NAME)
-		if err != nil {
-			core.GetSession().Log.Fatal("main: failed to serve: %v", err)
-		}
+		//err := server.RunServer(*socketPath, PLUGIN_NAME)
+		//if err != nil {
+		//	core.GetSession().Log.Fatal("main: failed to serve: %v", err)
+		//}
 	} else if *httpPort != "" {
 		err := server.RunHttpServer(*httpPort)
 		if err != nil {

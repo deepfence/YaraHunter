@@ -19,8 +19,8 @@ import (
 
 	"fmt"
 
-	"github.com/deepfence/IOCScanner/output"
 	"github.com/deepfence/IOCScanner/core"
+	"github.com/deepfence/IOCScanner/output"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
 )
@@ -34,11 +34,11 @@ type manifestItem struct {
 }
 
 var (
-	imageTarFileName   = "save-output.tar"
-	maxIOCsExceeded = errors.New("number of IOCs exceeded max-IOCs")
-	fd uintptr
-	rules          *yr.Rules
-	iocFile        *os.File
+	imageTarFileName = "save-output.tar"
+	maxIOCsExceeded  = errors.New("number of IOCs exceeded max-IOCs")
+	fd               uintptr
+	rules            *yr.Rules
+	iocFile          *os.File
 )
 
 type ImageScan struct {
@@ -46,7 +46,7 @@ type ImageScan struct {
 	imageId       string
 	tempDir       string
 	imageManifest manifestItem
-	numIOCs    uint
+	numIOCs       uint
 }
 
 // Function to retrieve contents of container images layer by layer
@@ -123,10 +123,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 		matchedRuleSet = make(map[uint]uint)
 	}
 
-
-
-
-
 	if layer != "" {
 		core.UpdateDirsPermissionsRW(fullDir)
 	}
@@ -144,7 +140,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 
 		var scanDirPath string
 		if layer != "" {
-			scanDirPath = strings.TrimPrefix(path, baseDir +  "/" + layer)
+			scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
 			if scanDirPath == "" {
 				scanDirPath = "/"
 			}
@@ -191,13 +187,13 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 		} else {
 			// fmt.Println(relPath, file.Filename, file.Extension, layer)
 			fd := iocFile.Fd()
-			
-            err = rules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
+
+			err = rules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
 			if err != nil {
 				var buf []byte
 				if buf, err = ioutil.ReadAll(iocFile); err != nil {
 					session.Log.Info("relPath: %s, Filename: %s, Extension: %s, layer: %s",
-					relPath, file.Filename, file.Extension, layer)
+						relPath, file.Filename, file.Extension, layer)
 					session.Log.Error("scanIOCsInDir: %s", err)
 					return err
 				}
@@ -222,22 +218,22 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 				}
 			}
 			if *session.Options.Quiet {
-				output.PrintColoredIOC(matches, isFirstIOC)
+				//output.PrintColoredIOC(matches, isFirstIOC)
 			}
 			return err
 			if *session.Options.Quiet {
-				output.PrintColoredIOCs(IOCs, isFirstIOC)
+				output.PrintColoredIOC(IOCs, isFirstIOC)
 			}
 			tempIOCsFound = append(tempIOCsFound, IOCs...)
 		}
 
 		if *session.Options.Quiet {
-			output.PrintColoredIOCs(IOCs, isFirstIOC)
+			output.PrintColoredIOC(IOCs, isFirstIOC)
 		}
 		tempIOCsFound = append(tempIOCsFound, IOCs...)
 
 		// Don't report IOCs if number of IOCs exceeds MAX value
-		if *numIOCs >= *session.Options.MaxIOCs {
+		if *numIOCs >= *session.Options.MaxIOC {
 			return maxIOCsExceeded
 		}
 		return nil
@@ -304,7 +300,7 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 		}
 
 		// Don't report IOCs if number of IOCs exceeds MAX value
-		if imageScan.numIOCs >= *core.GetSession().Options.MaxIOCs {
+		if imageScan.numIOCs >= *core.GetSession().Options.MaxIOC {
 			return tempIOCsFound, nil
 		}
 	}
@@ -412,7 +408,7 @@ func untar(tarName string, xpath string) (err error) {
 			relPath := strings.Split(fileName, "/")
 			var absDirPath string
 			if len(relPath) > 1 {
-				dirs := relPath[0: len(relPath) - 1]
+				dirs := relPath[0 : len(relPath)-1]
 				absDirPath = filepath.Join(absPath, strings.Join(dirs, "/"))
 			}
 			if err := os.MkdirAll(absDirPath, 0755); err != nil {
@@ -436,7 +432,7 @@ func untar(tarName string, xpath string) (err error) {
 		// fmt.Printf("x %s\n", absFileName)
 		n, cpErr := io.Copy(file, tr)
 		if closeErr := file.Close(); closeErr != nil { // close file immediately
-			fmt.Println("clserr:"+closeErr.Error())
+			fmt.Println("clserr:" + closeErr.Error())
 			return err
 		}
 		if cpErr != nil {
@@ -525,7 +521,7 @@ func runCommand(name string, args ...string) (stdout string, stderr string, exit
 }
 
 type ImageExtractionResult struct {
-	IOCs []output.IOCFound
+	IOCs    []output.IOCFound
 	ImageId string
 }
 

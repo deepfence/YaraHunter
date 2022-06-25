@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"reflect"
 	"strconv"
 
 	"github.com/Jeffail/tunny"
@@ -113,7 +112,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 	if err != nil {
 		fmt.Println("Error in marshalling secret in_progress log object to json:" + err.Error())
 	} else {
-		err = output.IngestSecretScanResults(string(byteJson), secretScanLogsIndexName)
+		err = output.IngestIOCScanResults(string(byteJson), secretScanLogsIndexName)
 		if err != nil {
 			fmt.Println("Error in updating in_progress log" + err.Error())
 		}
@@ -126,7 +125,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 			fmt.Println("Error in marshalling secret result object to json:" + err.Error())
 			return
 		}
-		err = output.IngestSecretScanResults(string(byteJson), secretScanLogsIndexName)
+		err = output.IngestIOCScanResults(string(byteJson), secretScanLogsIndexName)
 		if err != nil {
 			fmt.Println("error ingesting data: " + err.Error())
 		}
@@ -134,8 +133,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 	}
 	timestamp := core.GetTimestamp()
 	currTime := core.GetCurrentTime()
-	secrets := output.SecretsToSecretInfos(res.Secrets)
-	for _, secret := range secrets {
+	for _, secret := range res.IOCs {
 		var secretScanDoc = make(map[string]interface{})
 		for key, value := range postForm {
 			if len(value) > 0 {
@@ -149,19 +147,13 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 		secretScanDoc["node_id"] = imageName
 		secretScanDoc["node_name"] = imageName
 		secretScanDoc["scan_id"] = scanId
-		values := reflect.ValueOf(*secret)
-		typeOfS := values.Type()
-		for index := 0; index < values.NumField(); index++ {
-			if values.Field(index).CanInterface() {
-				secretScanDoc[typeOfS.Field(index).Name] = values.Field(index).Interface()
-			}
-		}
+		secretScanDoc["severity"] = secret.Severity
 		byteJson, err := json.Marshal(secretScanDoc)
 		if err != nil {
 			fmt.Println("Error in marshalling secret result object to json:" + err.Error())
 			return
 		}
-		err = output.IngestSecretScanResults(string(byteJson), secretScanIndexName)
+		err = output.IngestIOCScanResults(string(byteJson), secretScanIndexName)
 		if err != nil {
 			fmt.Println("Error in sending data to secretScanIndex:" + err.Error())
 		}
@@ -179,22 +171,24 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 		fmt.Println("Error in marshalling secretScanLogDoc to json:" + err.Error())
 		return
 	}
-	err = output.IngestSecretScanResults(string(byteJson), secretScanLogsIndexName)
+	err = output.IngestIOCScanResults(string(byteJson), secretScanLogsIndexName)
 	if err != nil {
 		fmt.Println("Error in sending data to secretScanLogsIndex:" + err.Error())
 	}
 }
 
 func RunHttpServer(listenPort string) error {
-	http.Handle("/secret-scan", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	http.Handle("/ioc-scan", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		runSecretScan(writer, request)
 	}))
-	http.HandleFunc("/secret-scan/test", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/ioc-scan/test", func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(writer, "Hello World!")
 	})
-
-	http.ListenAndServe(":"+listenPort, nil)
 	fmt.Println("Http Server listening on " + listenPort)
+	err := http.ListenAndServe(":"+listenPort, nil)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -67,7 +67,7 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 // @returns
 // []output.SecretFound - List of all IOC found
 // Error - Errors, if any. Otherwise, returns nil
-func (containerScan *ContainerScan) scan() ([]output.SecretFound, error) {
+func (containerScan *ContainerScan) scan() ([]output.IOCFound, error) {
 	var isFirstSecret bool = true
 	var numIOC uint = 0
 
@@ -85,7 +85,7 @@ func (containerScan *ContainerScan) scan() ([]output.SecretFound, error) {
 }
 
 type ContainerExtractionResult struct {
-	IOC         []output.SecretFound
+	IOC         []output.IOCFound
 	ContainerId string
 }
 
