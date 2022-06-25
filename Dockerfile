@@ -4,6 +4,9 @@ MAINTAINER DeepFence
 RUN apt-get update  \
     && apt-get -qq -y --no-install-recommends install  musl-dev git protobuf-compiler \
     autoconf \
+    gcc-multilib \
+    gcc-mingw-w64 \
+    gcc-mingw-w64-i686 \
     automake \
     libtool \
     libtool \
@@ -16,7 +19,9 @@ RUN apt-get update  \
     moreutils \
     zip \
     git \
-    yara 
+    yara \
+    g++-multilib \
+    libc6-dev-i386 
 
 
 
@@ -54,7 +59,7 @@ RUN apt-get update && apt-get -qq -y --no-install-recommends install libgcc-s1 d
     && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.18.0/nerdctl-0.18.0-linux-amd64.tar.gz \
     && tar Cxzvvf /usr/local/bin nerdctl-0.18.0-linux-amd64.tar.gz \
     && rm nerdctl-0.18.0-linux-amd64.tar.gz \
-    && apt-get remove curl 
+    && apt-get remove -y  curl  
 WORKDIR /home/deepfence/usr
 COPY --from=builder /home/deepfence/src/IOCScanner/IOCScanner .
 COPY --from=builder /home/deepfence/src/IOCScanner/config.yaml .
