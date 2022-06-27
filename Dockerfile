@@ -5,8 +5,6 @@ RUN apt-get update  \
     && apt-get -qq -y --no-install-recommends install  musl-dev git protobuf-compiler \
     autoconf \
     gcc-multilib \
-    gcc-mingw-w64 \
-    gcc-mingw-w64-i686 \
     automake \
     libtool \
     libtool \

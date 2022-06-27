@@ -57,7 +57,6 @@ IOCScanner:
 	$(info [+] PKG_CONFIG_PATH=$(PKG_CONFIG_PATH))
 	mkdir -p $(@D)
 	$(GOROOT)/bin/go build \
-		-ldflags '$(VERSIONDEF) -w -s -linkmode=external -extldflags "$(extldflags)"' \
 		-tags yara_static \
 	    -buildvcs=false -v .
 
