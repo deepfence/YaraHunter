@@ -22,6 +22,8 @@ RUN apt-get update  \
     yara \
     g++-multilib \
     libc6-dev-i386
+ENV PKG_CONFIG_PATH=/home/deepfence/src/IOCScanner/_3rdparty/tgt/x86_64-linux-musl/lib/pkgconfig 
+
 
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
@@ -30,8 +32,8 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
 WORKDIR /home/deepfence/src/IOCScanner
 COPY . .
 RUN make clean  \
-    && make 3rdparty-all \
-    && make all
+    && make 3rdparty-all 
+RUN make all
 
 FROM debian:bullseye
 MAINTAINER DeepFence
@@ -59,6 +61,7 @@ RUN apt-get update && apt-get -qq -y --no-install-recommends install libgcc-s1 d
     && tar Cxzvvf /usr/local/bin nerdctl-0.18.0-linux-amd64.tar.gz \
     && rm nerdctl-0.18.0-linux-amd64.tar.gz \
     && apt-get remove -y curl
+ENV PKG_CONFIG_PATH=/home/deepfence/src/IOCScanner/_3rdparty/tgt/x86_64-linux-musl/lib/pkgconfig 
 WORKDIR /home/deepfence/usr
 COPY --from=builder /home/deepfence/src/IOCScanner/IOCScanner .
 COPY --from=builder /home/deepfence/src/IOCScanner/config.yaml .

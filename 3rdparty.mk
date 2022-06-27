@@ -14,7 +14,7 @@ endef
 $(or \
 	$(if $(or $(findstring -linux-gnu,$(3rdparty_NATIVE_ARCH)),\
 		  $(findstring -redhat-linux,$(3rdparty_NATIVE_ARCH))),\
-		$(eval 3rdparty_ARCHS=i386-linux-musl x86_64-linux-musl i686-w64-mingw32 x86_64-w64-mingw32)\
+		$(eval 3rdparty_ARCHS=x86_64-linux-musl )\
 		$(foreach arch,i686-w64-mingw32 x86_64-w64-mingw32,\
 			$(if $(not $(shell which $(arch)-gcc)),$(error $(arch)-gcc not found)))),\
 	$(if $(or $(findstring -apple-darwin,$(3rdparty_NATIVE_ARCH)),\
