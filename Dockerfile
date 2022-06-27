@@ -2,11 +2,10 @@ FROM golang:1.18.3-bullseye AS builder
 MAINTAINER DeepFence
 
 RUN apt-get update  \
-    && apt-get -qq -y --no-install-recommends install  musl-dev git protobuf-compiler \
+    && apt-get -qq -y --no-install-recommends install musl-dev git protobuf-compiler \
     autoconf \
     gcc-multilib \
     automake \
-    libtool \
     libtool \
     pkg-config \
     ca-certificates \
@@ -18,8 +17,7 @@ RUN apt-get update  \
     zip \
     git \
     yara \
-    g++-multilib \
-    libc6-dev-i386
+    g++-multilib
 ENV PKG_CONFIG_PATH=/home/deepfence/src/IOCScanner/_3rdparty/tgt/x86_64-linux-musl/lib/pkgconfig 
 
 
