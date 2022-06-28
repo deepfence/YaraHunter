@@ -42,7 +42,7 @@ COPY registry_image_save/* ./
 RUN pip3 install -r requirements.txt \
     && cd /usr/local/ \
     && tar -xzf yara.tar.gz
-WORKDIR /home/deepfence/output
+WORKDIR /home/deepfence/mnt
 
 ENTRYPOINT ["/home/deepfence/usr/IOCScanner", "-config-path", "/home/deepfence/usr", "-quiet"]
 CMD ["-h"]
