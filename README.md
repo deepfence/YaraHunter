@@ -1,8 +1,7 @@
 # IOCScanner
 
-
-
-$ ./IOCScanner --help
+```
+$ docker run -it --rm deepfenceio/deepfence-ioc-scanner:latest --help
 
 Usage of ./IOCScanner:
   -config-path string
@@ -31,7 +30,6 @@ Usage of ./IOCScanner:
     	Number of concurrent threads (default number of logical CPUs)
   -socket-path string
   		The gRPC server socket path
-
 ```
 
 ## Quickly Try Using Docker
@@ -51,7 +49,7 @@ docker pull deepfenceio/deepfence-ioc-scanner:latest
 
 * Pull a container image for scanning:
 ```shell
-docker pull node:8.11
+docker pull node:10.19
 ```
 
 * Run IOCScanner as a standalone:
@@ -65,62 +63,11 @@ docker pull node:8.11
     docker run -it --rm --name=deepfence-ioc-scanner -v /:/deepfence/mnt -v $(pwd):/home/deepfence/output -v /var/run/docker.sock:/var/run/docker.sock deepfenceio/deepfence-ioc-scanner:latest -host-mount-path /deepfence/mnt -local /deepfence/mnt
     ```
 
-* Or run IOCScanner as a gRPC server:
-    ```shell
-    docker run -it --rm --name=deepfence-ioc-scanner -v $(pwd):/home/deepfence/output -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/sock:/tmp/sock deepfenceio -socket-path /tmp/sock/s.sock
-    ```
-  * Scan a container image:
-    ```shell
-    grpcurl -plaintext -import-path ./agent-plugins-grpc/proto -proto IOC_scanner.proto -d '{"image": {"name": "node:8.11"}}' -unix '/tmp/sock.sock' IOC_scanner.IOCScanner/FindIOCInfo
-    ```
-
-  * Scan a local directory:
-    ```shell
-    grpcurl -plaintext -import-path ./agent-plugins-grpc/proto -proto IOC_scanner.proto -d '{"path": "/tmp"}' -unix '/tmp/sock.sock' IOC_scanner.IOCScanner/FindIOCInfo
-    ```
-
 By default, IOCScanner will also create json files with details of all the IOC found in the current working directory. You can explicitly specify the output directory and json filename using the appropriate options.
-
-Please note that you can use `nerdctl` as an alternative to `docker` in the commands above.
-
-## Build Instructions
-
-1. Run boostrap.sh
-2. Install Docker
-3. Install Hyperscan
-4. Install go for your platform (version 1.14)
-5. Install go modules, if needed: `gohs`, `yaml.v3` and `color`
-6. `go get github.com/deepfence/IOCScanner` will download and build IOCScanner automatically in `$GOPATH/bin` or `$HOME/go/bin` directory. Or, clone this repository and run `go build -v -i` to build the executable in the current directory.
-7. Edit config.yaml file as needed and run the IOC scanner with the appropriate config file directory.
-
-For reference, the [Install file](https://github.com/deepfence/IOCScanner/blob/master/Install.Ubuntu) has commands to build on an ubuntu system.
-
-## Instructions to Run on Local Host
-
-### As a standalone application
-
-```shell
-./IOCScanner --help
-
-./IOCScanner -config-path /path/to/config.yaml/dir -local test
-
-./IOCScanner -config-path /path/to/config.yaml/dir -image-name node:8.11
-```
-
-### As a server application
-```shell
-./IOCScanner -socket-path /path/to/socket.sock
-```
-
-See "Quickly-Try-Using-Docker" section above to see how to send requests.
 
 ## Sample IOCScanner Output
 
 ![SampleJsonOutput](images/SampleIOCsOutput.png)
-
-# Credits
-
-We have built upon the configuration file from [shhgit](https://github.com/eth0izzle/shhgit) project.
 
 # Disclaimer
 
