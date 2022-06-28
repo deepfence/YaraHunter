@@ -35,10 +35,10 @@ type manifestItem struct {
 
 var (
 	imageTarFileName = "save-output.tar"
-	maxIOCsExceeded  = errors.New("number of IOCs exceeded max-IOCs")
+	maxIOCsExceeded  = errors.New("number of IOCs exceeded max-ioc")
 	fd               uintptr
 	rules            *yr.Rules
-	RuleFiles		 []string
+	RuleFiles        []string
 	iocFile          *os.File
 )
 
@@ -59,7 +59,6 @@ var extvars = map[int]extvardefs{
 		"executable": "",
 	},
 }
-
 
 type ImageScan struct {
 	imageName     string
@@ -126,8 +125,6 @@ func (imageScan *ImageScan) scan() ([]output.IOCFound, error) {
 	return tempIOCsFound, nil
 }
 
-
-
 func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, error) {
 	var c *yr.Compiler
 	session := core.GetSession()
@@ -154,12 +151,10 @@ func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, 
 		// because yr_compiler_add_string() does not accept a file
 		// name.
 		fmt.Println("include", path)
-		if err = c.AddString("/filescan.yar", ""); err != nil {
-			
+		if err = c.AddString(fmt.Sprintf(`include "%s"`, path), ""); err != nil {
 			return nil, err
 		}
 	}
-	
 	purposeStr := [...]string{"file", "process"}[purpose]
 	rs, err := c.GetRules()
 	if err != nil {
@@ -186,7 +181,6 @@ func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, 
 	return rs, nil
 }
 
-
 // ScanIOCsInDir Scans a given directory recursively to find all IOCs inside any file in the dir
 // @parameters
 // layer - layer ID, if we are scanning directory inside container image
@@ -211,8 +205,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 	session := core.GetSession()
 	ruleFiles := []string{"filescan.yar"}
 	rules, err = compile(filescan, ruleFiles, true)
-	fmt.Println("check rules",rules)
-
+	fmt.Println("check rules", rules)
 
 	if err != nil {
 		session.Log.Error("compiling rules issue: %s", err)
@@ -227,7 +220,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 		if err != nil {
 			return err
 		}
-		
 
 		var scanDirPath string
 		if layer != "" {
@@ -271,19 +263,19 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			}
 		}
 
-		fmt.Println("test step rules",rules)
+		fmt.Println("test step rules", rules)
 
 		fmt.Println(file.Filename, file.Extension, file.Path, file.CanCheckEntropy())
-		if (len(file.Extension) > 0) {
-			
+		if len(file.Extension) > 0 {
+
 		}
-		iocFile, err := os.Open(strings.ReplaceAll(file.Path,"/deepfence/mnt",""))
+		iocFile, err := os.Open(strings.ReplaceAll(file.Path, "/deepfence/mnt", ""))
 		if err != nil {
 			session.Log.Error("scanIOCsInDir reading file: %s", err)
 			// return tempIOCsFound, err
 		} else {
 			// fmt.Println(relPath, file.Filename, file.Extension, layer)
-			fmt.Println("test inside step",rules)
+			fmt.Println("test inside step", rules)
 			fd := iocFile.Fd()
 
 			err = rules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
@@ -295,12 +287,12 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 					session.Log.Error("scanIOCsInDir: %s", err)
 					return err
 				}
-				fmt.Println("test inside step",rules)
+				fmt.Println("test inside step", rules)
 				err = rules.ScanMem(buf, 0, 1*time.Minute, &matches)
 			}
 			var collectSize int64 = -1
 			for _, m := range matches {
-				fmt.Println("test inside step",rules)
+				fmt.Println("test inside step", rules)
 				for _, meta := range m.Metas {
 					var s int64
 					if v, ok := meta.Value.(int); !ok {

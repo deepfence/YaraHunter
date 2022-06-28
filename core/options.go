@@ -43,7 +43,7 @@ func ParseOptions() (*Options, error) {
 		ImageName:       flag.String("image-name", "", "Name of the image along with tag to scan for IOC"),
 		MultipleMatch:   flag.Bool("multi-match", false, "Output multiple matches of same pattern in one file. By default, only one match of a pattern is output for a file for better performance"),
 		MaxMultiMatch:   flag.Uint("max-multi-match", 3, "Maximum number of matches of same pattern in one file. This is used only when multi-match option is enabled."),
-		MaxIOC:          flag.Uint("max-IOC", 1000, "Maximum number of IOC to find in one container image or file system."),
+		MaxIOC:          flag.Uint("max-ioc", 1000, "Maximum number of IOC to find in one container image or file system."),
 		ContainerId:     flag.String("container-id", "", "Id of existing container ID"),
 		ContainerNS:     flag.String("container-ns", "", "Namespace of existing container to scan, empty for docker runtime"),
 		Quiet:           flag.Bool("quiet", false, "Don't display any output in stdout"),

@@ -17,7 +17,7 @@ Usage of ./IOCScanner:
     	Specify local directory (absolute path) which to scan. Scans only given directory recursively.
   -max-multi-match uint
     	Maximum number of matches of same pattern in one file. This is used only when multi-match option is enabled. (default 3)
-  -max-IOC uint
+  -max-ioc uint
     	Maximum number of IOC to find in one container image or file system. (default 1000)
   -maximum-file-size uint
     	Maximum file size to process in KB (default 256)
@@ -41,12 +41,12 @@ Install docker and run IOCScanner on a container image using the following instr
 * Build IOCScanner:
 ```shell
 ./bootstrap.sh
-docker build --rm=true --tag=deepfenceio/deepfence_IOC_scanner:latest -f Dockerfile .
+docker build --rm=true --tag=deepfenceio/deepfence-ioc-scanner:latest -f Dockerfile .
 ```
 
 * Or, pull the latest build from docker hub by doing:
 ```shell
-docker pull deepfenceio/deepfence_IOC_scanner:latest
+docker pull deepfenceio/deepfence-ioc-scanner:latest
 ```
 
 * Pull a container image for scanning:
@@ -57,17 +57,17 @@ docker pull node:8.11
 * Run IOCScanner as a standalone:
   * Scan a container image:
     ```shell
-    docker run -it --rm --name=deepfence-IOCscanner -v $(pwd):/home/deepfence/output -v /var/run/docker.sock:/var/run/docker.sock deepfenceio/deepfence_IOC_scanner:latest -image-name node:8.11
+    docker run -it --rm --name=deepfence-ioc-scanner -v $(pwd):/home/deepfence/output -v /var/run/docker.sock:/var/run/docker.sock deepfenceio/deepfence-ioc-scanner:latest -image-name node:10.19
     ```
 
   * Scan a local directory:
     ```shell
-    docker run -it --rm --name=deepfence-IOCscanner -v /:/deepfence/mnt -v $(pwd):/home/deepfence/output -v /var/run/docker.sock:/var/run/docker.sock deepfenceio/deepfence_IOC_scanner:latest -host-mount-path /deepfence/mnt -local /deepfence/mnt
+    docker run -it --rm --name=deepfence-ioc-scanner -v /:/deepfence/mnt -v $(pwd):/home/deepfence/output -v /var/run/docker.sock:/var/run/docker.sock deepfenceio/deepfence-ioc-scanner:latest -host-mount-path /deepfence/mnt -local /deepfence/mnt
     ```
 
 * Or run IOCScanner as a gRPC server:
     ```shell
-    docker run -it --rm --name=deepfence-IOCscanner -v $(pwd):/home/deepfence/output -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/sock:/tmp/sock deepfenceio -socket-path /tmp/sock/s.sock
+    docker run -it --rm --name=deepfence-ioc-scanner -v $(pwd):/home/deepfence/output -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/sock:/tmp/sock deepfenceio -socket-path /tmp/sock/s.sock
     ```
   * Scan a container image:
     ```shell
