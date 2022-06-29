@@ -231,8 +231,8 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			scanDirPath = path
 		}
 
-		if (f.IsDir() &&  (f.Name() == ".file" || f.Name() == ".vol" || f.Name() == "cpuid" ||
-		f.Name() == "msr" || f.Name() == "cpuid" || f.Name() == "cpu_dma_latency" || f.Name() == "cuse") ) {
+		if f.IsDir() && (f.Name() == ".file" || f.Name() == ".vol" || f.Name() == "cpuid" ||
+			f.Name() == "msr" || f.Name() == "cpuid" || f.Name() == "cpu_dma_latency" || f.Name() == "cuse") {
 			return filepath.SkipDir
 		}
 		if f.IsDir() {
@@ -242,8 +242,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			return nil
 		}
 
-
-		if(f.Name() == ".file" || f.Name() == ".vol") {
+		if f.Name() == ".file" || f.Name() == ".vol" {
 			return filepath.SkipDir
 		}
 
@@ -287,7 +286,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			// return tempIOCsFound, err
 		} else {
 			// fmt.Println(relPath, file.Filename, file.Extension, layer)
-			//fmt.Println("test inside step", rules)
 			fd := iocFile.Fd()
 
 			err = rules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
@@ -299,13 +297,11 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 					session.Log.Error("scanIOCsInDir: %s", err)
 					return err
 				}
-				fmt.Println("test inside step", matches)
 				err = rules.ScanMem(buf, 0, 1*time.Minute, &matches)
-				fmt.Println("test inside step", matches)
 			}
 			var collectSize int64 = -1
 			for _, m := range matches {
-				fmt.Println("test inside step 2", rules, m)
+				fmt.Sprintln(fmt.Sprintf("%v", m))
 				for _, meta := range m.Metas {
 					var s int64
 					if v, ok := meta.Value.(int); !ok {
@@ -323,19 +319,10 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 				}
 			}
 			if *session.Options.Quiet {
-				//output.PrintColoredIOC(matches, isFirstIOC)
-			}
-			return err
-			if *session.Options.Quiet {
 				output.PrintColoredIOC(IOCs, isFirstIOC)
 			}
 			tempIOCsFound = append(tempIOCsFound, IOCs...)
 		}
-
-		if *session.Options.Quiet {
-			output.PrintColoredIOC(IOCs, isFirstIOC)
-		}
-		tempIOCsFound = append(tempIOCsFound, IOCs...)
 
 		// Don't report IOCs if number of IOCs exceeds MAX value
 		if *numIOCs >= *session.Options.MaxIOC {
@@ -348,7 +335,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			session.Log.Warn("filepath.Walk: %s", walkErr)
 			fmt.Printf("filepath.Walk: %s\n", walkErr)
 		} else {
-			
+
 			session.Log.Error("Error in filepath.Walk: %s", walkErr)
 			fmt.Printf("Error in filepath.Walk: %s\n", walkErr)
 
