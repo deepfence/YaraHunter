@@ -132,8 +132,8 @@ func printJsonFooter() {
 	fmt.Printf("}\n")
 }
 
-func PrintColoredIOC(IOC []IOCFound, isFirstIOC *bool) {
-	for _, IOC := range IOC {
+func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool) {
+	for _, IOC := range IOCs {
 		printColoredIOCJsonObject(IOC, isFirstIOC)
 		*isFirstIOC = false
 	}

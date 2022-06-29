@@ -205,7 +205,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 	session := core.GetSession()
 	ruleFiles := []string{"filescan.yar"}
 	rules, err = compile(filescan, ruleFiles, true)
-	fmt.Println("check rules", rules)
 
 	if err != nil {
 		session.Log.Error("compiling rules issue: %s", err)
@@ -214,7 +213,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 	maxFileSize := *session.Options.MaximumFileSize * 1024
 	var file core.MatchFile
 	var relPath string
-	var IOCs []output.IOCFound
 
 	walkErr := filepath.Walk(fullDir, func(path string, f os.FileInfo, err error) error {
 		if err != nil {
@@ -299,31 +297,22 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 				}
 				err = rules.ScanMem(buf, 0, 1*time.Minute, &matches)
 			}
-			var collectSize int64 = -1
+			fmt.Println("=========================")
+			fmt.Println(file.Path)
 			for _, m := range matches {
-				fmt.Sprintln(fmt.Sprintf("%v", m))
-				for _, meta := range m.Metas {
-					var s int64
-					if v, ok := meta.Value.(int); !ok {
-						continue
-					} else {
-						s = int64(v)
-					}
-					if s < 0 {
-						// rules can tell us to collect the entire file.
-						collectSize = -1
-						break
-					} else if collectSize == -1 || collectSize > s {
-						collectSize = s
-					}
+				fmt.Printf("------------------------\n")
+				fmt.Printf("%v \n", m.Rule)
+				fmt.Printf("%v \n", m.Namespace)
+				for _, str := range m.Strings {
+					fmt.Println(str.Name)
+					fmt.Println(string(str.Data))
 				}
+				fmt.Printf("%v \n", m.Metas)
+				// TODO: change the fields in IOCFound struct to accept above fields
+				//ioc := output.IOCFound{}
+				//tempIOCsFound = append(tempIOCsFound, ioc)
 			}
-			if *session.Options.Quiet {
-				output.PrintColoredIOC(IOCs, isFirstIOC)
-			}
-			tempIOCsFound = append(tempIOCsFound, IOCs...)
 		}
-
 		// Don't report IOCs if number of IOCs exceeds MAX value
 		if *numIOCs >= *session.Options.MaxIOC {
 			return maxIOCsExceeded
@@ -335,11 +324,12 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			session.Log.Warn("filepath.Walk: %s", walkErr)
 			fmt.Printf("filepath.Walk: %s\n", walkErr)
 		} else {
-
 			session.Log.Error("Error in filepath.Walk: %s", walkErr)
 			fmt.Printf("Error in filepath.Walk: %s\n", walkErr)
-
 		}
+	}
+	if *session.Options.Quiet {
+		output.PrintColoredIOC(tempIOCsFound, isFirstIOC)
 	}
 	return tempIOCsFound, nil
 }
