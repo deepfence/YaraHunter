@@ -231,12 +231,26 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			scanDirPath = path
 		}
 
+		if (f.IsDir() &&  (f.Name() == ".file" || f.Name() == ".vol" || f.Name() == "cpuid" ||
+		f.Name() == "msr" || f.Name() == "cpuid" || f.Name() == "cpu_dma_latency" || f.Name() == "cuse") ) {
+			return filepath.SkipDir
+		}
 		if f.IsDir() {
 			if core.IsSkippableDir(scanDirPath, baseDir) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
+
+
+		if(f.Name() == ".file" || f.Name() == ".vol") {
+			return filepath.SkipDir
+		}
+
+		if uint(f.Size()) > maxFileSize || core.IsSkippableFileExtension(path) {
+			return nil
+		}
+
 		if uint(f.Size()) > maxFileSize || core.IsSkippableFileExtension(path) {
 			return nil
 		}
@@ -263,19 +277,17 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			}
 		}
 
-		fmt.Println("test step rules", rules)
-
-		fmt.Println(file.Filename, file.Extension, file.Path, file.CanCheckEntropy())
+		//fmt.Println("test step rules", rules)
 		if len(file.Extension) > 0 {
 
 		}
-		iocFile, err := os.Open(strings.ReplaceAll(file.Path, "/deepfence/mnt", ""))
+		iocFile, err := os.OpenFile(file.Path, os.O_RDWR|os.O_CREATE, 0777)
 		if err != nil {
 			session.Log.Error("scanIOCsInDir reading file: %s", err)
 			// return tempIOCsFound, err
 		} else {
 			// fmt.Println(relPath, file.Filename, file.Extension, layer)
-			fmt.Println("test inside step", rules)
+			//fmt.Println("test inside step", rules)
 			fd := iocFile.Fd()
 
 			err = rules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
@@ -287,12 +299,13 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 					session.Log.Error("scanIOCsInDir: %s", err)
 					return err
 				}
-				fmt.Println("test inside step", rules)
+				fmt.Println("test inside step", matches)
 				err = rules.ScanMem(buf, 0, 1*time.Minute, &matches)
+				fmt.Println("test inside step", matches)
 			}
 			var collectSize int64 = -1
 			for _, m := range matches {
-				fmt.Println("test inside step", rules)
+				fmt.Println("test inside step 2", rules, m)
 				for _, meta := range m.Metas {
 					var s int64
 					if v, ok := meta.Value.(int); !ok {
@@ -335,8 +348,10 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			session.Log.Warn("filepath.Walk: %s", walkErr)
 			fmt.Printf("filepath.Walk: %s\n", walkErr)
 		} else {
+			
 			session.Log.Error("Error in filepath.Walk: %s", walkErr)
 			fmt.Printf("Error in filepath.Walk: %s\n", walkErr)
+
 		}
 	}
 	return tempIOCsFound, nil

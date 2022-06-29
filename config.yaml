@@ -3,7 +3,8 @@
 blacklisted_strings: [] # skip matches containing any of these strings (case sensitive)
 blacklisted_extensions: [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".psd", ".xcf", ".zip", ".tar.gz", ".ttf", ".lock"] 
 # need to confirm as windows hides file extensions
-blacklisted_paths: [] 
+blacklisted_paths: ["{sep}var{sep}lib{sep}docker", "{sep}var{sep}lib{sep}containerd", "{sep}bin", "{sep}boot", "{sep}dev", "{sep}lib", "{sep}lib64", "{sep}media", "{sep}proc", "{sep}run", "{sep}sbin", "{sep}usr{sep}lib", "{sep}sys"] # use {sep} for the OS' path seperator (i.e. / or \)
+ 
 
 report: spyre.log
 evidence-collector:

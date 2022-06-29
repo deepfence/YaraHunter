@@ -15,6 +15,26 @@ rule HackTool_MSIL_Rubeus_1
     condition:
         uint16(0) == 0x5A4D and $typelibguid
 }
+
+
+
+rule XOR_DDosv1 : DDoS
+{
+  meta:
+    author = "Akamai CSIRT"
+    description = "Rule to detect XOR DDos infection"
+  strings:
+    $st0 = "BB2FA36AAA9541F0"
+    $st1 = "md5="
+    $st2 = "denyip="
+    $st3 = "filename="
+    $st4 = "rmfile="
+    $st5 = "exec_packet"
+    $st6 = "build_iphdr"
+  condition:
+    all of them
+}
+
 rule Trojan_Raw_Generic_4
 {
     meta:
