@@ -16,6 +16,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"math"
 
 	"fmt"
 
@@ -181,6 +182,39 @@ func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, 
 	return rs, nil
 }
 
+func calculateSeverity(inputString []string, severity string, severityScore float64) (string, float64) {
+	updatedSeverity := "low"
+	lenMatch := len(inputString)
+	MinSecretLength := 3
+
+	MaxSecretLength := 6
+
+	if lenMatch < MinSecretLength {
+		return severity, severityScore
+	}
+
+	if lenMatch >= MaxSecretLength {
+		return "high", 10.0
+	}
+
+	scoreRange := 10.0 - severityScore
+
+	increament := ((float64(lenMatch) - float64(MinSecretLength)) * scoreRange) / (float64(MaxSecretLength) - float64(MinSecretLength))
+
+	updatedScore := severityScore + increament
+	if updatedScore > 10.0 {
+		updatedScore = 10.0
+	}
+
+	if 2.5 < updatedScore && updatedScore <= 7.5 {
+		updatedSeverity = "medium"
+	} else if 7.5 < updatedScore {
+		updatedSeverity = "high"
+	}
+
+	return updatedSeverity, math.Round(updatedScore*100) / 100
+}
+
 // ScanIOCsInDir Scans a given directory recursively to find all IOCs inside any file in the dir
 // @parameters
 // layer - layer ID, if we are scanning directory inside container image
@@ -297,20 +331,44 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 				}
 				err = rules.ScanMem(buf, 0, 1*time.Minute, &matches)
 			}
-			fmt.Println("=========================")
-			fmt.Println(file.Path)
+			//fmt.Println("=========================")
 			for _, m := range matches {
-				fmt.Printf("------------------------\n")
-				fmt.Printf("%v \n", m.Rule)
-				fmt.Printf("%v \n", m.Namespace)
+				//fmt.Printf("------------------------\n")
+				//fmt.Printf("Matched file path is %v \n", file.Path)
+				//fmt.Printf("Match Rule is %v \n", m.Rule)
+				//fmt.Printf("Matched namespace is %v \n", m.Namespace)
+				//fmt.Printf("Matched strings are as below :")
+				matchesString := make([]string, len(m.Strings))
+				matchesStringData := make([]string, len(m.Strings))
 				for _, str := range m.Strings {
-					fmt.Println(str.Name)
-					fmt.Println(string(str.Data))
+					matchesString = append(matchesString, str.Name)
+					matchesStringData = append(matchesStringData, string(str.Data))
+					//fmt.Printf("string name: %v ",str.Name)
+					//fmt.Printf("string name: %v ",string(str.Data))
+					//fmt.Printf("*******\n")
 				}
+				matchesMeta := make([]string, len(m.Metas))
+				matchesMetaData := make([]string, len(m.Strings))
+				for _, strMeta := range m.Metas {
+					matchesMeta = append(matchesMeta, strMeta.Identifier)
+					matchesMetaData = append(matchesMetaData, fmt.Sprintf("value: %v", strMeta.Value))
+					
+				}
+
 				fmt.Printf("%v \n", m.Metas)
+				updatedSeverity, updatedScore := calculateSeverity(matchesString, "low", 0)
+
 				// TODO: change the fields in IOCFound struct to accept above fields
-				//ioc := output.IOCFound{}
-				//tempIOCsFound = append(tempIOCsFound, ioc)
+				ioc := output.IOCFound{
+					LayerID: layer,
+					RuleName:  m.Rule,
+					StringsToMatch: matchesString,
+					Severity: updatedSeverity, SeverityScore: updatedScore,
+					CompleteFilename:      file.Path,
+					MatchedContents:strings.Join(matchesStringData[:], ","),
+					Meta: matchesMetaData,
+				}
+				tempIOCsFound = append(tempIOCsFound, ioc)
 			}
 		}
 		// Don't report IOCs if number of IOCs exceeds MAX value
