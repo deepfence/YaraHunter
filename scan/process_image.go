@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"os"
 	"os/exec"
@@ -476,149 +475,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 			return nil
 		})
 
-
-
-
-
-
-
-
-
-
-	// walkErr := afero.Walk(fullDir, func(path string, f os.FileInfo, err error) error {
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	var scanDirPath string
-	// 	if layer != "" {
-	// 		scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
-	// 		if scanDirPath == "" {
-	// 			scanDirPath = "/"
-	// 		}
-	// 	} else {
-	// 		scanDirPath = path
-	// 	}
-
-	// 	if f.IsDir() && (f.Name() == ".file" || f.Name() == ".vol" || f.Name() == "cpuid" ||
-	// 		f.Name() == "msr" || f.Name() == "cpuid" || f.Name() == "cpu_dma_latency" || f.Name() == "cuse") {
-	// 		return filepath.SkipDir
-	// 	}
-	// 	if f.IsDir() {
-	// 		if core.IsSkippableDir(scanDirPath, baseDir) {
-	// 			return filepath.SkipDir
-	// 		}
-	// 		return nil
-	// 	}
-
-	// 	if f.Name() == ".file" || f.Name() == ".vol" {
-	// 		return filepath.SkipDir
-	// 	}
-
-	// 	if uint(f.Size()) > maxFileSize || core.IsSkippableFileExtension(path) {
-	// 		return nil
-	// 	}
-
-	// 	if uint(f.Size()) > maxFileSize || core.IsSkippableFileExtension(path) {
-	// 		return nil
-	// 	}
-	// 	// No need to scan sym links. This avoids hangs when scanning stderr, stdour or special file descriptors
-	// 	// Also, the pointed files will anyway be scanned directly
-	// 	if core.IsSymLink(path) {
-	// 		return nil
-	// 	}
-
-	// 	file = core.NewMatchFile(path)
-
-	// 	relPath, err = filepath.Rel(filepath.Join(baseDir, layer), file.Path)
-	// 	if err != nil {
-	// 		session.Log.Warn("scanIOCsInDir: Couldn't remove prefix of path: %s %s %s",
-	// 			baseDir, layer, file.Path)
-	// 		relPath = file.Path
-	// 	}
-
-	// 	// Add RW permissions for reading and deleting contents of containers, not for regular file system
-	// 	if layer != "" {
-	// 		err = os.Chmod(file.Path, 0600)
-	// 		if err != nil {
-	// 			session.Log.Error("scanIOCsInDir changine file permission: %s", err)
-	// 		}
-	// 	}
-
-	// 	for _, v := range []struct {
-	// 		name  string
-	// 		value interface{}
-	// 	}{
-	// 		{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
-	// 		{"filepath", filepath.ToSlash(f.Name())},
-	// 		{"extension", filepath.Ext(f.Name())},
-	// 	} {
-	// 		if err = rules.DefineVariable(v.name, v.value); err != nil {
-	// 			return err
-	// 		}
-	// 	}
-
-	// 	iocFile, err := os.OpenFile(file.Path, os.O_RDWR|os.O_CREATE, 0777)
-	// 	if err != nil {
-	// 		session.Log.Error("scanIOCsInDir reading file: %s", err)
-	// 		// return tempIOCsFound, err
-	// 	} else {
-	// 		fd := iocFile.Fd()
-	// 		err = rules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
-	// 		if err != nil {
-	// 			var buf []byte
-	// 			if buf, err = ioutil.ReadAll(iocFile); err != nil {
-	// 				session.Log.Info("relPath: %s, Filename: %s, Extension: %s, layer: %s",
-	// 					relPath, file.Filename, file.Extension, layer)
-	// 				session.Log.Error("scanIOCsInDir: %s", err)
-	// 				return err
-	// 			}
-	// 			err = rules.ScanMem(buf, 0, 1*time.Minute, &matches)
-	// 		}
-	// 		for _, m := range matches {
-	// 			matchesStringData := make([]string, len(m.Strings))
-	// 			for _, str := range m.Strings {
-	// 				matchesStringData = append(matchesStringData, string(str.Data))
-	// 			}
-	// 			matchesMeta := make([]string, len(m.Metas))
-	// 			matchesMetaData := make([]string, len(m.Strings))
-	// 			for _, strMeta := range m.Metas {
-	// 				matchesMeta = append(matchesMeta, strMeta.Identifier)
-	// 				matchesMetaData = append(matchesMetaData, fmt.Sprintf("value: %v", strMeta.Value))
-	// 			}
-
-	// 			updatedSeverity, updatedScore := calculateSeverity(matchesStringData, "low", 0)
-
-	// 			ioc := output.IOCFound{
-	// 				LayerID:          layer,
-	// 				RuleName:         m.Rule,
-	// 				StringsToMatch:   matchesStringData,
-	// 				Severity:         updatedSeverity,
-	// 				SeverityScore:    updatedScore,
-	// 				CompleteFilename: rules.,
-	// 				Meta:             matchesMetaData,
-	// 			}
-	// 			tempIOCsFound = append(tempIOCsFound, ioc)
-	// 		}
-	// 	}
-	// 	// Don't report IOCs if number of IOCs exceeds MAX value
-	// 	if *numIOCs >= *session.Options.MaxIOC {
-	// 		return maxIOCsExceeded
-	// 	}
-	// 	return nil
-	// })
-	// if walkErr != nil {
-	// 	if walkErr == maxIOCsExceeded {
-	// 		session.Log.Warn("filepath.Walk: %s", walkErr)
-	// 		fmt.Printf("filepath.Walk: %s\n", walkErr)
-	// 	} else {
-	// 		session.Log.Error("Error in filepath.Walk: %s", walkErr)
-	// 		fmt.Printf("Error in filepath.Walk: %s\n", walkErr)
-	// 	}
-	// }
-	if *session.Options.Quiet {
-		output.PrintColoredIOC(tempIOCsFound, isFirstIOC)
-	}
 	return tempIOCsFound, nil
 }
 
@@ -692,7 +548,6 @@ func (imageScan *ImageScan) saveImageData() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Scanning image %s for IOCs...\n", outputParam)
 	_, err = drun.Save(imageName, outputParam)
 
 	if err != nil {
@@ -878,7 +733,7 @@ func runCommand(name string, args ...string) (stdout string, stderr string, exit
 			// in this situation, exit code could not be get, and stderr will be
 			// empty string very likely, so we use the default fail code, and format err
 			// to string and set to stderr
-			log.Printf("Could not get exit code for failed program: %v, %v", name, args)
+			core.GetSession().Log.Debug("Could not get exit code for failed program: %v, %v", name, args)
 			exitCode = defaultFailedCode
 			if stderr == "" {
 				stderr = err.Error()
