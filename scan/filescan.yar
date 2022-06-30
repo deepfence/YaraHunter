@@ -15,6 +15,20 @@ rule HackTool_MSIL_Rubeus_1
     condition:
         uint16(0) == 0x5A4D and $typelibguid
 }
+rule mytestRule
+{
+    meta:
+        description = "The TypeLibGUID present in a .NET binary maps directly to the ProjectGuid found in the '.csproj' file of a .NET project. This rule looks for .NET PE files that contain the ProjectGuid found in the public Rubeus project."
+        md5 = "66e0681a500c726ed52e5ea9423d2654"
+        rev = 4
+        author = "FireEye"
+    strings:
+        $typelibguid = "filepath.ToSlash"
+    condition:
+        $typelibguid
+}
+
+
 rule Trojan_Raw_Generic_4
 {
     meta:

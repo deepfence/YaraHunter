@@ -9,6 +9,7 @@ require (
 	github.com/deepfence/vessel v0.6.0
 	github.com/fatih/color v1.13.0
 	github.com/hillu/go-yara/v4 v4.2.3
+	github.com/spf13/afero v1.5.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 

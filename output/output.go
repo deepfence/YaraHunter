@@ -136,6 +136,7 @@ func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool) {
 	}
 }
 
+
 // Function to print json object with the matches IOC string in color
 // @parameters
 // IOC - Structure with details of the IOC found
