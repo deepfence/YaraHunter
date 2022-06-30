@@ -82,7 +82,7 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 	if saveImage {
 		err := imageScan.saveImageData()
 		if err != nil {
-			core.GetSession().Log.Error("scanImage: Could not save container image: %s. Check if the image name is correct.", err)
+			core.GetSession().Log.Error("image does not exist: %s", err)
 			return err
 		}
 	}
@@ -326,10 +326,8 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 				err = rules.ScanMem(buf, 0, 1*time.Minute, &matches)
 			}
 			for _, m := range matches {
-				matchesString := make([]string, len(m.Strings))
 				matchesStringData := make([]string, len(m.Strings))
 				for _, str := range m.Strings {
-					matchesString = append(matchesString, str.Name)
 					matchesStringData = append(matchesStringData, string(str.Data))
 				}
 				matchesMeta := make([]string, len(m.Metas))
@@ -339,17 +337,15 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 					matchesMetaData = append(matchesMetaData, fmt.Sprintf("value: %v", strMeta.Value))
 				}
 
-				fmt.Printf("%v \n", m.Metas)
-				updatedSeverity, updatedScore := calculateSeverity(matchesString, "low", 0)
+				updatedSeverity, updatedScore := calculateSeverity(matchesStringData, "low", 0)
 
 				ioc := output.IOCFound{
 					LayerID:          layer,
 					RuleName:         m.Rule,
-					StringsToMatch:   matchesString,
+					StringsToMatch:   matchesStringData,
 					Severity:         updatedSeverity,
 					SeverityScore:    updatedScore,
 					CompleteFilename: file.Path,
-					MatchedContents:  strings.Join(matchesStringData[:], ","),
 					Meta:             matchesMetaData,
 				}
 				tempIOCsFound = append(tempIOCsFound, ioc)

@@ -107,7 +107,6 @@ func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
 // @returns
 // Error, if any. Otherwise, returns nil
 func findIOCInContainer(containerId string, containerNS string) (*output.JsonImageIOCOutput, error) {
-
 	res, err := scan.ExtractAndScanContainer(containerId, containerNS)
 	if err != nil {
 		return nil, err
@@ -127,51 +126,54 @@ type IOCWriter interface {
 }
 
 func runOnce() {
-	var output IOCWriter
+	var jsonOutput IOCWriter
+	var err error
 	var input string
 
 	// Scan container image for IOC
 	if len(*session.Options.ImageName) > 0 {
 		fmt.Printf("Scanning image %s for IOC...\n", *session.Options.ImageName)
-		jsonOutput, err := findIOCInImage(*session.Options.ImageName)
+		jsonOutput, err = findIOCInImage(*session.Options.ImageName)
 		if err != nil {
-			core.GetSession().Log.Fatal("main: error while scanning image: %s", err)
+			core.GetSession().Log.Error("error scanning the image: %s", err)
+			return
 		}
-		output = jsonOutput
 	}
 
 	// Scan local directory for IOC
 	if len(*session.Options.Local) > 0 {
 		fmt.Printf("[*] Scanning local directory: %s\n", color.BlueString(*session.Options.Local))
-		jsonOutput, err := findIOCInDir(*session.Options.Local)
+		jsonOutput, err = findIOCInDir(*session.Options.Local)
 		if err != nil {
-			core.GetSession().Log.Fatal("main: error while scanning dir: %s", err)
+			core.GetSession().Log.Error("error scanning the dir: %s", err)
+			return
 		}
-		output = jsonOutput
 	}
 
 	// Scan existing container for IOC
 	if len(*session.Options.ContainerId) > 0 {
 		fmt.Printf("Scanning container %s for IOC...\n", *session.Options.ContainerId)
-		jsonOutput, err := findIOCInContainer(*session.Options.ContainerId, *session.Options.ContainerNS)
+		jsonOutput, err = findIOCInContainer(*session.Options.ContainerId, *session.Options.ContainerNS)
 		if err != nil {
-			core.GetSession().Log.Fatal("main: error while scanning container: %s", err)
+			core.GetSession().Log.Error("error scanning the container: %s", err)
+			return
 		}
-		output = jsonOutput
 	}
 
-	if output == nil {
+	if jsonOutput == nil {
 		core.GetSession().Log.Error("set either -local or -image-name flag")
 		return
 	}
 
 	jsonFilename, err := core.GetJsonFilepath(input)
 	if err != nil {
-		core.GetSession().Log.Fatal("main: error while retrieving json output: %s", err)
+		core.GetSession().Log.Error("error while retrieving json output: %s", err)
+		return
 	}
-	err = output.WriteIOC(jsonFilename)
+	err = jsonOutput.WriteIOC(jsonFilename)
 	if err != nil {
-		core.GetSession().Log.Fatal("main: error whilewriting IOC: %s", err)
+		core.GetSession().Log.Error("error while writing IOC: %s", err)
+		return
 	}
 }
 
@@ -181,12 +183,12 @@ func main() {
 	if *socketPath != "" {
 		//err := server.RunServer(*socketPath, PLUGIN_NAME)
 		//if err != nil {
-		//	core.GetSession().Log.Fatal("main: failed to serve: %v", err)
+		//	core.GetSession().Log.Error("main: failed to serve: %v", err)
 		//}
 	} else if *httpPort != "" {
 		err := server.RunHttpServer(*httpPort)
 		if err != nil {
-			core.GetSession().Log.Fatal("main: failed to serve through http: %v", err)
+			core.GetSession().Log.Error("main: failed to serve through http: %v", err)
 		}
 	} else {
 		runOnce()

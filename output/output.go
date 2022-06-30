@@ -152,7 +152,7 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool) {
 	fmt.Printf(Indent3+"\"Image Layer ID\": %s,\n", jsonMarshal(IOC.LayerID))
 	fmt.Printf(Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(IOC.RuleName))
 	fmt.Printf(Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
-	fmt.Printf(Indent3+"\"Matched Contents\": %s,\n", jsonMarshal(IOC.MatchedContents))
+	fmt.Printf(Indent3+"\"Content to Match\": %s,\n", jsonMarshal(IOC.MatchedContents))
 	fmt.Printf(Indent3+"\"Severity\": %s,\n", jsonMarshal(IOC.Severity))
 	fmt.Printf(Indent3+"\"Severity Score\": %.2f,\n", IOC.SeverityScore)
 	fmt.Printf(Indent3+"\"File Name\": %s,\n", jsonMarshal(IOC.CompleteFilename))
