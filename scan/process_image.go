@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"os"
 	"os/exec"
@@ -151,7 +150,6 @@ func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, 
 		// We use the include callback function to actually read files
 		// because yr_compiler_add_string() does not accept a file
 		// name.
-		fmt.Println("include", path)
 		if err = c.AddString(fmt.Sprintf(`include "%s"`, path), ""); err != nil {
 			return nil, err
 		}
@@ -360,10 +358,8 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 	if walkErr != nil {
 		if walkErr == maxIOCsExceeded {
 			session.Log.Warn("filepath.Walk: %s", walkErr)
-			fmt.Printf("filepath.Walk: %s\n", walkErr)
 		} else {
 			session.Log.Error("Error in filepath.Walk: %s", walkErr)
-			fmt.Printf("Error in filepath.Walk: %s\n", walkErr)
 		}
 	}
 	if *session.Options.Quiet {
@@ -442,7 +438,6 @@ func (imageScan *ImageScan) saveImageData() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Scanning image %s for IOCs...\n", outputParam)
 	_, err = drun.Save(imageName, outputParam)
 
 	if err != nil {
@@ -628,7 +623,7 @@ func runCommand(name string, args ...string) (stdout string, stderr string, exit
 			// in this situation, exit code could not be get, and stderr will be
 			// empty string very likely, so we use the default fail code, and format err
 			// to string and set to stderr
-			log.Printf("Could not get exit code for failed program: %v, %v", name, args)
+			core.GetSession().Log.Debug("Could not get exit code for failed program: %v, %v", name, args)
 			exitCode = defaultFailedCode
 			if stderr == "" {
 				stderr = err.Error()
