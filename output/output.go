@@ -15,20 +15,16 @@ const (
 )
 
 type IOCFound struct {
-	LayerID               string  `json:"Image Layer ID,omitempty"`
-	RuleID                int     `json:"Matched Rule ID,omitempty"`
-	RuleName              string  `json:"Matched Rule Name,omitempty"`
-	StringsToMatch        []string  `json:"Matched Part,omitempty"`
-	Match                 string  `json:"String to Match,omitempty"`
-	Regex                 string  `json:"Signature to Match,omitempty"`
-	Severity              string  `json:"Severity,omitempty"`
-	SeverityScore         float64 `json:"Severity Score,omitempty"`
-	PrintBufferStartIndex int     `json:"Starting Index of Match in Original Content,omitempty"`
-	MatchFromByte         int     `json:"Relative Starting Index of Match in Displayed Substring"`
-	MatchToByte           int     `json:"Relative Ending Index of Match in Displayed Substring"`
-	CompleteFilename      string  `json:"Full File Name,omitempty"`
-	MatchedContents       string  `json:"Matched Contents,omitempty"`
-	Meta				  []string  `json:"rule meta"`
+	LayerID          string   `json:"Image Layer ID,omitempty"`
+	RuleID           int      `json:"Matched Rule ID,omitempty"`
+	RuleName         string   `json:"Matched Rule Name,omitempty"`
+	StringsToMatch   []string `json:"Matched Part,omitempty"`
+	Match            string   `json:"String to Match,omitempty"`
+	Severity         string   `json:"Severity,omitempty"`
+	SeverityScore    float64  `json:"Severity Score,omitempty"`
+	CompleteFilename string   `json:"Full File Name,omitempty"`
+	MatchedContents  string   `json:"Matched Contents,omitempty"`
+	Meta             []string `json:"rule meta"`
 }
 
 type IOCOutput interface {
@@ -156,10 +152,10 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool) {
 	fmt.Printf(Indent3+"\"Image Layer ID\": %s,\n", jsonMarshal(IOC.LayerID))
 	fmt.Printf(Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(IOC.RuleName))
 	fmt.Printf(Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
-	fmt.Printf(Indent3+"\"Content to Match\": %s,\n", jsonMarshal(IOC.MatchedContents))
+	fmt.Printf(Indent3+"\"Matched Contents\": %s,\n", jsonMarshal(IOC.MatchedContents))
 	fmt.Printf(Indent3+"\"Severity\": %s,\n", jsonMarshal(IOC.Severity))
 	fmt.Printf(Indent3+"\"Severity Score\": %.2f,\n", IOC.SeverityScore)
-	fmt.Printf(Indent3+"\"Full File Name\": %s,\n", jsonMarshal(IOC.CompleteFilename))
+	fmt.Printf(Indent3+"\"File Name\": %s,\n", jsonMarshal(IOC.CompleteFilename))
 	fmt.Printf(Indent3+"\"Match Rule Meta\": %s,\n", IOC.Meta)
 	// match := IOC.MatchedContents
 	// from := IOC.MatchFromByte

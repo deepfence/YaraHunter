@@ -65,20 +65,20 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 // @parameters
 // containerScan - Structure with details of the container  to scan
 // @returns
-// []output.SecretFound - List of all IOC found
+// []output.IOCFound - List of all IOC found
 // Error - Errors, if any. Otherwise, returns nil
 func (containerScan *ContainerScan) scan() ([]output.IOCFound, error) {
-	var isFirstSecret bool = true
+	var isFirstIOC bool = true
 	var numIOC uint = 0
 
-	IOC, err := ScanIOCInDir("", "", containerScan.tempDir, &isFirstSecret, &numIOC, nil)
+	IOC, err := ScanIOCInDir("", "", containerScan.tempDir, &isFirstIOC, &numIOC, nil)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInContainer: %s", err)
 		return nil, err
 	}
 
-	for _, secret := range IOC {
-		secret.CompleteFilename = strings.Replace(secret.CompleteFilename, containerScan.tempDir, "", 1)
+	for _, ioc := range IOC {
+		ioc.CompleteFilename = strings.Replace(ioc.CompleteFilename, containerScan.tempDir, "", 1)
 	}
 
 	return IOC, nil

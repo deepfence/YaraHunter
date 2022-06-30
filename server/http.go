@@ -18,11 +18,11 @@ import (
 )
 
 const (
-	scanStatusComplete      = "COMPLETE"
-	scanStatusError         = "ERROR"
-	defaultScanConcurrency  = 5
-	secretScanIndexName     = "secret-scan"
-	secretScanLogsIndexName = "secret-scan-logs"
+	scanStatusComplete     = "COMPLETE"
+	scanStatusError        = "ERROR"
+	defaultScanConcurrency = 5
+	iocScanIndexName       = "ioc-scan"
+	iocScanLogsIndexName   = "ioc-scan-logs"
 )
 
 var (
@@ -38,14 +38,14 @@ type imageParameters struct {
 
 func init() {
 	var err error
-	scanConcurrency, err = strconv.Atoi(os.Getenv("SECRET_SCAN_CONCURRENCY"))
+	scanConcurrency, err = strconv.Atoi(os.Getenv("IOC_SCAN_CONCURRENCY"))
 	if err != nil {
 		scanConcurrency = defaultScanConcurrency
 	}
 	httpScanWorkerPool = tunny.NewFunc(scanConcurrency, processImageWrapper)
 }
 
-func runSecretScan(writer http.ResponseWriter, request *http.Request) {
+func runIOCScan(writer http.ResponseWriter, request *http.Request) {
 	if err := request.ParseForm(); err != nil {
 		fmt.Fprintf(writer, "ParseForm() err: %v", err)
 		return
@@ -94,38 +94,38 @@ func processImage(imageName string, scanId string, form url.Values) {
 }
 
 func scanAndPublish(imageName string, scanId string, tempDir string, postForm url.Values) {
-	var secretScanLogDoc = make(map[string]interface{})
-	secretScanLogDoc["scan_status"] = "IN_PROGRESS"
-	secretScanLogDoc["node_id"] = imageName
-	secretScanLogDoc["node_name"] = imageName
-	secretScanLogDoc["time_stamp"] = core.GetTimestamp()
-	secretScanLogDoc["@timestamp"] = core.GetCurrentTime()
-	secretScanLogDoc["scan_id"] = scanId
+	var iocScanLogDoc = make(map[string]interface{})
+	iocScanLogDoc["scan_status"] = "IN_PROGRESS"
+	iocScanLogDoc["node_id"] = imageName
+	iocScanLogDoc["node_name"] = imageName
+	iocScanLogDoc["time_stamp"] = core.GetTimestamp()
+	iocScanLogDoc["@timestamp"] = core.GetCurrentTime()
+	iocScanLogDoc["scan_id"] = scanId
 	for key, value := range postForm {
 		if len(value) > 0 {
-			secretScanLogDoc[key] = value[0]
+			iocScanLogDoc[key] = value[0]
 		}
 	}
-	secretScanLogDoc["image_name_with_tag_list"] = nil
-	secretScanLogDoc["scan_id_list"] = nil
-	byteJson, err := json.Marshal(secretScanLogDoc)
+	iocScanLogDoc["image_name_with_tag_list"] = nil
+	iocScanLogDoc["scan_id_list"] = nil
+	byteJson, err := json.Marshal(iocScanLogDoc)
 	if err != nil {
-		fmt.Println("Error in marshalling secret in_progress log object to json:" + err.Error())
+		fmt.Println("Error in marshalling ioc log object to json:" + err.Error())
 	} else {
-		err = output.IngestIOCScanResults(string(byteJson), secretScanLogsIndexName)
+		err = output.IngestIOCScanResults(string(byteJson), iocScanLogsIndexName)
 		if err != nil {
 			fmt.Println("Error in updating in_progress log" + err.Error())
 		}
 	}
 	res, err := scan.ExtractAndScanFromTar(tempDir, imageName)
 	if err != nil {
-		secretScanLogDoc["scan_status"] = "ERROR"
-		byteJson, err := json.Marshal(secretScanLogDoc)
+		iocScanLogDoc["scan_status"] = "ERROR"
+		byteJson, err := json.Marshal(iocScanLogDoc)
 		if err != nil {
-			fmt.Println("Error in marshalling secret result object to json:" + err.Error())
+			fmt.Println("Error in marshalling ioc scan result object to json:" + err.Error())
 			return
 		}
-		err = output.IngestIOCScanResults(string(byteJson), secretScanLogsIndexName)
+		err = output.IngestIOCScanResults(string(byteJson), iocScanLogsIndexName)
 		if err != nil {
 			fmt.Println("error ingesting data: " + err.Error())
 		}
@@ -133,53 +133,57 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 	}
 	timestamp := core.GetTimestamp()
 	currTime := core.GetCurrentTime()
-	for _, secret := range res.IOCs {
-		var secretScanDoc = make(map[string]interface{})
+	for _, ioc := range res.IOCs {
+		var iocScanDoc = make(map[string]interface{})
 		for key, value := range postForm {
 			if len(value) > 0 {
-				secretScanDoc[key] = value[0]
+				iocScanDoc[key] = value[0]
 			}
 		}
-		secretScanDoc["image_name_with_tag_list"] = nil
-		secretScanDoc["scan_id_list"] = nil
-		secretScanDoc["time_stamp"] = timestamp
-		secretScanDoc["@timestamp"] = currTime
-		secretScanDoc["node_id"] = imageName
-		secretScanDoc["node_name"] = imageName
-		secretScanDoc["scan_id"] = scanId
-		secretScanDoc["severity"] = secret.Severity
-		byteJson, err := json.Marshal(secretScanDoc)
+		iocScanDoc["image_name_with_tag_list"] = nil
+		iocScanDoc["scan_id_list"] = nil
+		iocScanDoc["time_stamp"] = timestamp
+		iocScanDoc["@timestamp"] = currTime
+		iocScanDoc["node_id"] = imageName
+		iocScanDoc["node_name"] = imageName
+		iocScanDoc["scan_id"] = scanId
+		iocScanDoc["severity"] = ioc.Severity
+		iocScanDoc["file_name"] = ioc.CompleteFilename
+		iocScanDoc["rule_name"] = ioc.RuleName
+		iocScanDoc["matched_contents"] = ioc.MatchedContents
+		iocScanDoc["strings_to_match"] = ioc.StringsToMatch
+		byteJson, err := json.Marshal(iocScanDoc)
 		if err != nil {
-			fmt.Println("Error in marshalling secret result object to json:" + err.Error())
+			fmt.Println("Error in marshalling ioc scan result object to json:" + err.Error())
 			return
 		}
-		err = output.IngestIOCScanResults(string(byteJson), secretScanIndexName)
+		err = output.IngestIOCScanResults(string(byteJson), iocScanIndexName)
 		if err != nil {
-			fmt.Println("Error in sending data to secretScanIndex:" + err.Error())
+			fmt.Println("Error in sending data to iocScanIndex:" + err.Error())
 		}
 	}
 	if err == nil {
-		secretScanLogDoc["scan_status"] = scanStatusComplete
+		iocScanLogDoc["scan_status"] = scanStatusComplete
 	} else {
-		secretScanLogDoc["scan_status"] = scanStatusError
-		secretScanLogDoc["scan_message"] = err.Error()
+		iocScanLogDoc["scan_status"] = scanStatusError
+		iocScanLogDoc["scan_message"] = err.Error()
 	}
-	secretScanLogDoc["time_stamp"] = timestamp
-	secretScanLogDoc["@timestamp"] = currTime
-	byteJson, err = json.Marshal(secretScanLogDoc)
+	iocScanLogDoc["time_stamp"] = timestamp
+	iocScanLogDoc["@timestamp"] = currTime
+	byteJson, err = json.Marshal(iocScanLogDoc)
 	if err != nil {
-		fmt.Println("Error in marshalling secretScanLogDoc to json:" + err.Error())
+		fmt.Println("Error in marshalling iocScanLogDoc to json:" + err.Error())
 		return
 	}
-	err = output.IngestIOCScanResults(string(byteJson), secretScanLogsIndexName)
+	err = output.IngestIOCScanResults(string(byteJson), iocScanLogsIndexName)
 	if err != nil {
-		fmt.Println("Error in sending data to secretScanLogsIndex:" + err.Error())
+		fmt.Println("Error in sending data to iocScanLogsIndex:" + err.Error())
 	}
 }
 
 func RunHttpServer(listenPort string) error {
 	http.Handle("/ioc-scan", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		runSecretScan(writer, request)
+		runIOCScan(writer, request)
 	}))
 	http.HandleFunc("/ioc-scan/test", func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(writer, "Hello World!")
