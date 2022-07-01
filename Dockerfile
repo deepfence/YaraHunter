@@ -46,5 +46,5 @@ COPY --from=builder /home/deepfence/src/IOCScanner/scan/filescan.yar .
 RUN cd /usr/local/ \
     && tar -xzf yara.tar.gz
 
-ENTRYPOINT ["/home/deepfence/usr/IOCScanner", "-config-path", "/home/deepfence/usr", "-quiet"]
+ENTRYPOINT ["/home/deepfence/usr/IOCScanner", "-config-path", "/home/deepfence/usr"]
 CMD ["-h"]

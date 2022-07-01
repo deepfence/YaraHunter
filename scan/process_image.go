@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"math"
@@ -269,9 +270,7 @@ func ScanFile(f afero.File) error {
 		return err
 	}
 	if maxFileSize > 0 && fi.Size() > maxFileSize {
-		fmt.Printf("yara: %v: Skipping large file, size=%v, max_size=%v",
-			f.Name(), fi.Size(),
-			int64(32*1024*1024))
+		logrus.Debugf("\nyara: %v: Skipping large file, size=%v, max_size=%v", f.Name(), fi.Size(), maxFileSize)
 		return nil
 	}
 	if f, ok := f.(*os.File); ok {
@@ -286,28 +285,8 @@ func ScanFile(f afero.File) error {
 		}
 		err = rules.ScanMem(buf, 0, 1*time.Minute, &matches)
 	}
-	// -1 means collect the whole file
-	var collectSize int64 = -1
 	var tempIOCsFound []output.IOCFound
-	for _, m := range matches {
-		for _, meta := range m.Metas {
-			var s int64
-			if v, ok := meta.Value.(int); !ok {
-				continue
-			} else {
-				s = int64(v)
-			}
-			if s < 0 {
-				// rules can tell us to collect the entire file.
-				collectSize = -1
-				break
-			} else if collectSize == -1 || collectSize > s {
-				collectSize = s
-			}
-		}
-	}
 	totalmatchesStringData := make([]string, 0)
-	// 			tempIOCsFound = append(tempIOCsFound, ioc)
 	for _, m := range matches {
 		matchesStringData := make([]string, len(m.Strings))
 		for _, str := range m.Strings {

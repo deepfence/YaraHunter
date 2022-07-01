@@ -16,14 +16,11 @@ const (
 
 type IOCFound struct {
 	LayerID          string   `json:"Image Layer ID,omitempty"`
-	RuleID           int      `json:"Matched Rule ID,omitempty"`
 	RuleName         string   `json:"Matched Rule Name,omitempty"`
 	StringsToMatch   []string `json:"Matched Part,omitempty"`
-	Match            string   `json:"String to Match,omitempty"`
 	Severity         string   `json:"Severity,omitempty"`
 	SeverityScore    float64  `json:"Severity Score,omitempty"`
 	CompleteFilename string   `json:"Full File Name,omitempty"`
-	MatchedContents  string   `json:"Matched Contents,omitempty"`
 	Meta             []string `json:"rule meta"`
 }
 
@@ -166,7 +163,7 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool) {
 	// suffix := removeFirstLastChar(jsonMarshal(match[to:]))
 	// fmt.Printf(Indent3+"\"Matched Contents\": \"%s%s%s\"\n", prefix, coloredMatch, suffix)
 
-	fmt.Printf(Indent + Indent + "}")
+	fmt.Printf(Indent + Indent + "}\n")
 }
 
 func jsonMarshal(input string) string {
