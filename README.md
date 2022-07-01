@@ -4,32 +4,26 @@
 $ docker run -it --rm deepfenceio/deepfence-ioc-scanner:latest --help
 
 Usage of ./IOCScanner:
-  -config-path string
-    	Searches for config.yaml from given directory. If not set, tries to find it from IOCScanner binary's and current directory
   -debug-level string
-    	Debug levels are one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG. Only levels higher than the debug-level are displayed (default "ERROR")
+        Debug levels are one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG. Only levels higher than the debug-level are displayed (default "ERROR")
+  -host-mount-path string
+        If scanning the host, specify the host mount path for path exclusions to work correctly.
   -image-name string
-    	Name of the image along with tag to scan for IOC
+        Name of the image along with tag to scan for IOC
   -json-filename string
-    	Output json file name. If not set, it will automatically create a filename based on image or dir name
+        Output json file name. If not set, it will automatically create a filename based on image or dir name
   -local string
-    	Specify local directory (absolute path) which to scan. Scans only given directory recursively.
-  -max-multi-match uint
-    	Maximum number of matches of same pattern in one file. This is used only when multi-match option is enabled. (default 3)
+        Specify local directory (absolute path) which to scan. Scans only given directory recursively.
   -max-ioc uint
-    	Maximum number of IOC to find in one container image or file system. (default 1000)
-  -maximum-file-size uint
-    	Maximum file size to process in KB (default 256)
-  -multi-match
-    	Output multiple matches of same pattern in one file. By default, only one match of a pattern is output for a file for better performance
+        Maximum number of IOC to find in one container image or file system. (default 1000)
+  -maximum-file-size int
+        Maximum file size to process in bytes (default 33554432)
   -output-path string
-    	Output directory where json file will be stored. If not set, it will output to current directory
+        Output directory where json file will be stored. If not set, it will output to current directory (default ".")
   -temp-directory string
-    	Directory to process and store repositories/matches (default "/tmp")
+        Directory to process and store repositories/matches (default "/tmp")
   -threads int
-    	Number of concurrent threads (default number of logical CPUs)
-  -socket-path string
-  		The gRPC server socket path
+        Number of concurrent threads (default number of logical CPUs)
 ```
 
 ## Quickly Try Using Docker
