@@ -43,9 +43,7 @@ COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
 COPY --from=builder /home/deepfence/src/IOCScanner/IOCScanner .
 COPY --from=builder /home/deepfence/src/IOCScanner/config.yaml .
 COPY --from=builder /home/deepfence/src/IOCScanner/scan/filescan.yar .
-COPY registry_image_save/* ./
-RUN pip3 install -r requirements.txt \
-    && cd /usr/local/ \
+RUN cd /usr/local/ \
     && tar -xzf yara.tar.gz
 
 ENTRYPOINT ["/home/deepfence/usr/IOCScanner", "-config-path", "/home/deepfence/usr", "-quiet"]

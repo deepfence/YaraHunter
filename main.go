@@ -3,7 +3,7 @@ package main
 // ------------------------------------------------------------------------------
 // MIT License
 
-// Copyright (c) 2020 deepfence
+// Copyright (c) 2022 deepfence
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,18 +31,8 @@ import (
 	"github.com/deepfence/IOCScanner/core"
 	"github.com/deepfence/IOCScanner/output"
 	"github.com/deepfence/IOCScanner/scan"
-	"github.com/deepfence/IOCScanner/server"
 	"github.com/fatih/color"
 	yr "github.com/hillu/go-yara/v4"
-)
-
-const (
-	PLUGIN_NAME = "IOCScanner"
-)
-
-var (
-	socketPath = flag.String("socket-path", "", "The gRPC server unix socket path")
-	httpPort   = flag.String("http-port", "", "When set the http server will come up at port with df es as output")
 )
 
 // Read the regex signatures from config file, options etc.
@@ -180,17 +170,5 @@ func runOnce() {
 func main() {
 	flag.Parse()
 
-	if *socketPath != "" {
-		//err := server.RunServer(*socketPath, PLUGIN_NAME)
-		//if err != nil {
-		//	core.GetSession().Log.Error("main: failed to serve: %v", err)
-		//}
-	} else if *httpPort != "" {
-		err := server.RunHttpServer(*httpPort)
-		if err != nil {
-			core.GetSession().Log.Error("main: failed to serve through http: %v", err)
-		}
-	} else {
-		runOnce()
-	}
+	runOnce()
 }
