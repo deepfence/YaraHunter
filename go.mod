@@ -2,13 +2,11 @@ module github.com/deepfence/IOCScanner
 
 go 1.18
 
-//replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
-
 require (
-	github.com/Jeffail/tunny v0.1.4
 	github.com/deepfence/vessel v0.6.0
 	github.com/fatih/color v1.13.0
 	github.com/hillu/go-yara/v4 v4.2.3
+	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.5.1
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -44,7 +42,6 @@ require (
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
 	github.com/opencontainers/selinux v1.10.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect

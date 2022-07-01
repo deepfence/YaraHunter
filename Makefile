@@ -1,10 +1,6 @@
 all: IOCScanner
 
-$(PWD)/agent-plugins-grpc/proto/*.go: $(PWD)/agent-plugins-grpc/proto/*.proto
-	(cd agent-plugins-grpc && make go)
-
 clean:
-	-(cd agent-plugins-grpc && make clean)
 	-rm ./IOCScanner
 
 IOCScanner:
