@@ -38,7 +38,6 @@ Install docker and run IOCScanner on a container image using the following instr
 
 * Build IOCScanner:
 ```shell
-./bootstrap.sh
 docker build --rm=true --tag=deepfenceio/deepfence-ioc-scanner:latest -f Dockerfile .
 ```
 
