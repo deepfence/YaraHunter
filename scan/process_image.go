@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"errors"
-	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"math"
@@ -17,6 +16,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"fmt"
 
@@ -164,6 +165,7 @@ func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, 
 	}
 	purposeStr := [...]string{"file", "process"}[purpose]
 	rs, err := c.GetRules()
+	fmt.Println("test warnings",c.Warnings)
 	if err != nil {
 		for _, e := range c.Errors {
 			session.Log.Error("YARA compiler error in %s ruleset: %s:%d %s",
@@ -244,7 +246,7 @@ func ScanFile(f afero.File) error {
 		matches yr.MatchRules
 		err     error
 	)
-	ruleFiles := []string{"filescan.yar"}
+	ruleFiles := []string{"malware.yar"}
 	rules, err = compile(filescan, ruleFiles, true)
 	if err != nil {
 		return err
@@ -406,7 +408,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 		core.UpdateDirsPermissionsRW(fullDir)
 	}
 	session := core.GetSession()
-	ruleFiles := []string{"filescan.yar"}
+	ruleFiles := []string{"malware.yar"}
 	rules, err = compile(filescan, ruleFiles, true)
 	if err != nil {
 		session.Log.Error("compiling rules issue: %s", err)
