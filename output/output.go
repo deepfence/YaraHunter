@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+	"strings"
+	"github.com/fatih/color"
 )
 
 const (
@@ -18,6 +20,7 @@ type IOCFound struct {
 	LayerID          string   `json:"Image Layer ID,omitempty"`
 	RuleName         string   `json:"Matched Rule Name,omitempty"`
 	StringsToMatch   []string `json:"Matched Part,omitempty"`
+	CategoryName     []string   `json:"Category,omitempty"`
 	Severity         string   `json:"Severity,omitempty"`
 	SeverityScore    float64  `json:"Severity Score,omitempty"`
 	CompleteFilename string   `json:"Full File Name,omitempty"`
@@ -151,8 +154,15 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool) {
 	fmt.Printf(Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
 	fmt.Printf(Indent3+"\"Severity\": %s,\n", jsonMarshal(IOC.Severity))
 	fmt.Printf(Indent3+"\"Severity Score\": %.2f,\n", IOC.SeverityScore)
+	fmt.Printf(Indent3+"\"Category is\": %s,\n", IOC.CategoryName)
 	fmt.Printf(Indent3+"\"File Name\": %s,\n", jsonMarshal(IOC.CompleteFilename))
-	fmt.Printf(Indent3+"\"Match Rule Meta\": %s,\n", IOC.Meta)
+	for _, c := range IOC.Meta {
+		var metaSplit = strings.Split(c, " : ")
+		if (len(metaSplit) > 1) {
+			fmt.Printf(Indent3+"\""+ color.BlueString(metaSplit[0])+"\": " +
+			metaSplit[1])
+		}
+	}
 	// match := IOC.MatchedContents
 	// from := IOC.MatchFromByte
 	// to := IOC.MatchToByte

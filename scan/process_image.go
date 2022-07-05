@@ -294,14 +294,15 @@ func ScanFile(f afero.File) error {
 			totalmatchesStringData = append(totalmatchesStringData, string(str.Data))
 		}
 		matchesMeta := make([]string, len(m.Metas))
-		matchesMetaData := make([]string, len(m.Strings))
+		matchesMetaData := make([]string, len(m.Metas))
 		for _, strMeta := range m.Metas {
 			matchesMeta = append(matchesMeta, strMeta.Identifier)
-			matchesMetaData = append(matchesMetaData, fmt.Sprintf("value: %v", strMeta.Value))
+			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n",strMeta.Identifier, strMeta.Value))
 		}
 
 		tempIOCsFound = append(tempIOCsFound, output.IOCFound{
 			RuleName:         m.Rule,
+			CategoryName:     m.Tags,
 			StringsToMatch:   matchesStringData,
 			Meta:             matchesMetaData,
 			CompleteFilename: f.Name(),
@@ -344,8 +345,8 @@ func GetPaths(path string) (paths []string) { return []string{path} }
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
 func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool,
-	numIOCs *uint, matchedRuleSet map[uint]uint) ([]output.IOCFound, error) {
-	var tempIOCsFound []output.IOCFound
+	numIOCs *uint, matchedRuleSet map[uint]uint) error {
+	//var tempIOCsFound []output.IOCFound
 	var err error
 	var fs afero.Fs
 	if layer != "" {
@@ -408,7 +409,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 		return nil
 	})
 
-	return tempIOCsFound, nil
+	return  nil
 }
 
 // Extract all the layers of the container image and then find IOCs in each layer one by one
@@ -453,7 +454,7 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 			// return tempIOCsFound, error
 		}
 		core.GetSession().Log.Debug("Analyzing dir: %s", targetDir)
-		IOCs, err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, &isFirstIOC, &imageScan.numIOCs, matchedRuleSet)
+		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, &isFirstIOC, &imageScan.numIOCs, matchedRuleSet)
 		tempIOCsFound = append(tempIOCsFound, IOCs...)
 		if err != nil {
 			core.GetSession().Log.Error("ProcessImageLayers: %s", err)
