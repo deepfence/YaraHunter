@@ -290,8 +290,10 @@ func ScanFile(f afero.File) error {
 	for _, m := range matches {
 		matchesStringData := make([]string, len(m.Strings))
 		for _, str := range m.Strings {
-			matchesStringData = append(matchesStringData, string(str.Data))
-			totalmatchesStringData = append(totalmatchesStringData, string(str.Data))
+			if (!strings.Contains(strings.Join(matchesStringData, " "),string(str.Data))) {
+				matchesStringData = append(matchesStringData, string(str.Data))
+				totalmatchesStringData = append(totalmatchesStringData, string(str.Data))
+			}
 		}
 		matchesMeta := make([]string, len(m.Metas))
 		matchesMetaData := make([]string, len(m.Metas))
@@ -317,7 +319,7 @@ func ScanFile(f afero.File) error {
 	fileMat.updatedScore = updatedScore
 	var isFirstIOC bool = true
 	if len(matches) > 0 {
-		output.PrintColoredIOC(tempIOCsFound, &isFirstIOC)
+		output.PrintColoredIOC(tempIOCsFound, &isFirstIOC,fileMat.updatedScore, fileMat.updatedSeverity)
 	}
 
 	return err
