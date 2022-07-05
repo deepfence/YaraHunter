@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/deepfence/IOCScanner/core"
-	"github.com/deepfence/IOCScanner/core/sys"
 	"github.com/deepfence/IOCScanner/output"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
@@ -165,7 +164,7 @@ func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, 
 	}
 	purposeStr := [...]string{"file", "process"}[purpose]
 	rs, err := c.GetRules()
-	fmt.Println("test warnings",c.Warnings)
+	fmt.Println("test warnings", c.Warnings)
 	if err != nil {
 		for _, e := range c.Errors {
 			session.Log.Error("YARA compiler error in %s ruleset: %s:%d %s",
@@ -334,53 +333,6 @@ func typeToString(name [16]int8) string {
 	return string(b)
 }
 
-func SkipDir(fs afero.Fs, path string) bool {
-	file, err := fs.Open(path)
-	if err != nil {
-		return false
-	}
-	defer file.Close()
-	f, ok := file.(*os.File)
-	if !ok {
-		return false
-	}
-	var buf syscall.Statfs_t
-	if err := syscall.Fstatfs(int(f.Fd()), &buf); err != nil {
-		return false
-	}
-	switch uint32(buf.Type) {
-	case
-		// pseudo filesystems
-		sys.BDEVFS_MAGIC,
-		sys.BINFMTFS_MAGIC,
-		sys.CGROUP_SUPER_MAGIC,
-		sys.DEBUGFS_MAGIC,
-		sys.EFIVARFS_MAGIC,
-		sys.FUTEXFS_SUPER_MAGIC,
-		sys.HUGETLBFS_MAGIC,
-		sys.PIPEFS_MAGIC,
-		sys.PROC_SUPER_MAGIC,
-		sys.SELINUX_MAGIC,
-		sys.SMACK_MAGIC,
-		sys.SYSFS_MAGIC,
-		// network filesystems
-		sys.AFS_FS_MAGIC,
-		sys.OPENAFS_FS_MAGIC,
-		sys.CEPH_SUPER_MAGIC,
-		sys.CIFS_MAGIC_NUMBER,
-		sys.CODA_SUPER_MAGIC,
-		sys.NCP_SUPER_MAGIC,
-		sys.NFS_SUPER_MAGIC,
-		sys.OCFS2_SUPER_MAGIC,
-		sys.SMB_SUPER_MAGIC,
-		sys.V9FS_MAGIC,
-		sys.VMBLOCK_SUPER_MAGIC,
-		sys.XENFS_SUPER_MAGIC:
-		return true
-	}
-	return false
-}
-
 func GetPaths(path string) (paths []string) { return []string{path} }
 
 // ScanIOCsInDir Scans a given directory recursively to find all IOCs inside any file in the dir
@@ -420,18 +372,31 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
-		//printStats()
 		if err != nil {
 			return nil
 		}
+
+		var scanDirPath string
+		if layer != "" {
+			scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
+			if scanDirPath == "" {
+				scanDirPath = "/"
+			}
+		} else {
+			scanDirPath = path
+		}
+
 		if info.IsDir() {
-			if SkipDir(fs, path) {
+			if core.IsSkippableDir(fs, path, baseDir) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 		const specialMode = os.ModeSymlink | os.ModeDevice | os.ModeNamedPipe | os.ModeSocket | os.ModeCharDevice
 		if info.Mode()&specialMode != 0 {
+			return nil
+		}
+		if core.IsSkippableFileExtension(path) {
 			return nil
 		}
 

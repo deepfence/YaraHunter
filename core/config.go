@@ -6,28 +6,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 )
 
 type Config struct {
-	BlacklistedStrings           []string          `yaml:"blacklisted_strings"`
-	BlacklistedExtensions        []string          `yaml:"blacklisted_extensions"`
-	BlacklistedPaths             []string          `yaml:"blacklisted_paths"`
-	BlacklistedEntropyExtensions []string          `yaml:"blacklisted_entropy_extensions"`
-	Signatures                   []ConfigSignature `yaml:"signatures"`
-}
-
-type ConfigSignature struct {
-	Name          string `yaml:"name"`
-	Part          string `yaml:"part"`
-	Match         string `yaml:"match,omitempty"`
-	Regex         string `yaml:"regex,omitempty"`
-	RegexType     string `yaml:"regextype,omitempty"`
-	CompiledRegex *regexp.Regexp
-	Verifier      string  `yaml:"verifier,omitempty"`
-	Severity      string  `yaml:"severity,omitempty"`
-	SeverityScore float64 `yaml:"severityscore,omitempty"`
-	ID            int     `yaml:"ID,omitempty"`
+	ExcludedExtensions []string `yaml:"exclude_extensions"`
+	ExcludedPaths      []string `yaml:"exclude_paths"`
 }
 
 func ParseConfig(options *Options) (*Config, error) {
