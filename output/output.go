@@ -93,8 +93,6 @@ func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 		return err
 	}
 
-	// fmt.Println(string(file))
-
 	return nil
 }
 

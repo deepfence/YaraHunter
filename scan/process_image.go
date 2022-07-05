@@ -164,7 +164,6 @@ func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, 
 	}
 	purposeStr := [...]string{"file", "process"}[purpose]
 	rs, err := c.GetRules()
-	fmt.Println("test warnings", c.Warnings)
 	if err != nil {
 		for _, e := range c.Errors {
 			session.Log.Error("YARA compiler error in %s ruleset: %s:%d %s",
