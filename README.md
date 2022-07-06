@@ -6,14 +6,19 @@
 
 # IOCScanner
 
-Deepfence IOCScanner can be used to scan filesystems and running Docker container images to find indicators of malware. It uses a [YARA ruleset](https://virustotal.github.io/yara/) to identify resources that match known malware signatures, and may indicate that the container or filesystem has been compromised.
+Deepfence IOCScanner scans container images, running Docker containers, and filesystems to find indicators of malware. It uses a [YARA ruleset](https://virustotal.github.io/yara/) to identify resources that match known malware signatures, and may indicate that the container or filesystem has been compromised.
 
-For example, if you observe unusual network traffic or CPU activity from a running container, you can use IOCScanner to quickly scan the container to determine if malware such as a cryptominer, proxy or CnC node has been installed. 
+IOCScanner can be used in the following ways:
+
+ * At build time: scan images during the CI/CD pipeline, to determine if they are subject to a supply-chain compromise
+ * At rest: scan local container images, for example, before they are deployed, to verify they do not contain malware
+ * At runtime: scan running docker containers, for example, if you observe unusual network traffic or CPU activity
+ * Against filesystems: at any time, IOCScanner can scan a local filesystems for indicators of compromise
 
 Key capabilities:
 
  * Scan running and at-rest containers, and filesystems
- * Run anywhere: highly-portable, docker container form factor
+ * Run anywhere: highly-portable, docker container form factor or universal GO binary
  * Designed for automation: easy-to-deploy, easy-to-parse JSON output
 
 IOCScanner is a work-in-progress (check the [issues list](issues)), and will be integrated into the [ThreatMapper](/deepfence/ThreatMapper) threat discovery platform.  We welcome any contributions to help to improve this tool.
