@@ -13,9 +13,7 @@ RUN apt-get update  \
     && make \
     && make install \
     && cd /usr/local/ \
-    && tar -czf yara.tar.gz yara \
-    && cd /home/deepfence \
-    && git clone https://github.com/deepfence/yara-rules
+    && tar -czf yara.tar.gz yara
 
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
@@ -23,7 +21,9 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
 WORKDIR /home/deepfence/src/IOCScanner
 COPY . .
 RUN make clean \
-    && make all
+    && make all \
+    && cd /home/deepfence \
+    && git clone https://github.com/deepfence/yara-rules
 
 FROM debian:bullseye
 MAINTAINER DeepFence
@@ -41,7 +41,7 @@ RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4
     && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
     && rm docker-${DOCKERVERSION}.tgz
 WORKDIR /home/deepfence/rules
-COPY --from=builder /usr/deepfence/yara-rules .
+COPY --from=builder /home/deepfence/yara-rules .
 WORKDIR /home/deepfence/usr
 COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
 COPY --from=builder /home/deepfence/src/IOCScanner/IOCScanner .
