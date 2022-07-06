@@ -71,10 +71,7 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 // @returns
 // Error, if any. Otherwise, returns nil
 func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
-	var isFirstIOC bool = true
-	var numIOC uint = 0
-
-	err := scan.ScanIOCInDir("", "", dir, &isFirstIOC, &numIOC, nil)
+	err := scan.ScanIOCInDir("", "", dir, nil)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInDir: %s", err)
 		return nil, err

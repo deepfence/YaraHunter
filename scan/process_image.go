@@ -248,18 +248,6 @@ func ScanFile(f afero.File) error {
 
 	return err
 }
-func typeToString(name [16]int8) string {
-	var b []byte
-	for _, c := range name {
-		if c == 0 {
-			break
-		}
-		b = append(b, byte(c))
-	}
-	return string(b)
-}
-
-func GetPaths(path string) (paths []string) { return []string{path} }
 
 // ScanIOCsInDir Scans a given directory recursively to find all IOCs inside any file in the dir
 // @parameters
@@ -270,7 +258,7 @@ func GetPaths(path string) (paths []string) { return []string{path} }
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool, numIOCs *uint, matchedRuleSet map[uint]uint) error {
+func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint) error {
 	var fs afero.Fs
 	if layer != "" {
 		session.Log.Info("Scan results in selected image with layer ", layer)
@@ -316,12 +304,8 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 		if core.IsSkippableFileExtension(path) {
 			return nil
 		}
-
-		for _, path := range GetPaths(path) {
-			//log.Debugf("Scanning %s...", path)
-			if err = ScanFilePath(fs, path); err != nil {
-				//log.Errorf("Error scanning file: %s: %v", path, err)
-			}
+		if err = ScanFilePath(fs, path); err != nil {
+			//log.Errorf("Error scanning file: %s: %v", path, err)
 		}
 		return nil
 	})
@@ -339,7 +323,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]output.IOCFound, error) {
 	var tempIOCsFound []output.IOCFound
 	var err error
-	var isFirstIOC bool = true
 
 	// extractPath - Base directory where all the layers should be extracted to
 	extractPath := path.Join(imageManifestPath, core.ExtractedImageFilesDir)
@@ -367,11 +350,11 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 		_, error := extractTarFile("", completeLayerPath, targetDir)
 		if error != nil {
 			core.GetSession().Log.Error("ProcessImageLayers: Unable to extract image layer. Reason = %s", error.Error())
-			// Don't stop. Print error and continue with remaning extracted files and other layers
+			// Don't stop. Print error and continue with remaining extracted files and other layers
 			// return tempIOCsFound, error
 		}
 		core.GetSession().Log.Debug("Analyzing dir: %s", targetDir)
-		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, &isFirstIOC, &imageScan.numIOCs, matchedRuleSet)
+		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet)
 		tempIOCsFound = append(tempIOCsFound, IOCs...)
 		if err != nil {
 			core.GetSession().Log.Error("ProcessImageLayers: %s", err)
