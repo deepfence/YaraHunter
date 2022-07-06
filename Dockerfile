@@ -13,7 +13,9 @@ RUN apt-get update  \
     && make \
     && make install \
     && cd /usr/local/ \
-    && tar -czf yara.tar.gz yara
+    && tar -czf yara.tar.gz yara \
+    && cd /home/deepfence \
+    && git clone https://github.com/deepfence/yara-rules
 
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
@@ -38,11 +40,12 @@ RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4
     && curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
     && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
     && rm docker-${DOCKERVERSION}.tgz
+WORKDIR /home/deepfence/rules
+COPY --from=builder /usr/deepfence/yara-rules .
 WORKDIR /home/deepfence/usr
 COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
 COPY --from=builder /home/deepfence/src/IOCScanner/IOCScanner .
 COPY --from=builder /home/deepfence/src/IOCScanner/config.yaml .
-COPY --from=builder /home/deepfence/src/IOCScanner/scan/malware.yar .
 RUN cd /usr/local/ \
     && tar -xzf yara.tar.gz
 

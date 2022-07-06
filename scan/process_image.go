@@ -43,28 +43,9 @@ type fileMatches struct {
 
 var (
 	imageTarFileName = "save-output.tar"
-	rules            *yr.Rules
 	session          = *core.GetSession()
 	maxFileSize      = *session.Options.MaximumFileSize
 )
-
-type extvardefs map[string]interface{}
-
-const filescan = 0
-const procscan = 1
-
-var extvars = map[int]extvardefs{
-	filescan: {
-		"filename":  "",
-		"filepath":  "",
-		"extension": "",
-		"filetype":  "",
-	},
-	procscan: {
-		"pid":        -1,
-		"executable": "",
-	},
-}
 
 type ImageScan struct {
 	imageName     string
@@ -131,60 +112,6 @@ func (imageScan *ImageScan) scan() ([]output.IOCFound, error) {
 	return tempIOCsFound, nil
 }
 
-func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, error) {
-	var c *yr.Compiler
-	var err error
-	var paths []string
-	if c, err = yr.NewCompiler(); err != nil {
-		return nil, err
-	}
-
-	for k, v := range extvars[purpose] {
-		if err = c.DefineVariable(k, v); err != nil {
-			return nil, err
-		}
-	}
-
-	for _, path := range inputfiles {
-		paths = append(paths, path)
-	}
-	if len(paths) == 0 {
-		return nil, errors.New("No YARA rule files found")
-	}
-	for _, path := range paths {
-		// We use the include callback function to actually read files
-		// because yr_compiler_add_string() does not accept a file
-		// name.
-		if err = c.AddString(fmt.Sprintf(`include "%s"`, path), ""); err != nil {
-			return nil, err
-		}
-	}
-	purposeStr := [...]string{"file", "process"}[purpose]
-	rs, err := c.GetRules()
-	if err != nil {
-		for _, e := range c.Errors {
-			session.Log.Error("YARA compiler error in %s ruleset: %s:%d %s",
-				purposeStr, e.Filename, e.Line, e.Text)
-		}
-		return nil, fmt.Errorf("%d YARA compiler errors(s) found, rejecting %s ruleset",
-			len(c.Errors), purposeStr)
-	}
-	if len(c.Warnings) > 0 {
-		for _, w := range c.Warnings {
-			session.Log.Info("YARA compiler warning in %s ruleset: %s:%d %s",
-				purposeStr, w.Filename, w.Line, w.Text)
-		}
-		if failOnWarnings {
-			return nil, fmt.Errorf("%d YARA compiler warning(s) found, rejecting %s ruleset",
-				len(c.Warnings), purposeStr)
-		}
-	}
-	if len(rs.GetRules()) == 0 {
-		return nil, errors.New("No YARA rules defined")
-	}
-	return rs, nil
-}
-
 func calculateSeverity(inputString []string, severity string, severityScore float64) (string, float64) {
 	updatedSeverity := "low"
 	lenMatch := len(inputString)
@@ -232,7 +159,6 @@ func ScanFilePath(fs afero.Fs, path string) (err error) {
 	if e := ScanFile(f); err == nil && e != nil {
 		err = e
 	}
-
 	return
 }
 
@@ -241,21 +167,22 @@ func ScanFile(f afero.File) error {
 		matches yr.MatchRules
 		err     error
 	)
-	ruleFiles := []string{"malware.yar"}
-	rules, err = compile(filescan, ruleFiles, true)
 	if err != nil {
 		return err
 	}
 
-	for _, v := range []struct {
+	type ruleVariable struct {
 		name  string
 		value interface{}
-	}{
+	}
+
+	variables := []ruleVariable{
 		{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
 		{"filepath", filepath.ToSlash(f.Name())},
 		{"extension", filepath.Ext(f.Name())},
-	} {
-		if err = rules.DefineVariable(v.name, v.value); err != nil {
+	}
+	for _, v := range variables {
+		if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
 			return err
 		}
 	}
@@ -272,7 +199,7 @@ func ScanFile(f afero.File) error {
 	}
 	if f, ok := f.(*os.File); ok {
 		fd := f.Fd()
-		err = rules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
+		err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
 	} else {
 		var buf []byte
 		if buf, err = ioutil.ReadAll(f); err != nil {
@@ -280,7 +207,7 @@ func ScanFile(f afero.File) error {
 				f.Name(), err.Error())
 			return err
 		}
-		err = rules.ScanMem(buf, 0, 1*time.Minute, &matches)
+		err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
 	}
 	var tempIOCsFound []output.IOCFound
 	totalmatchesStringData := make([]string, 0)
@@ -343,9 +270,7 @@ func GetPaths(path string) (paths []string) { return []string{path} }
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool,
-	numIOCs *uint, matchedRuleSet map[uint]uint) error {
-	var err error
+func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool, numIOCs *uint, matchedRuleSet map[uint]uint) error {
 	var fs afero.Fs
 	if layer != "" {
 		session.Log.Info("Scan results in selected image with layer ", layer)
@@ -356,11 +281,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 
 	if layer != "" {
 		core.UpdateDirsPermissionsRW(fullDir)
-	}
-	ruleFiles := []string{"malware.yar"}
-	rules, err = compile(filescan, ruleFiles, true)
-	if err != nil {
-		session.Log.Error("compiling rules issue: %s", err)
 	}
 
 	// maxFileSize := *session.Options.MaximumFileSize * 1024

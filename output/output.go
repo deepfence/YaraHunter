@@ -148,10 +148,10 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 	}
 
 	if IOC.LayerID != "" {
-		fmt.Fprintf(os.Stdout, Indent3+"\"Image Layer ID\": %s,\n", jsonMarshal(IOC.LayerID))
+		fmt.Fprintf(os.Stdout, Indent3+"\""+color.BlueString("Image Layer ID")+"\": %s,\n", jsonMarshal(IOC.LayerID))
 	}
-	fmt.Fprintf(os.Stdout, Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(IOC.RuleName))
-	fmt.Fprintf(os.Stdout, Indent3+"\"Strings to match are\":\n")
+	fmt.Fprintf(os.Stdout, Indent3+"\""+color.BlueString("Matched Rule Name")+"\": %s,\n", jsonMarshal(IOC.RuleName))
+	fmt.Fprintf(os.Stdout, Indent3+"\""+color.BlueString("Strings to match are")+"\":\n")
 	for _, c := range IOC.StringsToMatch {
 		if len(c) > 0 {
 			fmt.Fprintf(os.Stdout, Indent3+Indent3+"\""+c+"\",\n")
@@ -166,15 +166,14 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 	}
 
 	//fmt.Fprintf(os.Stdout, Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
-	fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity\": %s,\n", jsonMarshal(severity))
-	fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity Score\": %.2f,\n", fileScore)
-	fmt.Fprintf(os.Stdout, Indent3+"\"Category is\": %s,\n", IOC.CategoryName)
-	fmt.Fprintf(os.Stdout, Indent3+"\"File Name\": %s,\n", jsonMarshal(IOC.CompleteFilename))
+	//fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity\": %s,\n", jsonMarshal(severity))
+	//fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity Score\": %.2f,\n", fileScore)
+	fmt.Fprintf(os.Stdout, Indent3+"\""+color.BlueString("Category")+"\": %s,\n", IOC.CategoryName)
+	fmt.Fprintf(os.Stdout, Indent3+"\""+color.BlueString("File Name")+"\": %s,\n", jsonMarshal(IOC.CompleteFilename))
 	for _, c := range IOC.Meta {
 		var metaSplit = strings.Split(c, " : ")
 		if len(metaSplit) > 1 {
-			fmt.Fprintf(os.Stdout, Indent3+"\""+color.BlueString(metaSplit[0])+"\": "+
-				metaSplit[1])
+			fmt.Fprintf(os.Stdout, Indent3+"\""+color.BlueString(metaSplit[0])+"\": "+metaSplit[1])
 			if metaSplit[0] == "description" {
 				str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
 				summary = summary + strings.Join(str, " ")
@@ -187,7 +186,7 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 		}
 	}
 	if len(summary) > 0 {
-		fmt.Fprintf(os.Stdout, Indent3+"\"Summary\": %s,\n", color.YellowString(summary))
+		fmt.Fprintf(os.Stdout, Indent3+"\""+color.BlueString("Summary")+"\": %s,\n", color.YellowString(summary))
 	}
 
 	fmt.Fprintf(os.Stdout, Indent+Indent+"}\n")

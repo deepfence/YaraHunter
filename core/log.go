@@ -33,7 +33,7 @@ type Logger struct {
 	debugLevel int
 }
 
-func (l *Logger) SetDebugLevel(d string) {
+func (l *Logger) SetLogLevel(d string) {
 	l.debugLevel = ERROR
 
 	if strings.EqualFold(d, "FATAL") {

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"github.com/hillu/go-yara/v4"
 	"math/rand"
 	"os"
 	"runtime"
@@ -12,11 +13,12 @@ import (
 
 type Session struct {
 	sync.Mutex
-	Version string
-	Options *Options
-	Config  *Config
-	Context context.Context
-	Log     *Logger
+	Version   string
+	Options   *Options
+	Config    *Config
+	Context   context.Context
+	Log       *Logger
+	YaraRules *yara.Rules
 }
 
 var (
@@ -34,7 +36,7 @@ func (s *Session) Start() {
 
 func (s *Session) InitLogger() {
 	s.Log = &Logger{}
-	s.Log.SetDebugLevel(*s.Options.DebugLevel)
+	s.Log.SetLogLevel(*s.Options.LogLevel)
 }
 
 func (s *Session) InitThreads() {
@@ -68,6 +70,12 @@ func GetSession() *Session {
 			excludedPaths = append(excludedPaths, strings.Replace(excludedPath, "{sep}", pathSeparator, -1))
 		}
 		session.Config.ExcludedPaths = excludedPaths
+
+		rules, err := compile(filescan, *session.Options.RulesPath, true)
+		if err != nil {
+			session.Log.Error("compiling rules issue: %s", err)
+		}
+		session.YaraRules = rules
 
 		session.Start()
 	})
