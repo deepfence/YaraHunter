@@ -40,7 +40,7 @@ func getRuleFiles(rulesPath string) ([]string, error) {
 	return fileNames, nil
 }
 
-func compile(purpose int, rulesPath string, failOnWarnings bool) (*yr.Rules, error) {
+func compile(purpose int, session *Session, failOnWarnings bool) (*yr.Rules, error) {
 	var c *yr.Compiler
 	var err error
 	if c, err = yr.NewCompiler(); err != nil {
@@ -53,7 +53,7 @@ func compile(purpose int, rulesPath string, failOnWarnings bool) (*yr.Rules, err
 		}
 	}
 
-	paths, err := getRuleFiles(rulesPath)
+	paths, err := getRuleFiles(*session.Options.RulesPath)
 	if len(paths) == 0 {
 		return nil, errors.New("no Yara rule files found")
 	}
@@ -61,6 +61,7 @@ func compile(purpose int, rulesPath string, failOnWarnings bool) (*yr.Rules, err
 		// We use the include callback function to actually read files
 		// because yr_compiler_add_string() does not accept a file
 		// name.
+		session.Log.Info("including yara rule file %s", path)
 		if err = c.AddString(fmt.Sprintf(`include "%s"`, path), ""); err != nil {
 			return nil, err
 		}
@@ -77,7 +78,7 @@ func compile(purpose int, rulesPath string, failOnWarnings bool) (*yr.Rules, err
 	}
 	if len(c.Warnings) > 0 {
 		for _, w := range c.Warnings {
-			session.Log.Info("YARA compiler warning in %s ruleset: %s:%d %s",
+			session.Log.Warn("YARA compiler warning in %s ruleset: %s:%d %s",
 				purposeStr, w.Filename, w.Line, w.Text)
 		}
 		if failOnWarnings {

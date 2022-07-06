@@ -71,7 +71,7 @@ func GetSession() *Session {
 		}
 		session.Config.ExcludedPaths = excludedPaths
 
-		rules, err := compile(filescan, *session.Options.RulesPath, true)
+		rules, err := compile(filescan, session, true)
 		if err != nil {
 			session.Log.Error("compiling rules issue: %s", err)
 		}
