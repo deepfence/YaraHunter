@@ -40,7 +40,7 @@ func getRuleFiles(rulesPath string) ([]string, error) {
 	return fileNames, nil
 }
 
-func compile(purpose int, session *Session, failOnWarnings bool) (*yr.Rules, error) {
+func compile(purpose int, session *Session) (*yr.Rules, error) {
 	var c *yr.Compiler
 	var err error
 	if c, err = yr.NewCompiler(); err != nil {
@@ -81,7 +81,7 @@ func compile(purpose int, session *Session, failOnWarnings bool) (*yr.Rules, err
 			session.Log.Warn("YARA compiler warning in %s ruleset: %s:%d %s",
 				purposeStr, w.Filename, w.Line, w.Text)
 		}
-		if failOnWarnings {
+		if *session.Options.FailOnCompileWarning == true {
 			return nil, fmt.Errorf("%d YARA compiler warning(s) found, rejecting %s ruleset",
 				len(c.Warnings), purposeStr)
 		}

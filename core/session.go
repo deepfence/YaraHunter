@@ -73,9 +73,10 @@ func GetSession() *Session {
 
 		session.Start()
 
-		rules, err := compile(filescan, session, true)
+		rules, err := compile(filescan, session)
 		if err != nil {
 			session.Log.Error("compiling rules issue: %s", err)
+			os.Exit(1)
 		}
 		session.YaraRules = rules
 	})
