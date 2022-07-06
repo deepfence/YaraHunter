@@ -53,7 +53,6 @@ docker run -it --rm --name=deepfence-ioc-scanner \
 Mount the filesystem within the IOCScanner container and scan it:
 
 <pre><code>docker run -it --rm --name=deepfence-ioc-scanner \
-    -v /var/run/docker.sock:/var/run/docker.sock \
     <b>-v ~/src/YARA-RULES:/tmp/YARA-RULES</b> \
     deepfenceio/deepfence-ioc-scanner:latest <b>--local /tmp/YARA-RULES</b>
 </code></pre>
@@ -73,7 +72,7 @@ Display the command line options:
  * `--max-ioc uint`: Maximum number of IOC matches to report from a container image or file system (default 1000).
  * `--maximum-file-size int`:	Maximum file size to process in bytes (default 32Mb).
  * `--threads int`:	Number of concurrent threads to use during scan (default number of logical CPUs).
- * `--debug-level string`: one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG (default "ERROR"); print messages of this severity or higher.
+ * `--log-level string`: one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG (default "ERROR"); print messages of this severity or higher.
  * `--temp-directory string`: temporary storage for working data (default "/tmp")
 
 #### Scan Containers
