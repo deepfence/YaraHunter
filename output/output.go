@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/deepfence/IOCScanner/core"
+	"github.com/fatih/color"
 	// "github.com/fatih/color"
 	"io/ioutil"
 	"os"
-	"time"
 	"strings"
-	"github.com/fatih/color"
+	"time"
 )
 
 const (
@@ -20,7 +20,7 @@ type IOCFound struct {
 	LayerID          string   `json:"Image Layer ID,omitempty"`
 	RuleName         string   `json:"Matched Rule Name,omitempty"`
 	StringsToMatch   []string `json:"Matched Part,omitempty"`
-	CategoryName     []string   `json:"Category,omitempty"`
+	CategoryName     []string `json:"Category,omitempty"`
 	Severity         string   `json:"Severity,omitempty"`
 	SeverityScore    float64  `json:"Severity Score,omitempty"`
 	CompleteFilename string   `json:"Full File Name,omitempty"`
@@ -100,11 +100,11 @@ func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 }
 
 func (imageOutput JsonImageIOCOutput) PrintJsonHeader() {
-	fmt.Printf("{\n")
-	fmt.Printf(Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
-	fmt.Printf(Indent+"\"Image Name\": \"%s\",\n", imageOutput.ImageName)
-	fmt.Printf(Indent+"\"Image ID\": \"%s\",\n", imageOutput.ImageId)
-	fmt.Printf(Indent + "\"IOC\": [\n")
+	fmt.Fprintf(os.Stdout, "{\n")
+	fmt.Fprintf(os.Stdout, Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
+	fmt.Fprintf(os.Stdout, Indent+"\"Image Name\": \"%s\",\n", imageOutput.ImageName)
+	fmt.Fprintf(os.Stdout, Indent+"\"Image ID\": \"%s\",\n", imageOutput.ImageId)
+	fmt.Fprintf(os.Stdout, Indent+"\"IOC\": [\n")
 }
 
 func (imageOutput JsonImageIOCOutput) PrintJsonFooter() {
@@ -112,10 +112,10 @@ func (imageOutput JsonImageIOCOutput) PrintJsonFooter() {
 }
 
 func (dirOutput JsonDirIOCOutput) PrintJsonHeader() {
-	fmt.Printf("{\n")
-	fmt.Printf(Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
-	fmt.Printf(Indent+"\"Directory Name\": \"%s\",\n", dirOutput.DirName)
-	fmt.Printf(Indent + "\"IOC\": [\n")
+	fmt.Fprintf(os.Stdout, "{\n")
+	fmt.Fprintf(os.Stdout, Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
+	fmt.Fprintf(os.Stdout, Indent+"\"Directory Name\": \"%s\",\n", dirOutput.DirName)
+	fmt.Fprintf(os.Stdout, Indent+"\"IOC\": [\n")
 }
 
 func (dirOutput JsonDirIOCOutput) PrintJsonFooter() {
@@ -123,8 +123,8 @@ func (dirOutput JsonDirIOCOutput) PrintJsonFooter() {
 }
 
 func printJsonFooter() {
-	fmt.Printf("\n" + Indent + "]\n")
-	fmt.Printf("}\n")
+	fmt.Fprintf(os.Stdout, "\n"+Indent+"]\n")
+	fmt.Fprintf(os.Stdout, "}\n")
 }
 
 func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool, fileScore float64, severity string) {
@@ -138,61 +138,59 @@ func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool, fileScore float64, sever
 // @parameters
 // IOC - Structure with details of the IOC found
 // isFirstIOC - indicates if some IOC are already printed, used to properly format json
-func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64, severity string)  {
+func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64, severity string) {
 	Indent3 := Indent + Indent + Indent
 
 	if *isFirstIOC {
-		fmt.Printf(Indent + Indent + "{\n")
+		fmt.Fprintf(os.Stdout, Indent+Indent+"{\n")
 	} else {
-		fmt.Printf(",\n" + Indent + Indent + "{\n")
+		fmt.Fprintf(os.Stdout, ",\n"+Indent+Indent+"{\n")
 	}
 
 	if IOC.LayerID != "" {
-		fmt.Printf(Indent3+"\"Image Layer ID\": %s,\n", jsonMarshal(IOC.LayerID))
+		fmt.Fprintf(os.Stdout, Indent3+"\"Image Layer ID\": %s,\n", jsonMarshal(IOC.LayerID))
 	}
-	fmt.Printf(Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(IOC.RuleName))
-	fmt.Printf(Indent3+"\"Strings to match are\":\n")
+	fmt.Fprintf(os.Stdout, Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(IOC.RuleName))
+	fmt.Fprintf(os.Stdout, Indent3+"\"Strings to match are\":\n")
 	for _, c := range IOC.StringsToMatch {
-		if(len(c) > 0 ) {
-			fmt.Printf(Indent3+Indent3+"\""+c+"\",\n")
+		if len(c) > 0 {
+			fmt.Fprintf(os.Stdout, Indent3+Indent3+"\""+c+"\",\n")
 		}
 	}
 	summary := ""
 	for _, c := range IOC.CategoryName {
-		if(len(c) > 0 ) {
-			str := []string{"The file", IOC.CompleteFilename ,"has a",c,"match."}
-			summary = strings.Join(str," ")
+		if len(c) > 0 {
+			str := []string{"The file", IOC.CompleteFilename, "has a", c, "match."}
+			summary = strings.Join(str, " ")
 		}
-	} 
+	}
 
-	//fmt.Printf(Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
-	fmt.Printf(Indent3+"\"File Match Severity\": %s,\n", jsonMarshal(severity))
-	fmt.Printf(Indent3+"\"File Match Severity Score\": %.2f,\n", fileScore)
-	fmt.Printf(Indent3+"\"Category is\": %s,\n", IOC.CategoryName)
-	fmt.Printf(Indent3+"\"File Name\": %s,\n", jsonMarshal(IOC.CompleteFilename))
+	//fmt.Fprintf(os.Stdout, Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
+	fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity\": %s,\n", jsonMarshal(severity))
+	fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity Score\": %.2f,\n", fileScore)
+	fmt.Fprintf(os.Stdout, Indent3+"\"Category is\": %s,\n", IOC.CategoryName)
+	fmt.Fprintf(os.Stdout, Indent3+"\"File Name\": %s,\n", jsonMarshal(IOC.CompleteFilename))
 	for _, c := range IOC.Meta {
 		var metaSplit = strings.Split(c, " : ")
-		if (len(metaSplit) > 1) {
-			fmt.Printf(Indent3+"\""+ color.BlueString(metaSplit[0])+"\": " +
-			metaSplit[1])
-			if(metaSplit[0] == "description") {
-				str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1],"\n","",-1) + "."}
-				summary = summary + strings.Join(str," ")
+		if len(metaSplit) > 1 {
+			fmt.Fprintf(os.Stdout, Indent3+"\""+color.BlueString(metaSplit[0])+"\": "+
+				metaSplit[1])
+			if metaSplit[0] == "description" {
+				str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
+				summary = summary + strings.Join(str, " ")
 			} else {
-				if (len(metaSplit[0])>0) {
-					str := []string{"The matched rule file's ", metaSplit[0] ," is",strings.Replace(metaSplit[1],"\n","",-1)+ "." }
-					summary = summary + strings.Join(str," ")
+				if len(metaSplit[0]) > 0 {
+					str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
+					summary = summary + strings.Join(str, " ")
 				}
 			}
-			
 		}
-		
 	}
-	if (len(summary) > 0) {
-		fmt.Printf(Indent3+"\"Summary\": %s,\n", color.YellowString(summary))
+	if len(summary) > 0 {
+		fmt.Fprintf(os.Stdout, Indent3+"\"Summary\": %s,\n", color.YellowString(summary))
 	}
-	
-	fmt.Printf(Indent + Indent + "}\n")
+
+	fmt.Fprintf(os.Stdout, Indent+Indent+"}\n")
 }
 
 func jsonMarshal(input string) string {

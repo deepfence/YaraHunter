@@ -2,19 +2,12 @@ package scan
 
 import (
 	"errors"
-	"fmt"
-	"os"
-
 	"github.com/deepfence/IOCScanner/core"
 	"github.com/deepfence/IOCScanner/output"
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	dockerRuntime "github.com/deepfence/vessel/docker"
-)
-
-var (
-	containerTarFileName = "save-output.tar"
 )
 
 type ContainerScan struct {
@@ -43,8 +36,7 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 		containerRuntimeInterface = containerdRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
-		fmt.Println("Error: Could not detect container runtime")
-		os.Exit(1)
+		return errors.New("could not detect container runtime")
 	}
 	err = containerRuntimeInterface.ExtractFileSystemContainer(containerScan.containerId, containerScan.namespace, containerScan.tempDir+".tar", endpoint)
 
@@ -66,7 +58,7 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 // @returns
 // []output.IOCFound - List of all IOC found
 // Error - Errors, if any. Otherwise, returns nil
-func (containerScan *ContainerScan) scan()  error {
+func (containerScan *ContainerScan) scan() error {
 	var isFirstIOC bool = true
 	var numIOC uint = 0
 
@@ -80,7 +72,7 @@ func (containerScan *ContainerScan) scan()  error {
 	// 	ioc.CompleteFilename = strings.Replace(ioc.CompleteFilename, containerScan.tempDir, "", 1)
 	// }
 
-	return  nil
+	return nil
 }
 
 type ContainerExtractionResult struct {
@@ -107,5 +99,5 @@ func ExtractAndScanContainer(containerId string, namespace string) error {
 	if e != nil {
 		return e
 	}
-	return  nil
+	return nil
 }

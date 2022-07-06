@@ -147,7 +147,6 @@ func IsSymLink(path string) bool {
 
 	// --- check if file is a symlink
 	if fileInfo.Mode()&os.ModeSymlink == os.ModeSymlink {
-		// fmt.Println("File is a symbolic link")
 		return true
 	}
 

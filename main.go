@@ -26,8 +26,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-
 	"github.com/deepfence/IOCScanner/core"
 	"github.com/deepfence/IOCScanner/output"
 	"github.com/deepfence/IOCScanner/scan"
@@ -76,7 +74,7 @@ func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
 	var isFirstIOC bool = true
 	var numIOC uint = 0
 
-	err:= scan.ScanIOCInDir("", "", dir, &isFirstIOC, &numIOC, nil)
+	err := scan.ScanIOCInDir("", "", dir, &isFirstIOC, &numIOC, nil)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInDir: %s", err)
 		return nil, err
@@ -122,7 +120,7 @@ func runOnce() {
 
 	// Scan container image for IOC
 	if len(*session.Options.ImageName) > 0 {
-		fmt.Printf("Scanning image %s for IOC...\n", *session.Options.ImageName)
+		session.Log.Info("Scanning image %s for IOC...\n", *session.Options.ImageName)
 		jsonOutput, err = findIOCInImage(*session.Options.ImageName)
 		if err != nil {
 			core.GetSession().Log.Error("error scanning the image: %s", err)
@@ -132,7 +130,7 @@ func runOnce() {
 
 	// Scan local directory for IOC
 	if len(*session.Options.Local) > 0 {
-		fmt.Printf("[*] Scanning local directory: %s\n", color.BlueString(*session.Options.Local))
+		session.Log.Info("[*] Scanning local directory: %s\n", color.BlueString(*session.Options.Local))
 		jsonOutput, err = findIOCInDir(*session.Options.Local)
 		if err != nil {
 			core.GetSession().Log.Error("error scanning the dir: %s", err)
@@ -142,7 +140,7 @@ func runOnce() {
 
 	// Scan existing container for IOC
 	if len(*session.Options.ContainerId) > 0 {
-		fmt.Printf("Scanning container %s for IOC...\n", *session.Options.ContainerId)
+		session.Log.Info("Scanning container %s for IOC...\n", *session.Options.ContainerId)
 		jsonOutput, err = findIOCInContainer(*session.Options.ContainerId, *session.Options.ContainerNS)
 		if err != nil {
 			core.GetSession().Log.Error("error scanning the container: %s", err)

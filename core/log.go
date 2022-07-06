@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/fatih/color"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -59,9 +60,9 @@ func (l *Logger) Log(level int, format string, args ...interface{}) {
 	}
 
 	if c, ok := LogColors[level]; ok {
-		c.Printf("\r"+format+"\n", args...)
+		c.Fprintf(os.Stderr, "\r"+format+"\n", args...)
 	} else {
-		fmt.Printf("\r"+format+"\n", args...)
+		fmt.Fprintf(os.Stderr, "\r"+format+"\n", args...)
 	}
 
 	if level == FATAL {

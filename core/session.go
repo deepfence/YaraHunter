@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"os"
 	"runtime"
@@ -49,18 +48,17 @@ func (s *Session) InitThreads() {
 
 func GetSession() *Session {
 	sessionSync.Do(func() {
-		fmt.Println("Initializing....")
 		session = &Session{
 			Context: context.Background(),
 		}
 
 		if session.Options, err = ParseOptions(); err != nil {
-			fmt.Println(err)
+			session.Log.Error(err.Error())
 			os.Exit(1)
 		}
 
 		if session.Config, err = ParseConfig(session.Options); err != nil {
-			fmt.Println(err)
+			session.Log.Error(err.Error())
 			os.Exit(1)
 		}
 

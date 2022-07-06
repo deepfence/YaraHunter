@@ -17,8 +17,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"fmt"
 
 	"github.com/deepfence/IOCScanner/core"
@@ -46,7 +44,8 @@ type fileMatches struct {
 var (
 	imageTarFileName = "save-output.tar"
 	rules            *yr.Rules
-	maxFileSize      = *core.GetSession().Options.MaximumFileSize
+	session          = *core.GetSession()
+	maxFileSize      = *session.Options.MaximumFileSize
 )
 
 type extvardefs map[string]interface{}
@@ -134,7 +133,6 @@ func (imageScan *ImageScan) scan() ([]output.IOCFound, error) {
 
 func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, error) {
 	var c *yr.Compiler
-	session := core.GetSession()
 	var err error
 	var paths []string
 	if c, err = yr.NewCompiler(); err != nil {
@@ -157,7 +155,6 @@ func compile(purpose int, inputfiles []string, failOnWarnings bool) (*yr.Rules, 
 		// We use the include callback function to actually read files
 		// because yr_compiler_add_string() does not accept a file
 		// name.
-		//fmt.Println("include", path)
 		if err = c.AddString(fmt.Sprintf(`include "%s"`, path), ""); err != nil {
 			return nil, err
 		}
@@ -224,12 +221,12 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 func ScanFilePath(fs afero.Fs, path string) (err error) {
 	f, err := fs.Open(path)
 	if err != nil {
-		fmt.Printf("Error: %v", err)
+		session.Log.Error("Error: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		fmt.Printf("Could not seek to start of file %s: %v", path, err)
+		session.Log.Error("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
 	if e := ScanFile(f); err == nil && e != nil {
@@ -270,7 +267,7 @@ func ScanFile(f afero.File) error {
 		return err
 	}
 	if maxFileSize > 0 && fi.Size() > maxFileSize {
-		logrus.Debugf("\nyara: %v: Skipping large file, size=%v, max_size=%v", f.Name(), fi.Size(), maxFileSize)
+		session.Log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", f.Name(), fi.Size(), maxFileSize)
 		return nil
 	}
 	if f, ok := f.(*os.File); ok {
@@ -279,7 +276,7 @@ func ScanFile(f afero.File) error {
 	} else {
 		var buf []byte
 		if buf, err = ioutil.ReadAll(f); err != nil {
-			fmt.Printf("yara: %s: Error reading file, error=%s",
+			session.Log.Error("yara: %s: Error reading file, error=%s",
 				f.Name(), err.Error())
 			return err
 		}
@@ -290,7 +287,7 @@ func ScanFile(f afero.File) error {
 	for _, m := range matches {
 		matchesStringData := make([]string, len(m.Strings))
 		for _, str := range m.Strings {
-			if (!strings.Contains(strings.Join(matchesStringData, " "),string(str.Data))) {
+			if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
 				matchesStringData = append(matchesStringData, string(str.Data))
 				totalmatchesStringData = append(totalmatchesStringData, string(str.Data))
 			}
@@ -299,7 +296,7 @@ func ScanFile(f afero.File) error {
 		matchesMetaData := make([]string, len(m.Metas))
 		for _, strMeta := range m.Metas {
 			matchesMeta = append(matchesMeta, strMeta.Identifier)
-			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n",strMeta.Identifier, strMeta.Value))
+			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
 		}
 
 		tempIOCsFound = append(tempIOCsFound, output.IOCFound{
@@ -319,7 +316,7 @@ func ScanFile(f afero.File) error {
 	fileMat.updatedScore = updatedScore
 	var isFirstIOC bool = true
 	if len(matches) > 0 {
-		output.PrintColoredIOC(tempIOCsFound, &isFirstIOC,fileMat.updatedScore, fileMat.updatedSeverity)
+		output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
 	}
 
 	return err
@@ -348,11 +345,10 @@ func GetPaths(path string) (paths []string) { return []string{path} }
 // Error - Errors if any. Otherwise, returns nil
 func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool,
 	numIOCs *uint, matchedRuleSet map[uint]uint) error {
-	//var tempIOCsFound []output.IOCFound
 	var err error
 	var fs afero.Fs
 	if layer != "" {
-		fmt.Println("Scan Results in selected image with layer-----", layer)
+		session.Log.Info("Scan results in selected image with layer ", layer)
 	}
 	if matchedRuleSet == nil {
 		matchedRuleSet = make(map[uint]uint)
@@ -361,7 +357,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 	if layer != "" {
 		core.UpdateDirsPermissionsRW(fullDir)
 	}
-	session := core.GetSession()
 	ruleFiles := []string{"malware.yar"}
 	rules, err = compile(filescan, ruleFiles, true)
 	if err != nil {
@@ -411,7 +406,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, isFirstIOC *bool
 		return nil
 	})
 
-	return  nil
+	return nil
 }
 
 // Extract all the layers of the container image and then find IOCs in each layer one by one
@@ -508,7 +503,6 @@ func extractTarFile(imageName, imageTarPath string, extractPath string) (string,
 
 	// Extract the contents of image from tar file
 	if err := untar(imageTarPath, path); err != nil {
-		fmt.Println(err)
 		return "", err
 	}
 
@@ -575,7 +569,7 @@ func untar(tarName string, xpath string) (err error) {
 				absDirPath = filepath.Join(absPath, strings.Join(dirs, "/"))
 			}
 			if err := os.MkdirAll(absDirPath, 0755); err != nil {
-				fmt.Println(err.Error())
+				session.Log.Warn(err.Error())
 			}
 		}
 
@@ -589,21 +583,17 @@ func untar(tarName string, xpath string) (err error) {
 		// create new file with original file mode
 		file, err := os.OpenFile(absFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, finfo.Mode().Perm())
 		if err != nil {
-			fmt.Println(err.Error())
 			return err
 		}
-		// fmt.Printf("x %s\n", absFileName)
 		n, cpErr := io.Copy(file, tr)
 		if closeErr := file.Close(); closeErr != nil { // close file immediately
-			fmt.Println("clserr:" + closeErr.Error())
 			return err
 		}
 		if cpErr != nil {
-			fmt.Println("copyErr:" + cpErr.Error())
 			return cpErr
 		}
 		if n != finfo.Size() {
-			return fmt.Errorf("unexpected bytes written: wrote %d, want %d", n, finfo.Size())
+			return errors.New(fmt.Sprintf("unexpected bytes written: wrote %d, want %d", n, finfo.Size()))
 		}
 	}
 	return nil
