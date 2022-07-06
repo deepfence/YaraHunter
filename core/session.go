@@ -71,13 +71,13 @@ func GetSession() *Session {
 		}
 		session.Config.ExcludedPaths = excludedPaths
 
+		session.Start()
+
 		rules, err := compile(filescan, session, true)
 		if err != nil {
 			session.Log.Error("compiling rules issue: %s", err)
 		}
 		session.YaraRules = rules
-
-		session.Start()
 	})
 
 	return session
