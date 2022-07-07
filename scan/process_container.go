@@ -59,7 +59,8 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 // []output.IOCFound - List of all IOC found
 // Error - Errors, if any. Otherwise, returns nil
 func (containerScan *ContainerScan) scan() error {
-	err := ScanIOCInDir("", "", containerScan.tempDir, nil)
+	var IOCs []output.IOCFound
+	err := ScanIOCInDir("", "", containerScan.tempDir, nil, &IOCs)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInContainer: %s", err)
 		return err

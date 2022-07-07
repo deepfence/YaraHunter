@@ -55,7 +55,7 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: image}
+	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: image,IOC: res.IOCs}
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.SetImageId(res.ImageId)
 	jsonImageIOCOutput.PrintJsonHeader()
@@ -71,17 +71,14 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 // @returns
 // Error, if any. Otherwise, returns nil
 func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
-	err := scan.ScanIOCInDir("", "", dir, nil)
+	var tempIOCsFound []output.IOCFound
+	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInDir: %s", err)
 		return nil, err
 	}
 
-	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: *session.Options.Local}
-	//jsonDirIOCOutput.SetTime()
-	//jsonDirIOCOutput.PrintJsonHeader()
-	//jsonDirIOCOutput.PrintJsonFooter()
-	//jsonDirIOCOutput.SetIOC(IOC)
+	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: *session.Options.Local,IOC: tempIOCsFound}
 
 	return &jsonDirIOCOutput, nil
 }
