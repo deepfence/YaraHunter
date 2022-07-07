@@ -225,7 +225,11 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 			matchesMeta = append(matchesMeta, strMeta.Identifier)
 			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
 		}
-
+		fileName := f.Name()
+		hostMountPath := *session.Options.HostMountPath
+		if hostMountPath != "" {
+			fileName = strings.TrimPrefix(fileName, hostMountPath)
+		}
 		tempIOCsFound = append(tempIOCsFound, output.IOCFound{
 			RuleName:         m.Rule,
 			CategoryName:     m.Tags,

@@ -30,19 +30,11 @@ import (
 	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/YaRadare/scan"
 	"github.com/fatih/color"
-	yr "github.com/hillu/go-yara/v4"
 )
 
 // Read the regex signatures from config file, options etc.
 // and setup the session to start scanning for IOC
 var session = core.GetSession()
-
-//defining a type fileScanner
-type fileScanner struct {
-	RuleFiles      []string `yaml:"rule-files"`
-	FailOnWarnings bool     `yaml:"fail-on-warnings"`
-	rules          *yr.Rules
-}
 
 // Scan a container image for IOC layer by layer
 // @parameters
