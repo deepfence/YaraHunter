@@ -1,60 +1,68 @@
-[![GitHub license](https://img.shields.io/github/license/deepfence/IOScanner)](https://github.com/deepfence/PacketStreamer/blob/master/LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/deepfence/IOCScanner)](https://github.com/deepfence/IOCScanner/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/deepfence/IOCScanner)](https://github.com/deepfence/IOCScanner/issues)
+[![GitHub license](https://img.shields.io/github/license/deepfence/YaRadare)](https://github.com/deepfence/YaRadare/blob/master/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/deepfence/YaRadare)](https://github.com/deepfence/YaRadare/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/deepfence/YaRadare)](https://github.com/deepfence/YaRadare/issues)
 [![Slack](https://img.shields.io/badge/slack-@deepfence-blue.svg?logo=slack)](https://join.slack.com/t/deepfence-community/shared_invite/zt-podmzle9-5X~qYx8wMaLt9bGWwkSdgQ)
 
 
-# IOCScanner
+# YaRadare
 
-Deepfence IOCScanner can be used to scan filesystems and running Docker container images to find indicators of malware. It uses a [YARA ruleset](https://virustotal.github.io/yara/) to identify resources that match known malware signatures, and may indicate that the container or filesystem has been compromised.
+Deepfence YaRadare ("Ya-Radar") scans container images, running Docker containers, and filesystems to find indicators of malware. It uses a [YARA ruleset](https://virustotal.github.io/yara/) to identify resources that match known malware signatures, and may indicate that the container or filesystem has been compromised.
 
-For example, if you observe unusual network traffic or CPU activity from a running container, you can use IOCScanner to quickly scan the container to determine if malware such as a cryptominer, proxy or CnC node has been installed. 
+YaRadare can be used in the following ways:
+
+ * At build time: scan images during the CI/CD pipeline, to determine if they are subject to a supply-chain compromise
+ * At rest: scan local container images, for example, before they are deployed, to verify they do not contain malware
+ * At runtime: scan running docker containers, for example, if you observe unusual network traffic or CPU activity
+ * Against filesystems: at any time, IOCScanner can scan a local filesystems for indicators of compromise
 
 Key capabilities:
 
  * Scan running and at-rest containers, and filesystems
- * Run anywhere: highly-portable, docker container form factor
+ * Run anywhere: highly-portable, docker container form factor or universal GO binary
  * Designed for automation: easy-to-deploy, easy-to-parse JSON output
 
-IOCScanner is a work-in-progress (check the [issues list](issues)), and will be integrated into the [ThreatMapper](/deepfence/ThreatMapper) threat discovery platform.  We welcome any contributions to help to improve this tool.
+YaRadare is a work-in-progress (check the [Roadmap](https://github.com/orgs/deepfence/projects/3) and [issues list](issues)), and will be integrated into the [ThreatMapper](/deepfence/ThreatMapper) threat discovery platform.  We welcome any contributions to help to improve this tool.
 
 ## Getting Started
 
-### Build IOCScanner
+### Build YaRadare
 
-IOCScanner is a self-contained docker-based tool. Clone this repository, then build:
+YaRadare is a self-contained docker-based tool. Clone this repository, then build:
 
 ```
-docker build --rm=true --tag=deepfenceio/deepfence-ioc-scanner:latest -f Dockerfile .
+docker build --rm=true --tag=deepfenceio/deepfence-yaradare:latest -f Dockerfile .
 ```
 
-Alternatively, you can pull the ‘official’ deepfence image at `deepfenceio/deepfence-ioc-scanner:latest`.
+Alternatively, you can pull the ‘official’ deepfence image at `deepfenceio/deepfence-yaradare:latest`.
 
 ### Scan a Container Image
 
 Pull the image to your local repository, then scan it
 
 <pre><code>docker pull node:latest
-docker run -it --rm --name=deepfence-ioc-scanner \
+
+docker run -it --rm --name=deepfence-yaradare \
     -v /var/run/docker.sock:/var/run/docker.sock \
-    deepfenceio/deepfence-ioc-scanner:latest <b>--image-name node:latest</b>
+    deepfenceio/deepfence-yaradare:latest <b>--image-name node:latest</b>
+
+docker rmi node:latest
 </code></pre>
 
 ### Scan a Running Container
 
-<pre><code>docker run -it --rm --name=deepfence-ioc-scanner \
+<pre><code>docker run -it --rm --name=deepfence-yaradare \
     -v /var/run/docker.sock:/var/run/docker.sock \
     <b>-v /:/deepfence/mnt</b> \
-    deepfenceio/deepfence-ioc-scanner:latest <b>--host-mount-path /deepfence/mnt --container-id 69221b948a73</b>
+    deepfenceio/deepfence-yaradare:latest <b>--host-mount-path /deepfence/mnt --container-id 69221b948a73</b>
 </code></pre>
 
 ### Scan a filesystem
 
-Mount the filesystem within the IOCScanner container and scan it:
+Mount the filesystem within the YaRadare container and scan it:
 
-<pre><code>docker run -it --rm --name=deepfence-ioc-scanner \
+<pre><code>docker run -it --rm --name=deepfence-yaradare \
     <b>-v ~/src/YARA-RULES:/tmp/YARA-RULES</b> \
-    deepfenceio/deepfence-ioc-scanner:latest <b>--local /tmp/YARA-RULES</b>
+    deepfenceio/deepfence-yaradare:latest <b>--local /tmp/YARA-RULES</b>
 </code></pre>
 
 ## Example:
@@ -66,7 +74,7 @@ TODO: find an example that illustrates the malware detection capabilities, illus
 
 Display the command line options:
 
-<pre><code>$ docker run -it --rm deepfenceio/deepfence-ioc-scanner:latest <b>--help</b></code></pre>
+<pre><code>$ docker run -it --rm deepfenceio/deepfence-yaradare:latest <b>--help</b></code></pre>
 
  * `--config-path string`: searches for `config.yaml` from given directory. If not set, fall back to the IOCScanner binary directory and the current working directory.
  * `--max-ioc uint`: Maximum number of IOC matches to report from a container image or file system (default 1000).
@@ -93,18 +101,18 @@ Display the command line options:
 
 ### Detailed Configuration
 
-IOCScanner's scanning operation can be fine-tuned using `config.yaml`, to exclude files and locations from the malware scan:
+YaRadare's scanning operation can be fine-tuned using `config.yaml`, to exclude files and locations from the malware scan:
 
 ```
-# IOC Scanner Configuration File
+# YaRadare Configuration File
 
 exclude_strings: [] # skip matches containing any of these strings (case sensitive)
 exclude_extensions: [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".psd", ".xcf", ".zip", ".tar.gz", ".ttf", ".lock"] 
 # need to confirm as windows hides file extensions
-exclude_paths: ["{sep}var{sep}lib{sep}docker", "{sep}var{sep}lib{sep}containerd", "{sep}bin", "{sep}boot", "{sep}dev", "{sep}lib", "{sep}lib64", "{sep}media", "{sep}proc", "{sep}run", "{sep}sbin", "{sep}usr{sep}lib", "{sep}sys"] # use {sep} for the OS' path seperator (i.e. / or \)
+exclude_paths: ["/var/lib/docker", "/var/lib/containerd", "/bin", "/boot", "/dev", "/lib", "/lib64", "/media", "/proc", "/run", "/sbin", "/usr/lib", "/sys"] # use \ for windows paths
 ```
 
-IOCScanner reads `config.yaml` from the location of the IOCScanner binary or from the current working directory; the location can be overriden using the `--config-path` command line argument.
+YaRadare reads `config.yaml` from the location of the YaRadare binary or from the current working directory; the location can be overriden using the `--config-path` command line argument.
 
 
 # Disclaimer
