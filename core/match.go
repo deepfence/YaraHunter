@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/deepfence/IOCScanner/core/sys"
+	"github.com/deepfence/YaRadare/core/sys"
 	"github.com/spf13/afero"
 	"os"
 	"path/filepath"

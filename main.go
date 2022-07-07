@@ -26,9 +26,9 @@ package main
 
 import (
 	"flag"
-	"github.com/deepfence/IOCScanner/core"
-	"github.com/deepfence/IOCScanner/output"
-	"github.com/deepfence/IOCScanner/scan"
+	"github.com/deepfence/YaRadare/core"
+	"github.com/deepfence/YaRadare/output"
+	"github.com/deepfence/YaRadare/scan"
 	"github.com/fatih/color"
 	yr "github.com/hillu/go-yara/v4"
 )
@@ -55,7 +55,7 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: image,IOC: res.IOCs}
+	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: image, IOC: res.IOCs}
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.SetImageId(res.ImageId)
 	jsonImageIOCOutput.PrintJsonHeader()
@@ -78,7 +78,7 @@ func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
 		return nil, err
 	}
 
-	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: *session.Options.Local,IOC: tempIOCsFound}
+	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: *session.Options.Local, IOC: tempIOCsFound}
 
 	return &jsonDirIOCOutput, nil
 }

@@ -19,8 +19,8 @@ import (
 
 	"fmt"
 
-	"github.com/deepfence/IOCScanner/core"
-	"github.com/deepfence/IOCScanner/output"
+	"github.com/deepfence/YaRadare/core"
+	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
 	"github.com/spf13/afero"
@@ -245,10 +245,9 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 	if len(matches) > 0 {
 		output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
 		for _, m := range tempIOCsFound {
-			*(*(*iocs)) = append(*(*(*iocs)),m)
+			*(*(*iocs)) = append(*(*(*iocs)), m)
 		}
 	}
-	
 
 	return err
 }
@@ -262,7 +261,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint,iocs *[]output.IOCFound) error {
+func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound) error {
 	var fs afero.Fs
 	if layer != "" {
 		session.Log.Info("Scan results in selected image with layer ", layer)
@@ -358,7 +357,7 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 			// return tempIOCsFound, error
 		}
 		core.GetSession().Log.Debug("Analyzing dir: %s", targetDir)
-		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet,&IOCs)
+		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs)
 		tempIOCsFound = append(tempIOCsFound, IOCs...)
 		if err != nil {
 			core.GetSession().Log.Error("ProcessImageLayers: %s", err)

@@ -1,9 +1,9 @@
-all: IOCScanner
+all: YaRadare
 
 clean:
-	-rm ./IOCScanner
+	-rm ./YaRadare
 
-IOCScanner:
+YaRadare:
 	env PKG_CONFIG_PATH=/usr/local/yara/lib/pkgconfig:$(PKG_CONFIG_PATH) go build -buildvcs=false -v .
 
 .PHONY: clean

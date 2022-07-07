@@ -2,8 +2,8 @@ package scan
 
 import (
 	"errors"
-	"github.com/deepfence/IOCScanner/core"
-	"github.com/deepfence/IOCScanner/output"
+	"github.com/deepfence/YaRadare/core"
+	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"

@@ -13,7 +13,7 @@ YaRadare can be used in the following ways:
  * At build time: scan images during the CI/CD pipeline, to determine if they are subject to a supply-chain compromise
  * At rest: scan local container images, for example, before they are deployed, to verify they do not contain malware
  * At runtime: scan running docker containers, for example, if you observe unusual network traffic or CPU activity
- * Against filesystems: at any time, IOCScanner can scan a local filesystems for indicators of compromise
+ * Against filesystems: at any time, YaRadare can scan a local filesystems for indicators of compromise
 
 Key capabilities:
 
@@ -76,8 +76,8 @@ Display the command line options:
 
 <pre><code>$ docker run -it --rm deepfenceio/deepfence-yaradare:latest <b>--help</b></code></pre>
 
- * `--config-path string`: searches for `config.yaml` from given directory. If not set, fall back to the IOCScanner binary directory and the current working directory.
- * `--max-ioc uint`: Maximum number of IOC matches to report from a container image or file system (default 1000).
+ * `--config-path string`: searches for `config.yaml` from given directory. If not set, fall back to the YaRadare binary directory and the current working directory.
+ * `--max-ioc uint`: Maximum number of indicator of compromise matches to report from a container image or file system (default 1000).
  * `--maximum-file-size int`:	Maximum file size to process in bytes (default 32Mb).
  * `--threads int`:	Number of concurrent threads to use during scan (default number of logical CPUs).
  * `--log-level string`: one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG (default "ERROR"); print messages of this severity or higher.
@@ -91,7 +91,7 @@ Display the command line options:
 
 #### Scan Filesystems
 
- * `--local string`: scan the local directory in the IOCScanner docker container.  Mount the external (host) directory within the container using `-v`
+ * `--local string`: scan the local directory in the YaRadare docker container.  Mount the external (host) directory within the container using `-v`
  * `--host-mount-path string`: If scanning the host, specify the host mount path for path exclusions to work correctly.  **TODO: clarify the meaning**
 
 #### Configure Output
@@ -117,4 +117,4 @@ YaRadare reads `config.yaml` from the location of the YaRadare binary or from th
 
 # Disclaimer
 
-This tool is not meant to be used for hacking. Please use it only for legitimate purposes like detecting IOC on the infrastructure you own, not on others' infrastructure. DEEPFENCE shall not be liable for loss of profit, loss of business, other financial loss, or any other loss or damage which may be caused, directly or indirectly, by the inadequacy of IOCScanner for any purpose or use thereof or by any defect or deficiency therein.
+This tool is not meant to be used for hacking. Please use it only for legitimate purposes like detecting indicator of compromise on the infrastructure you own, not on others' infrastructure. DEEPFENCE shall not be liable for loss of profit, loss of business, other financial loss, or any other loss or damage which may be caused, directly or indirectly, by the inadequacy of YaRadare for any purpose or use thereof or by any defect or deficiency therein.

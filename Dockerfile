@@ -18,7 +18,7 @@ RUN apt-get update  \
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 
-WORKDIR /home/deepfence/src/IOCScanner
+WORKDIR /home/deepfence/src/YaRadare
 COPY . .
 RUN make clean \
     && make all \
@@ -44,11 +44,11 @@ WORKDIR /home/deepfence/rules
 COPY --from=builder /home/deepfence/yara-rules .
 WORKDIR /home/deepfence/usr
 COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
-COPY --from=builder /home/deepfence/src/IOCScanner/IOCScanner .
-COPY --from=builder /home/deepfence/src/IOCScanner/config.yaml .
+COPY --from=builder /home/deepfence/src/YaRadare/YaRadare .
+COPY --from=builder /home/deepfence/src/YaRadare/config.yaml .
 RUN cd /usr/local/ \
     && tar -xzf yara.tar.gz
 WORKDIR /home/deepfence/output
 
-ENTRYPOINT ["/home/deepfence/usr/IOCScanner", "-config-path", "/home/deepfence/usr"]
+ENTRYPOINT ["/home/deepfence/usr/YaRadare", "-config-path", "/home/deepfence/usr"]
 CMD ["-h"]
