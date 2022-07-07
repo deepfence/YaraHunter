@@ -58,14 +58,14 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 // @returns
 // []output.IOCFound - List of all IOC found
 // Error - Errors, if any. Otherwise, returns nil
-func (containerScan *ContainerScan) scan() error {
-	var IOCs []output.IOCFound
-	err := ScanIOCInDir("", "", containerScan.tempDir, nil, &IOCs)
+func (containerScan *ContainerScan) scan() ([]output.IOCFound, error) {
+	var iocsFound []output.IOCFound
+	err := ScanIOCInDir("", "", containerScan.tempDir, nil, &iocsFound)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInContainer: %s", err)
-		return err
+		return iocsFound, err
 	}
-	return nil
+	return iocsFound, nil
 }
 
 type ContainerExtractionResult struct {
@@ -73,24 +73,23 @@ type ContainerExtractionResult struct {
 	ContainerId string
 }
 
-func ExtractAndScanContainer(containerId string, namespace string) error {
+func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOCFound, error) {
+	var iocsFound []output.IOCFound
 	tempDir, err := core.GetTmpDir(containerId)
 	if err != nil {
-		return err
+		return iocsFound, err
 	}
 	defer core.DeleteTmpDir(tempDir)
 
 	containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
 	err = containerScan.extractFileSystem()
-
 	if err != nil {
-		return err
+		return iocsFound, err
 	}
 
-	e := containerScan.scan()
-
-	if e != nil {
-		return e
+	iocsFound, err = containerScan.scan()
+	if err != nil {
+		return iocsFound, err
 	}
-	return nil
+	return iocsFound, nil
 }
