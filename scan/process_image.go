@@ -193,8 +193,13 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 		// 	f.Name(), err.Error())
 		return err
 	}
+	fileName := f.Name()
+	hostMountPath := *session.Options.HostMountPath
+	if hostMountPath != "" {
+		fileName = strings.TrimPrefix(fileName, hostMountPath)
+	}
 	if maxFileSize > 0 && fi.Size() > maxFileSize {
-		session.Log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", f.Name(), fi.Size(), maxFileSize)
+		session.Log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), maxFileSize)
 		return nil
 	}
 	if f, ok := f.(*os.File); ok {
@@ -204,19 +209,19 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 		var buf []byte
 		if buf, err = ioutil.ReadAll(f); err != nil {
 			session.Log.Error("yara: %s: Error reading file, error=%s",
-				f.Name(), err.Error())
+				fileName, err.Error())
 			return err
 		}
 		err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
 	}
-	var tempIOCsFound []output.IOCFound
-	totalmatchesStringData := make([]string, 0)
+	var iocsFound []output.IOCFound
+	totalMatchesStringData := make([]string, 0)
 	for _, m := range matches {
 		matchesStringData := make([]string, len(m.Strings))
 		for _, str := range m.Strings {
 			if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
 				matchesStringData = append(matchesStringData, string(str.Data))
-				totalmatchesStringData = append(totalmatchesStringData, string(str.Data))
+				totalMatchesStringData = append(totalMatchesStringData, string(str.Data))
 			}
 		}
 		matchesMeta := make([]string, len(m.Metas))
@@ -225,30 +230,25 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 			matchesMeta = append(matchesMeta, strMeta.Identifier)
 			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
 		}
-		fileName := f.Name()
-		hostMountPath := *session.Options.HostMountPath
-		if hostMountPath != "" {
-			fileName = strings.TrimPrefix(fileName, hostMountPath)
-		}
-		tempIOCsFound = append(tempIOCsFound, output.IOCFound{
+		iocsFound = append(iocsFound, output.IOCFound{
 			RuleName:         m.Rule,
 			CategoryName:     m.Tags,
 			StringsToMatch:   matchesStringData,
 			Meta:             matchesMetaData,
-			CompleteFilename: f.Name(),
+			CompleteFilename: fileName,
 		})
 	}
 	var fileMat fileMatches
-	fileMat.fileName = f.Name()
-	fileMat.iocs = tempIOCsFound
+	fileMat.fileName = fileName
+	fileMat.iocs = iocsFound
 
-	updatedSeverity, updatedScore := calculateSeverity(totalmatchesStringData, "low", 0)
+	updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
 	fileMat.updatedSeverity = updatedSeverity
 	fileMat.updatedScore = updatedScore
 	var isFirstIOC bool = true
 	if len(matches) > 0 {
-		output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
-		for _, m := range tempIOCsFound {
+		output.PrintColoredIOC(iocsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
+		for _, m := range iocsFound {
 			*(*(*iocs)) = append(*(*(*iocs)), m)
 		}
 	}
