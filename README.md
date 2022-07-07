@@ -63,7 +63,7 @@ Mount the filesystem within the YaRadare container and scan it:
 <pre><code>docker run -it --rm --name=deepfence-yaradare \
     <b>-v ~/src/YARA-RULES:/tmp/YARA-RULES</b> \
     deepfenceio/deepfence-yaradare:latest \
-    <b>--local /tmp/YARA-RULES</b>
+    <b>--local /tmp/YARA-RULES --host-mount-path /tmp/YARA-RULES</b>
 </code></pre>
 
 ### Configure Output
