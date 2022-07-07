@@ -100,7 +100,7 @@ docker run -it --rm --name=deepfence-yaradare \
 </code></pre>
 
 
-## Example:
+## Example: finding Indicators of Compromise in a container image
 
 Images may be compromised with the installation of a cryptominer such as XMRig.  In the following example, we'll scan a legitimiate cryptominer image that contains the same xmrig software that is often installed through an exploit:
 
@@ -109,13 +109,19 @@ docker pull metal3d/xmrig
 
 docker run -it --rm --name=deepfence-yaradare \
      -v /var/run/docker.sock:/var/run/docker.sock \
-     deepfenceio/deepfence-yaradare:latest --image-name metal3d/xmrig:latest
+     -v /tmp:/home/deepfence/output \
+     deepfenceio/deepfence-yaradare:latest --image-name metal3d/xmrig:latest \
+     --json-filename=xmrig-scan.json
 ```
 
-This returns, among other things, clear indication of the presence of XMRig:
+This returns, among other things, clear indication of the presence of XMRig.  Note that we store the output (`/tmp/xmrig-scan.json`) for quick and easy manipulation:
 
+```
+# Extract the IOC array values.  From these, extract the values of the 'Matched Rule Name' key
+cat /tmp/xmrig-scan.json | jq '.IOC[] | ."Matched Rule Name"'
+```
 
-
+This returns a list of the IOCs identified in the container we scanned.
 
 
 ## Command Line Options
