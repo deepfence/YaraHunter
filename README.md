@@ -10,7 +10,6 @@ Deepfence YaRadare ("Ya-Radar") scans container images, running Docker container
 
 YaRadare can be used in the following ways:
 
- * **At build time**: scan images during the CI/CD pipeline, to determine if they are subject to a supply-chain compromise
  * **At rest**: scan local container images, for example, before they are deployed, to verify they do not contain malware
  * **At runtime**: scan running docker containers, for example, if you observe unusual network traffic or CPU activity
  * **Against filesystems**: at any time, YaRadare can scan a local filesystems for indicators of compromise
