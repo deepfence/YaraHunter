@@ -39,7 +39,7 @@ func ParseOptions() (*Options, error) {
 		Local:                flag.String("local", "", "Specify local directory (absolute path) which to scan. Scans only given directory recursively."),
 		HostMountPath:        flag.String("host-mount-path", "", "If scanning the host, specify the host mount path for path exclusions to work correctly."),
 		ConfigPath:           flag.String("config-path", "", "Searches for config.yaml from given directory. If not set, tries to find it from YaRadare binary's and current directory"),
-		OutputPath:           flag.String("output-path", ".", "Output directory where json file will be stored. If not set, it will output to current directory"),
+		OutputPath:           flag.String("output-path", "", "Output directory where json file will be stored. If not set, it will output to current directory"),
 		JsonFilename:         flag.String("json-filename", "", "Output json file name. If not set, it will automatically create a filename based on image or dir name"),
 		ImageName:            flag.String("image-name", "", "Name of the image along with tag to scan for IOC"),
 		MaxIOC:               flag.Uint("max-ioc", 1000, "Maximum number of indicator of compromise to find in one container image or file system."),

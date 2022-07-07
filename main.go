@@ -110,7 +110,6 @@ type IOCWriter interface {
 func runOnce() {
 	var jsonOutput IOCWriter
 	var err error
-	var input string
 
 	// Scan container image for IOC
 	if len(*session.Options.ImageName) > 0 {
@@ -147,15 +146,17 @@ func runOnce() {
 		return
 	}
 
-	jsonFilename, err := core.GetJsonFilepath(input)
+	jsonFilename, err := core.GetJsonFilepath()
 	if err != nil {
 		core.GetSession().Log.Error("error while retrieving json output: %s", err)
 		return
 	}
-	err = jsonOutput.WriteIOC(jsonFilename)
-	if err != nil {
-		core.GetSession().Log.Error("error while writing IOC: %s", err)
-		return
+	if jsonFilename != "" {
+		err = jsonOutput.WriteIOC(jsonFilename)
+		if err != nil {
+			core.GetSession().Log.Error("error while writing IOC: %s", err)
+			return
+		}
 	}
 }
 

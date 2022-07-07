@@ -54,20 +54,20 @@ func getSanitizedString(imageName string) string {
 // @returns
 // string - Sanitized string which can used as path and filename of json output file
 // Error - Errors if path can't be created. Otherwise, returns nil
-func GetJsonFilepath(input string) (string, error) {
+func GetJsonFilepath() (string, error) {
+	jsonFilename := *GetSession().Options.JsonFilename
+	if jsonFilename == "" {
+		return "", nil
+	}
 	outputDir := *GetSession().Options.OutputPath
-	JsonFilename := *GetSession().Options.JsonFilename
-	if !PathExists(outputDir) {
+	if outputDir != "" && !PathExists(outputDir) {
 		err := CreateRecursiveDir(outputDir)
 		if err != nil {
 			GetSession().Log.Error("GetJsonFilepath: Could not create output dir: %s", err)
 			return "", err
 		}
 	}
-	if JsonFilename == "" {
-		JsonFilename = getSanitizedString(input) + "-IOCs.json"
-	}
-	jsonFilePath := filepath.Join(outputDir, JsonFilename)
+	jsonFilePath := filepath.Join(outputDir, jsonFilename)
 	GetSession().Log.Info("Complete json file path and name: %s", jsonFilePath)
 	return jsonFilePath, nil
 }
