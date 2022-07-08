@@ -24,6 +24,10 @@ YaRadare is a work-in-progress (check the [Roadmap](https://github.com/orgs/deep
 
 ## Getting Started
 
+### YaRadare in action
+
+![demo gif](demo.gif)
+
 ### Build YaRadare
 
 YaRadare is a self-contained docker-based tool. Clone this repository, then build:
