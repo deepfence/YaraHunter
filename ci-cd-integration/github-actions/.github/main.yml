@@ -1,0 +1,52 @@
+name: ci
+
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'info' 
+        type: choice
+        options:
+        - info
+        - warning
+        - debug 
+  push:
+    branches:
+    - "*"  # run for branches
+    tags:
+    - "*"  # run for tags
+  pull_request:
+    branches:
+    - "*"  # run for branches
+    tags:
+    - "*"  # run for tags
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GROUP: deepfence
+      COMMIT: ${{ github.sha }}
+      REPO: demo-app
+    steps:
+    - uses: actions/checkout@v2
+
+    # Build docker image for service
+    - name: Build docker image
+      uses: docker/build-push-action@v1
+      with:
+        push: false
+        repository: ${{ env.GROUP }}/${{ env.REPO }}
+        tag_with_ref: true
+        tag_with_sha: true
+        tags: ${{ github.sha }}
+
+    # Run Deepfence YaRadare scans to find indicators of malware in container images.
+    - name: Run Deepfence YaRadare scans 
+      env:
+        FULL_IMAGE_NAME: ${{ env.GROUP }}/${{ env.REPO }}:${{ github.sha }}
+      run: |
+        docker pull deepfenceio/deepfence-yaradare:latest
+        docker run --rm --name=deepfence-yaradare -v /var/run/docker.sock:/var/run/docker.sock deepfenceio/deepfence-yaradare:latest --image-name $FULL_IMAGE_NAME
