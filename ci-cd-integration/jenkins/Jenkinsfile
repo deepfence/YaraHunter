@@ -10,7 +10,7 @@ node {
         app = docker.build("${full_image_name}", "-f ci-cd-integration/jenkins/Dockerfile .")
     }
 
-    stage('Run Deepfence IOC Scanner'){
+    stage('Run Deepfence YaRadare'){
         DeepfenceAgent = docker.image("deepfenceio/deepfence-yaradare:latest")
         try {
             c = DeepfenceAgent.run("--rm --name=deepfence-yaradare -v /var/run/docker.sock:/var/run/docker.sock", "--image-name ${full_image_name}")
