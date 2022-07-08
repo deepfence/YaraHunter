@@ -6,7 +6,7 @@
 
 # YaRadare
 
-Deepfence YaRadare ("Ya-Radar") scans container images, running Docker containers, and filesystems to find indicators of malware. It uses a [YARA ruleset](https://github.com/deepfence/yara-rules) to identify resources that match known malware signatures, and may indicate that the container or filesystem has been compromised.
+Deepfence YaRadare ("Yara-rā,där") scans container images, running Docker containers, and filesystems to find indicators of malware. It uses a [YARA ruleset](https://github.com/deepfence/yara-rules) to identify resources that match known malware signatures, and may indicate that the container or filesystem has been compromised.
 
 YaRadare can be used in the following ways:
 
