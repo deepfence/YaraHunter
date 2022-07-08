@@ -48,10 +48,5 @@ jobs:
       env:
         FULL_IMAGE_NAME: ${{ env.GROUP }}/${{ env.REPO }}:${{ github.sha }}
       run: |
-        mkdir deepfence_docker
-        docker_config_path="$(pwd)/deepfence_docker"
-        docker_creds=$(echo -n "${{ secrets.DOCKER_USER }}:${{ secrets.DOCKER_PASS }}" | base64)
-        echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$docker_creds\"}}}" > "$docker_config_path/config.json"
-        docker --config "$docker_config_path" pull deepfenceio/deepfence-yaradare:latest
-        rm -rf deepfence_docker
+        docker pull deepfenceio/deepfence-yaradare:latest
         docker run --rm --name=deepfence-yaradare -v /var/run/docker.sock:/var/run/docker.sock deepfenceio/deepfence-yaradare:latest --image-name $FULL_IMAGE_NAME
