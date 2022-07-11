@@ -42,16 +42,20 @@ var session = core.GetSession()
 // @returns
 // Error, if any. Otherwise, returns nil
 func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
+
 	res, err := scan.ExtractAndScanImage(image)
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: image, IOC: res.IOCs}
+	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: image,IOC: res.IOCs}
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.SetImageId(res.ImageId)
-	jsonImageIOCOutput.PrintJsonHeader()
-	jsonImageIOCOutput.PrintJsonFooter()
 	jsonImageIOCOutput.SetIOC(res.IOCs)
+	jsonImageIOCOutput.PrintJsonHeader()
+	var isFirstIOC bool = true
+	output.PrintColoredIOC(res.IOCs, &isFirstIOC)
+
+	jsonImageIOCOutput.PrintJsonFooter()
 
 	return &jsonImageIOCOutput, nil
 }
@@ -62,14 +66,20 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 // @returns
 // Error, if any. Otherwise, returns nil
 func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
-	var iocsFound []output.IOCFound
-	err := scan.ScanIOCInDir("", "", dir, nil, &iocsFound)
+	var tempIOCsFound []output.IOCFound
+	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInDir: %s", err)
 		return nil, err
 	}
 
-	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: *session.Options.Local, IOC: iocsFound}
+	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: *session.Options.Local,IOC: tempIOCsFound}
+	jsonDirIOCOutput.SetTime()
+	jsonDirIOCOutput.PrintJsonHeader()
+	var isFirstIOC bool = true
+	output.PrintColoredIOC(jsonDirIOCOutput.IOC, &isFirstIOC)
+
+	jsonDirIOCOutput.PrintJsonFooter()
 
 	return &jsonDirIOCOutput, nil
 }
@@ -80,16 +90,19 @@ func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
 // @returns
 // Error, if any. Otherwise, returns nil
 func findIOCInContainer(containerId string, containerNS string) (*output.JsonImageIOCOutput, error) {
-	var iocsFound []output.IOCFound
-	iocsFound, err := scan.ExtractAndScanContainer(containerId, containerNS)
+	var tempIOCsFound []output.IOCFound
+	tempIOCsFound, err := scan.ExtractAndScanContainer(containerId, containerNS)
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ContainerId: containerId}
+	jsonImageIOCOutput := output.JsonImageIOCOutput{ContainerId: containerId,IOC: tempIOCsFound}
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.PrintJsonHeader()
+	var isFirstIOC bool = true
+	output.PrintColoredIOC(jsonImageIOCOutput.IOC, &isFirstIOC)
+
 	jsonImageIOCOutput.PrintJsonFooter()
-	jsonImageIOCOutput.SetIOC(iocsFound)
+
 
 	return &jsonImageIOCOutput, nil
 }
@@ -153,5 +166,6 @@ func runOnce() {
 
 func main() {
 	flag.Parse()
+
 	runOnce()
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/deepfence/YaRadare/core"
+	// "github.com/fatih/color"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -21,6 +22,8 @@ type IOCFound struct {
 	CategoryName     []string `json:"Category,omitempty"`
 	Severity         string   `json:"Severity,omitempty"`
 	SeverityScore    float64  `json:"Severity Score,omitempty"`
+	FileSeverity     string   `json:"FileSeverity,omitempty"`
+	FileSevScore     float64  `json:"File Severity Score,omitempty"`
 	CompleteFilename string   `json:"Full File Name,omitempty"`
 	Meta             []string `json:"rule meta"`
 }
@@ -101,7 +104,7 @@ func (imageOutput JsonImageIOCOutput) PrintJsonHeader() {
 	fmt.Fprintf(os.Stdout, Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
 	fmt.Fprintf(os.Stdout, Indent+"\"Image Name\": \"%s\",\n", imageOutput.ImageName)
 	fmt.Fprintf(os.Stdout, Indent+"\"Image ID\": \"%s\",\n", imageOutput.ImageId)
-	fmt.Fprintf(os.Stdout, Indent+"\"IOC\": [\n")
+	fmt.Fprintf(os.Stdout, Indent+"\"Malware match detected are\": [\n")
 }
 
 func (imageOutput JsonImageIOCOutput) PrintJsonFooter() {
@@ -112,7 +115,7 @@ func (dirOutput JsonDirIOCOutput) PrintJsonHeader() {
 	fmt.Fprintf(os.Stdout, "{\n")
 	fmt.Fprintf(os.Stdout, Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
 	fmt.Fprintf(os.Stdout, Indent+"\"Directory Name\": \"%s\",\n", dirOutput.DirName)
-	fmt.Fprintf(os.Stdout, Indent+"\"IOC\": [\n")
+	fmt.Fprintf(os.Stdout, Indent+"\"Malware match detected are\": [\n")
 }
 
 func (dirOutput JsonDirIOCOutput) PrintJsonFooter() {
@@ -124,9 +127,9 @@ func printJsonFooter() {
 	fmt.Fprintf(os.Stdout, "}\n")
 }
 
-func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool, fileScore float64, severity string) {
+func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool) {
 	for _, IOC := range IOCs {
-		printColoredIOCJsonObject(IOC, isFirstIOC, fileScore, severity)
+		printColoredIOCJsonObject(IOC, isFirstIOC, IOC.FileSevScore, IOC.FileSeverity)
 		*isFirstIOC = false
 	}
 }
