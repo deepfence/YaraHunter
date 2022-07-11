@@ -230,12 +230,13 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 			matchesMeta = append(matchesMeta, strMeta.Identifier)
 			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
 		}
+
 		iocsFound = append(iocsFound, output.IOCFound{
 			RuleName:         m.Rule,
 			CategoryName:     m.Tags,
 			StringsToMatch:   matchesStringData,
 			Meta:             matchesMetaData,
-			CompleteFilename: fileName,
+			CompleteFilename: f.Name(),
 		})
 	}
 	var fileMat fileMatches
@@ -245,13 +246,16 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 	updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
 	fileMat.updatedSeverity = updatedSeverity
 	fileMat.updatedScore = updatedScore
-	var isFirstIOC bool = true
+	//var isFirstIOC bool = true
 	if len(matches) > 0 {
-		output.PrintColoredIOC(iocsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
+		//output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
 		for _, m := range iocsFound {
-			*(*(*iocs)) = append(*(*(*iocs)), m)
+			m.FileSeverity = updatedSeverity
+			m.FileSevScore = updatedScore
+			*(*(*iocs)) = append(*(*(*iocs)),m)
 		}
 	}
+	
 
 	return err
 }
@@ -265,7 +269,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound) error {
+func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint,iocs *[]output.IOCFound) error {
 	var fs afero.Fs
 	if layer != "" {
 		session.Log.Info("Scan results in selected image with layer ", layer)
@@ -312,7 +316,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 			return nil
 		}
 		if err = ScanFilePath(fs, path, &iocs); err != nil {
-			//log.Errorf("Error scanning file: %s: %v", path, err)
 		}
 		return nil
 	})
