@@ -10,14 +10,15 @@ Deepfence YaRadare ("Yara-rā,där") scans container images, running Docker cont
 
 YaRadare can be used in the following ways:
 
+ * **At build-and-test**: scan build artifacts in the CI/CD pipeline, reporting on possible indicators of malware
  * **At rest**: scan local container images, for example, before they are deployed, to verify they do not contain malware
  * **At runtime**: scan running docker containers, for example, if you observe unusual network traffic or CPU activity
  * **Against filesystems**: at any time, YaRadare can scan a local filesystems for indicators of compromise
 
 Key capabilities:
 
- * Scan running and at-rest containers, and filesystems
- * Run anywhere: highly-portable, docker container form factor or universal GO binary [work in progress](https://github.com/deepfence/YaRadare/issues/15)
+ * Scan running and at-rest containers; scan filesystems; scan during CI/CD build operations
+ * Run anywhere: highly-portable, docker container form factor
  * Designed for automation: easy-to-deploy, easy-to-parse JSON output
 
 YaRadare is a work-in-progress (check the [Roadmap](https://github.com/orgs/deepfence/projects/3) and [issues list](issues)), and will be integrated into the [ThreatMapper](/deepfence/ThreatMapper) threat discovery platform.  We welcome any contributions to help to improve this tool.
@@ -69,6 +70,10 @@ Mount the filesystem within the YaRadare container and scan it:
     deepfenceio/deepfence-yaradare:latest \
     <b>--local /tmp/YARA-RULES --host-mount-path /tmp/YARA-RULES</b>
 </code></pre>
+
+### Scan during CI/CD build
+
+Refer to the detailed [documentation for CI/CD integration](https://github.com/deepfence/YaRadare/tree/main/ci-cd-integration).
 
 ### Configure Output
 
