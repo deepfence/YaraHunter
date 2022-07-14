@@ -2,8 +2,7 @@
 title: Command-Line Options
 ---
 
-
-## Command Line Options
+# Command Line Options
 
 Display the command line options:
 

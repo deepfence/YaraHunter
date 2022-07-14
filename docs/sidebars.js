@@ -21,25 +21,22 @@ const sidebars = {
     },    
 
     "yaradare/index",
+    "yaradare/quickstart",
 
     {
       type: 'category',
-      label: 'QuickStart',
-
+      label: 'Using YaRadare',
       items: [
-        'yaradare/quickstart/build',
-        'yaradare/quickstart/scan',
+        'yaradare/using/build',
+        'yaradare/using/scan',
       ]
     },
 
     {
       type: 'category',
       label: 'Configuration',
-      link: {
-        type: 'doc',
-        id: 'yaradare/configure/cli'
-      },
       items: [
+        'yaradare/configure/cli',
         'yaradare/configure/output',
         'yaradare/configure/rules',
       ]

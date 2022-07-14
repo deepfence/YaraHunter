@@ -1,5 +1,5 @@
 ---
-title: Output
+title: Configure Output
 ---
 
 
