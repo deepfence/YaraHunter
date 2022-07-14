@@ -14,7 +14,7 @@ docker pull deepfenceio/deepfence-yaradare:latest
 
 ## Scan a Container Image
 
-Pull the image to your local repository, then scan it
+Pull an image to your local repository, then scan it
 
 ```bash
 docker pull node:latest
