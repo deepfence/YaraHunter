@@ -10,7 +10,7 @@ Display the command line options:
 $ docker run -it --rm deepfenceio/deepfence-yaradare:latest --help
 ```
 
-Note that all files and directories used in YaRadare configuration are local to the container, not the host filesystem. The examples above illustrate how to map host directories to the container when needed.
+Note that all files and directories used in YaRadare configuration are local to the container, not the host filesystem. The examples given illustrate how to map host directories to the container when needed.
 
 ### General Configuration
 

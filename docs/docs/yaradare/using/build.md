@@ -12,6 +12,6 @@ docker build --rm=true --tag=deepfenceio/deepfence-yaradare:latest -f Dockerfile
 
 Alternatively, you can pull the official deepfence image at `deepfenceio/deepfence-yaradare:latest`.
 
-```shell
+```bash
 docker pull deepfenceio/deepfence-yaradare:latest
 ```

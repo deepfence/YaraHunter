@@ -16,7 +16,7 @@ const sidebars = {
   yaradare: [
     {
       type: 'html',
-      value: 'Deepfence Yaradare',
+      value: 'Deepfence YaRadare',
       className: 'sidebar-title',
     },    
 

@@ -1,5 +1,5 @@
 ---
-title: Yaradare QuickStart
+title: YaRadare QuickStart
 ---
 
 # Quick Start
