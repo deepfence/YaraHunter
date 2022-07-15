@@ -26,6 +26,8 @@ type IOCFound struct {
 	FileSevScore     float64  `json:"File Severity Score,omitempty"`
 	CompleteFilename string   `json:"Full File Name,omitempty"`
 	Meta             []string `json:"rule meta"`
+	MetaRules        map[string]string `json:"rule metadata"`
+	Summary          string   `json:"Summary,omitempty"`
 }
 
 type IOCOutput interface {
@@ -175,7 +177,7 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 	for _, c := range IOC.Meta {
 		var metaSplit = strings.Split(c, " : ")
 		if len(metaSplit) > 1 {
-			fmt.Fprintf(os.Stdout, Indent3+"\""+metaSplit[0]+"\":\" "+metaSplit[1]+"\"")
+			fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.Replace(metaSplit[1], "\n", "", -1))+",\n")
 			if metaSplit[0] == "description" {
 				str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
 				summary = summary + strings.Join(str, " ")
