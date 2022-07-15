@@ -67,10 +67,6 @@ func (imageOutput JsonImageIOCOutput) WriteIOC(outputFilename string) error {
 	return err
 }
 
-func (dirOutput *JsonDirIOCOutput) SetDirName(dirName string) {
-	dirOutput.DirName = dirName
-}
-
 func (dirOutput *JsonDirIOCOutput) SetTime() {
 	dirOutput.Timestamp = time.Now()
 }

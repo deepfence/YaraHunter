@@ -236,7 +236,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 			CategoryName:     m.Tags,
 			StringsToMatch:   matchesStringData,
 			Meta:             matchesMetaData,
-			CompleteFilename: f.Name(),
+			CompleteFilename: fileName,
 		})
 	}
 	var fileMat fileMatches
@@ -252,10 +252,9 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 		for _, m := range iocsFound {
 			m.FileSeverity = updatedSeverity
 			m.FileSevScore = updatedScore
-			*(*(*iocs)) = append(*(*(*iocs)),m)
+			*(*(*iocs)) = append(*(*(*iocs)), m)
 		}
 	}
-	
 
 	return err
 }
@@ -269,7 +268,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint,iocs *[]output.IOCFound) error {
+func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound) error {
 	var fs afero.Fs
 	if layer != "" {
 		session.Log.Info("Scan results in selected image with layer ", layer)
