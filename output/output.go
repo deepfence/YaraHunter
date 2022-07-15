@@ -149,19 +149,21 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 		fmt.Fprintf(os.Stdout, Indent3+"\"Image Layer ID\": %s,\n", jsonMarshal(IOC.LayerID))
 	}
 	fmt.Fprintf(os.Stdout, Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(IOC.RuleName))
-	fmt.Fprintf(os.Stdout, Indent3+"\"Strings to match are\":\n")
+	fmt.Fprintf(os.Stdout, Indent3+"\"Strings to match are\":\n[")
+
 	for _, c := range IOC.StringsToMatch {
 		if len(c) > 0 {
-			fmt.Fprintf(os.Stdout, Indent3+Indent3+"\""+jsonMarshal(c)+"\",\n")
+			fmt.Fprintf(os.Stdout, Indent3+Indent3+jsonMarshal(c)+",\n")
 		}
 	}
+	fmt.Fprintf(os.Stdout, "]\n")
 	summary := ""
 	categoryName := "["
 	for i, c := range IOC.CategoryName {
 		if len(c) > 0 {
 			str := []string{"The file", IOC.CompleteFilename, "has a", c, "match."}
 			summary = strings.Join(str, " ")
-			categoryName = categoryName +"\""+c+"\""
+			categoryName = categoryName +jsonMarshal(c)
 			if (i==0 && len(IOC.CategoryName)>1) {
 				categoryName = categoryName +","
 			}
@@ -172,7 +174,7 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 	//fmt.Fprintf(os.Stdout, Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
 	//fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity\": %s,\n", jsonMarshal(severity))
 	//fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity Score\": %.2f,\n", fileScore)
-	fmt.Fprintf(os.Stdout, Indent3+"\"Category\": %s,\n", jsonMarshal(categoryName))
+	fmt.Fprintf(os.Stdout, Indent3+"\"Category\": %s,\n", categoryName)
 	fmt.Fprintf(os.Stdout, Indent3+"\"File Name\": %s,\n", jsonMarshal(IOC.CompleteFilename))
 	for _, c := range IOC.Meta {
 		var metaSplit = strings.Split(c, " : ")
