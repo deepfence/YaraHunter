@@ -30,6 +30,7 @@ import (
 	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/YaRadare/scan"
 	"github.com/fatih/color"
+	"strings"
 )
 
 // Read the regex signatures from config file, options etc.
@@ -47,7 +48,7 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: image,IOC: res.IOCs}
+	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: image, IOC: res.IOCs}
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.SetImageId(res.ImageId)
 	jsonImageIOCOutput.SetIOC(res.IOCs)
@@ -72,8 +73,12 @@ func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
 		core.GetSession().Log.Error("findIOCInDir: %s", err)
 		return nil, err
 	}
-
-	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: *session.Options.Local,IOC: tempIOCsFound}
+	dirName := *session.Options.Local
+	hostMountPath := *session.Options.HostMountPath
+	if hostMountPath != "" {
+		dirName = strings.TrimPrefix(dirName, hostMountPath)
+	}
+	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: dirName, IOC: tempIOCsFound}
 	jsonDirIOCOutput.SetTime()
 	jsonDirIOCOutput.PrintJsonHeader()
 	var isFirstIOC bool = true
@@ -95,14 +100,13 @@ func findIOCInContainer(containerId string, containerNS string) (*output.JsonIma
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ContainerId: containerId,IOC: tempIOCsFound}
+	jsonImageIOCOutput := output.JsonImageIOCOutput{ContainerId: containerId, IOC: tempIOCsFound}
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.PrintJsonHeader()
 	var isFirstIOC bool = true
 	output.PrintColoredIOC(jsonImageIOCOutput.IOC, &isFirstIOC)
 
 	jsonImageIOCOutput.PrintJsonFooter()
-
 
 	return &jsonImageIOCOutput, nil
 }
