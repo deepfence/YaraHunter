@@ -77,7 +77,7 @@ Refer to the detailed [documentation for CI/CD integration](https://github.com/d
 
 ### Configure Output
 
-YaRadare can write its JSON output to a container-local file (`--json-file`), which is written to `/home/deepfence/output` in the container filesystem by default: 
+YaRadare can write its JSON output to a container-local file (`--json-filename`), which is written to `/home/deepfence/output` in the container filesystem by default: 
 
 <pre><code>mkdir ./my-output
 
@@ -85,7 +85,7 @@ docker run -it --rm --name=deepfence-yaradare \
     -v /var/run/docker.sock:/var/run/docker.sock \
     <b>-v $(pwd)/my-output:/home/deepfence/output</b> \
     deepfenceio/deepfence-yaradare:latest --image-name node:latest \
-    <b>--json-file node-scan.json</b>
+    <b>--json-filename node-scan.json</b>
 </code></pre>
 
 You can also override the default output location (`--output-path`) in the container.
