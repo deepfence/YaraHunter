@@ -145,7 +145,7 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 	return updatedSeverity, math.Round(updatedScore*100) / 100
 }
 
-func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound) (err error) {
+func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound,layer string) (err error) {
 	f, err := fs.Open(path)
 	if err != nil {
 		session.Log.Error("Error: %v", err)
@@ -156,13 +156,13 @@ func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound) (err error
 		session.Log.Error("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
-	if e := ScanFile(f, &iocs); err == nil && e != nil {
+	if e := ScanFile(f, &iocs, layer ); err == nil && e != nil {
 		err = e
 	}
 	return
 }
 
-func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
+func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 	var (
 		matches yr.MatchRules
 		err     error
@@ -242,7 +242,6 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 	var fileMat fileMatches
 	fileMat.fileName = fileName
 	fileMat.iocs = iocsFound
-
 	updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
 	fileMat.updatedSeverity = updatedSeverity
 	fileMat.updatedScore = updatedScore
@@ -252,6 +251,34 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound) error {
 		for _, m := range iocsFound {
 			m.FileSeverity = updatedSeverity
 			m.FileSevScore = updatedScore
+			StringsMatch := make([]string, 0) 		
+			for _, c := range m.StringsToMatch {
+				if len(c) > 0 {
+					StringsMatch = append(StringsMatch,c)
+				}
+			}
+			m.StringsToMatch = StringsMatch
+			m.LayerID = layer
+			summary := ""
+			m.MetaRules = make(map[string]string)
+			for _, c := range m.Meta {
+				var metaSplit = strings.Split(c, " : ")
+				if len(metaSplit) > 1 {
+
+					//fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.Replace(metaSplit[1], "\n", "", -1))+",\n")
+					m.MetaRules[metaSplit[0]] = strings.Replace(metaSplit[1], "\n", "", -1)
+					if metaSplit[0] == "description" {
+						str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
+						summary = summary + strings.Join(str, " ")
+					} else {
+						if len(metaSplit[0]) > 0 {
+							str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
+							summary = summary + strings.Join(str, " ")
+						}
+					}
+				}
+			}
+			m.Summary = summary
 			*(*(*iocs)) = append(*(*(*iocs)), m)
 		}
 	}
@@ -314,7 +341,8 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		if core.IsSkippableFileExtension(path) {
 			return nil
 		}
-		if err = ScanFilePath(fs, path, &iocs); err != nil {
+		if err = ScanFilePath(fs, path, &iocs,layer); err != nil {
+
 		}
 		return nil
 	})
