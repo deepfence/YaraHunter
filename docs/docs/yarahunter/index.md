@@ -1,10 +1,10 @@
 ---
-title: Introduction to YaRadare
+title: Introduction to YaraHunter
 ---
 
-# YaRadare
+# YaraHunter
 
-Deepfence YaRadare scans container images, running Docker containers, and filesystems to find indicators of malware. It uses a [YARA ruleset](https://github.com/deepfence/yara-rules) to identify resources that match known malware signatures, and may indicate that the container or filesystem has been compromised.
+Deepfence YaraHunter scans container images, running Docker containers, and filesystems to find indicators of malware. It uses a [YARA ruleset](https://github.com/deepfence/yara-rules) to identify resources that match known malware signatures, and may indicate that the container or filesystem has been compromised.
 
 
 Key capabilities:
@@ -14,9 +14,9 @@ Key capabilities:
  * Designed for automation: easy-to-deploy, easy-to-parse JSON output
 
 
-## YaRadare in Action
+## YaraHunter in Action
 
-![Yadare in Action](img/yaradare-demo.gif)
+![Yadare in Action](img/yarahunter-demo.gif)
 
 
 ## Example: Finding Indicators of Compromise in a Container Image
@@ -26,10 +26,10 @@ Images may be compromised with the installation of a cryptominer such as XMRig. 
 ```bash
 docker pull metal3d/xmrig
 
-docker run -it --rm --name=deepfence-yaradare \
+docker run -it --rm --name=yara-hunter \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     deepfenceio/deepfence-yaradare:latest --image-name metal3d/xmrig:latest \
+     deepfenceio/yara-hunter:latest --image-name metal3d/xmrig:latest \
      --json-filename=xmrig-scan.json
 ```
 
@@ -42,11 +42,11 @@ cat /tmp/xmrig-scan.json | jq '.IOC[] | ."Matched Rule Name"'
 
 This returns a list of the IOCs identified in the container we scanned.
 
-## When to use YaRadare
+## When to use YaraHunter
 
-YaRadare can be used in the following ways:
+YaraHunter can be used in the following ways:
 
  * **At build-and-test**: scan build artifacts in the CI/CD pipeline, reporting on possible indicators of malware
  * **At rest**: scan local container images, for example, before they are deployed, to verify they do not contain malware
  * **At runtime**: scan running docker containers, for example, if you observe unusual network traffic or CPU activity
- * **Against filesystems**: at any time, YaRadare can scan a local filesystems for indicators of compromise
+ * **Against filesystems**: at any time, YaraHunter can scan a local filesystems for indicators of compromise

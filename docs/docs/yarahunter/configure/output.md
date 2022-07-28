@@ -5,7 +5,7 @@ title: Configure Output
 
 # Configure Output
 
-YaRadare can write its JSON output to a container-local file (`--json-file`).
+YaraHunter can write its JSON output to a container-local file (`--json-file`).
 
 By default, the output is written to `/home/deepfence/output` in the container filesystem.  You can mount a host directory over this location.
 
@@ -14,11 +14,11 @@ By default, the output is written to `/home/deepfence/output` in the container f
 
 mkdir ./my-output
 
-docker run -it --rm --name=deepfence-yaradare \
+docker run -it --rm --name=yara-hunter \
     -v /var/run/docker.sock:/var/run/docker.sock \
 # highlight-next-line
     -v $(pwd)/my-output:/home/deepfence/output \
-    deepfenceio/deepfence-yaradare:latest --image-name node:latest \
+    deepfenceio/yara-hunter:latest --image-name node:latest \
 # highlight-next-line
     --json-file node-scan.json
 ```

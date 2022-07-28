@@ -13,22 +13,22 @@
 
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
-  yaradare: [
+  yarahunter: [
     {
       type: 'html',
-      value: 'Deepfence YaRadare',
+      value: 'Deepfence YaraHunter',
       className: 'sidebar-title',
     },    
 
-    "yaradare/index",
-    "yaradare/quickstart",
+    "yarahunter/index",
+    "yarahunter/quickstart",
 
     {
       type: 'category',
-      label: 'Using YaRadare',
+      label: 'Using YaraHunter',
       items: [
-        'yaradare/using/build',
-        'yaradare/using/scan',
+        'yarahunter/using/build',
+        'yarahunter/using/scan',
       ]
     },
 
@@ -36,9 +36,9 @@ const sidebars = {
       type: 'category',
       label: 'Configuration',
       items: [
-        'yaradare/configure/cli',
-        'yaradare/configure/output',
-        'yaradare/configure/rules',
+        'yarahunter/configure/cli',
+        'yarahunter/configure/output',
+        'yarahunter/configure/rules',
       ]
     },
 

@@ -6,9 +6,9 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Deepfence Yaradare',
+  title: 'Deepfence YaraHunter',
   tagline: 'Malware scanner for cloud-native, as part of CI/CD and at Runtime',
-  url: 'https://yaradare.local',
+  url: 'https://yarahunter.local',
   baseUrl: '/',
 
   onBrokenLinks: 'throw',
@@ -33,7 +33,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/deepfence/YaRadare/docs/',
+            'https://github.com/deepfence/YaraHunter/docs/',
           breadcrumbs: true,
           routeBasePath: '/',
           // options for remark-admonitions
@@ -61,8 +61,8 @@ const config = {
         items: [
           {
             type: 'doc',
-            docId: 'yaradare/index',
-            label: 'Yaradare Documentation',
+            docId: 'yarahunter/index',
+            label: 'YaraHunter Documentation',
           },
           { 
             to: 'https://deepfence.io/',
