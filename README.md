@@ -1,3 +1,4 @@
+[<img src="https://img.shields.io/badge/documentation-read-green">](https://docs.deepfence.io/yarahunter/)
 [![GitHub license](https://img.shields.io/github/license/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/blob/master/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/issues)
@@ -23,94 +24,23 @@ Key capabilities:
 
 YaraHunter is a work-in-progress (check the [Roadmap](https://github.com/orgs/deepfence/projects/3) and [issues list](issues)), and will be integrated into the [ThreatMapper](/deepfence/ThreatMapper) threat discovery platform.  We welcome any contributions to help to improve this tool.
 
-## Getting Started
+## Quick Start
 
-### YaraHunter in action
+For full instructions, refer to the [YaraHunter Documentation](https://docs.deepfence.io/yarahunter/).
 
 ![demo gif](demo.gif)
 
-### Build YaraHunter
-
-YaraHunter is a self-contained docker-based tool. Clone this repository, then build:
-
-```
-docker build --rm=true --tag=deepfenceio/yara-hunter:latest -f Dockerfile .
-```
-
-Alternatively, you can pull the ‘official’ deepfence image at `deepfenceio/yara-hunter:latest`.
-
-### Scan a Container Image
-
-Pull the image to your local repository, then scan it
-
-<pre><code>docker pull node:latest
-
-docker run -it --rm --name=deepfence-yarahunter \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    deepfenceio/yara-hunter:latest <b>--image-name node:latest</b>
-
-docker rmi node:latest
-</code></pre>
-
-### Scan a Running Container
-
-<pre><code>docker run -it --rm --name=deepfence-yarahunter \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    <b>-v /:/deepfence/mnt</b> \
-    deepfenceio/yara-hunter:latest \
-    <b>--host-mount-path /deepfence/mnt --container-id 69221b948a73</b>
-</code></pre>
-
-### Scan a filesystem
-
-Mount the filesystem within the YaraHunter container and scan it:
-
-<pre><code>docker run -it --rm --name=deepfence-yarahunter \
-    <b>-v ~/src/YARA-RULES:/tmp/YARA-RULES</b> \
-    deepfenceio/yara-hunter:latest \
-    <b>--local /tmp/YARA-RULES --host-mount-path /tmp/YARA-RULES</b>
-</code></pre>
-
-### Scan during CI/CD build
-
-Refer to the detailed [documentation for CI/CD integration](https://github.com/deepfence/YaraHunter/tree/main/ci-cd-integration).
-
-### Configure Output
-
-YaraHunter can write its JSON output to a container-local file (`--json-filename`), which is written to `/home/deepfence/output` in the container filesystem by default: 
-
-<pre><code>mkdir ./my-output
-
-docker run -it --rm --name=deepfence-yarahunter \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    <b>-v $(pwd)/my-output:/home/deepfence/output</b> \
-    deepfenceio/yara-hunter:latest --image-name node:latest \
-    <b>--json-filename node-scan.json</b>
-</code></pre>
-
-You can also override the default output location (`--output-path`) in the container.
-
-### Provide Custom Rules
-
-YaraHunter uses the YARA rules files (`*.yar` and `*.yara`) in the `/home/deepfence/rules` directory in the container.  You can provide an alternative set of rules, either at build-time, or by mounting a new rules directory into the container.
-
-You can mount the rules directory over the existing one (`-v $(pwd)/my-rules:/home/deepfence/rules`), or you can mount it in a different location and specify it with `--rules-path`:
-
-<pre><code>mkdir ./my-rules
-
-# add your rules files (*.yar, *.yara) to my-rules
-
-docker run -it --rm --name=deepfence-yarahunter \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    <b>-v $(pwd)/my-rules:/tmp/my-rules</b> \
-    deepfenceio/yara-hunter:latest --image-name node:latest \
-    <b>--rules-path /tmp/my-rules</b>
-</code></pre>
-
-
-## Example: finding Indicators of Compromise in a container image
+## Example: Finding Indicators of Compromise in a container image
 
 Images may be compromised with the installation of a cryptominer such as XMRig.  In the following example, we'll scan a legitimiate cryptominer image that contains the same xmrig software that is often installed through an exploit:
+
+Pull the official **yarahunter** image:
+
+```
+docker pull deepfenceio/yara-hunter:latest
+```
+
+Pull the image we want to inspect, and scan it:
 
 ```
 docker pull metal3d/xmrig
@@ -131,66 +61,27 @@ cat /tmp/xmrig-scan.json | jq '.IOC[] | ."Matched Rule Name"'
 
 This returns a list of the IOCs identified in the container we scanned.
 
+## Get in touch
 
-## Command Line Options
+Thank you for using YaraHunter.
 
-Display the command line options:
+ * [<img src="https://img.shields.io/badge/documentation-read-green">](https://docs.deepfence.io/yarahunter/) Start with the documentation
+ * [<img src="https://img.shields.io/badge/slack-@deepfence-blue.svg?logo=slack">](https://join.slack.com/t/deepfence-community/shared_invite/zt-podmzle9-5X~qYx8wMaLt9bGWwkSdgQ) Got a question, need some help?  Find the Deepfence team on Slack
+ * [![GitHub issues](https://img.shields.io/github/issues/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/issues) Got a feature request or found a bug? Raise an issue
+ * [productsecurity *at* deepfence *dot* io](SECURITY.md): Found a security issue? Share it in confidence
+ * Find out more at [deepfence.io](https://deepfence.io/)
 
-<pre><code>$ docker run -it --rm deepfenceio/yara-hunter:latest <b>--help</b></code></pre>
+## Security and Support
 
-Note that all files and directories used in YaraHunter configuration are local to the container, not the host filesystem. The examples above illustrate how to map host directories to the container when needed.
+For any security-related issues in the YaraHunter project, contact [productsecurity *at* deepfence *dot* io](SECURITY.md).
 
-#### General Configuration
+Please file GitHub issues as needed, and join the Deepfence Community [Slack channel](https://join.slack.com/t/deepfence-community/shared_invite/zt-podmzle9-5X~qYx8wMaLt9bGWwkSdgQ).
 
- * `--log-level string`: one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG (default "ERROR"); print messages of this severity or higher.
- * `--threads int`: Number of concurrent threads to use during scan (default number of logical CPUs).
- * `--temp-directory string`: temporary storage for working data (default "/tmp")
+## License
 
- * `--max-ioc uint`: Maximum number of indicator of compromise matches to report from a container image or file system (default 1000).
- * `--maximum-file-size int`:   Maximum file size to process in bytes (default 32Mb, 33554432 bytes).
+The Deepfence YaraHunter project (this repository) is offered under the [Apache2 license](https://www.apache.org/licenses/LICENSE-2.0).
 
-#### Scan Containers
-
- * `--image-name string`: scan this image (name:tag) in the local registry
- * `--container-id string`: scan a running container, identified by the provided container ID
- * `--container-ns string`: search the provided namespace (not used for Docker runtime)
-
-#### Scan Filesystems
-
- * `--local string`: scan the local directory in the YaraHunter docker container.  Mount the external (host) directory within the container using `-v`
- * `--host-mount-path string`: inform YaraHunter of the location in the container where the host filesystem was mounted, such as '/tmp/mnt'. YaraHunter uses this as the root directory when matching `exclude_paths` such as `/var/lib` (see below) 
-
-#### Configure Output
-
-In addition to writing output to **stdout** / **stderr**, YaraHunter can write JSON output to a local file. You may wish to mount a directory on the host into `output-path` in the container so that you can easily obtain the JSON output file.
-
- * `--json-filename string`: output json file name; required
- * `--output-path string`: location in container where json file will be stored (default `/home/deepfence/output`)
-
-#### Configure Rules
-
-YaraHunter applies YARA rules from the local container filesystem; all `*.yar` and `*.yara` files in the `rules-path` are considered. You can replace the default rules with your own by providing a different `rules-path`, mounted from the host filesystem.
-
- * `--fail-on-rule-compile-warn`: YaraHunter will fail if a yara rule compilation has warnings; otherwise, rules that fail to compile are just ignored
- * `--rules-path string`: all .yar and .yara files in the given local directory will be compiled (default "/home/deepfence/rules")
- 
-#### Configure Scans
-
-Scans can be fine-tuned using settings in `config.yaml`:
-
- * `--config-path string`: directory location of `config.yaml`. If not set, YaraHunter will fall back to the local binary directory or the current working directory.
-
-`config.yaml` can be used to exclude files and locations from the malware scan:
-
-```
-# YaraHunter Configuration File
-
-exclude_strings: [] # skip matches containing any of these strings (case sensitive)
-exclude_extensions: [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".psd", ".xcf", ".zip", ".tar.gz", ".ttf", ".lock"] 
-# need to confirm as windows hides file extensions
-exclude_paths: ["/var/lib/docker", "/var/lib/containerd", "/bin", "/boot", "/dev", "/lib", "/lib64", "/media", "/proc", "/run", "/sbin", "/usr/lib", "/sys"] # use \ for windows paths
-```
-
+[Contributions](CONTRIBUTING.md) to Deepfence YaraHunter project are similarly accepted under the Apache2 license, as per [GitHub's inbound=outbound policy](https://docs.github.com/en/github/site-policy/github-terms-of-service#6-contributions-under-repository-license).
 
 # Disclaimer
 
