@@ -28,7 +28,7 @@ YaraHunter is a work-in-progress (check the [Roadmap](https://github.com/orgs/de
 
 For full instructions, refer to the [YaraHunter Documentation](https://docs.deepfence.io/yarahunter/).
 
-![demo gif](demo.gif)
+![YaraHunter QuickStart](docs/docs/yarahunter/img/yarahunter.svg)
 
 ## Example: Finding Indicators of Compromise in a container image
 
