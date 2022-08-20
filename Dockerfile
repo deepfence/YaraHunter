@@ -1,8 +1,10 @@
 FROM golang:1.18.3-bullseye AS builder
 MAINTAINER DeepFence
 
+
+
 RUN apt-get update  \
-    && apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev \
+    && apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev git protoc-gen-go \
     libjansson-dev libmagic-dev \
     && cd /root  \
     && wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.2.1.tar.gz \
@@ -17,6 +19,7 @@ RUN apt-get update  \
 
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
+
 
 WORKDIR /home/deepfence/src/YaRadare
 COPY . .

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/deepfence/YaRadare/core"
+	pb "github.com/deepfence/agent-plugins-grpc/proto"
 	// "github.com/fatih/color"
 	"io/ioutil"
 	"os"
@@ -96,6 +97,31 @@ func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 
 	return nil
 }
+
+
+func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
+	res := make([]*pb.MalwareInfo, 0)
+	for _, v := range out {
+		res = append(res, MalwaresToMalwareInfo(v))
+	}
+	return res
+}
+
+func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
+	return &pb.MalwareInfo{
+		ImageLayerId: out.LayerID,
+		RuleName: out.RuleName,
+    	StringsToMatch: out.StringsToMatch,
+		SeverityScore: out.SeverityScore,
+		FileSeverity: out.FileSeverity,
+		FileSevScore: out.FileSevScore,
+		CompleteFilename: out.CompleteFilename,
+		Meta: out.Meta,
+		MetaRules: out.MetaRules,
+		Summary: out.Summary,
+	}
+}
+
 
 func (imageOutput JsonImageIOCOutput) PrintJsonHeader() {
 	fmt.Fprintf(os.Stdout, "{\n")

@@ -286,6 +286,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 	return err
 }
 
+
 // ScanIOCsInDir Scans a given directory recursively to find all IOCs inside any file in the dir
 // @parameters
 // layer - layer ID, if we are scanning directory inside container image

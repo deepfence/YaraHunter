@@ -254,6 +254,8 @@ github.com/d2g/hardwareaddr v0.0.0-20190221164911-e7d9fbe030e4/go.mod h1:bMl4RjI
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/deepfence/agent-plugins-grpc v1.0.1 h1:Lx6InMUogleCRPcgU1SCD/8kZ4mtqZLBS9KTudJ9b2M=
+github.com/deepfence/agent-plugins-grpc v1.0.1/go.mod h1:wiPh9IdBMNyWN4GpegqprbwFNbjDNnFF9wSy4rd0Oho=
 github.com/deepfence/vessel v0.6.0 h1:gUJycbGiU2LAugM8hdHeN1u20fYk94+oh+bUgdASST8=
 github.com/deepfence/vessel v0.6.0/go.mod h1:ydEWt/EpYSuuS78w52BUAJKfkOBW0MyLvrmzpoFqPAQ=
 github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=

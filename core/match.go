@@ -9,6 +9,13 @@ import (
 	"syscall"
 )
 
+type MatchFile struct {
+	Path      string
+	Filename  string
+	Extension string
+	Contents  []byte
+}
+
 // IsSkippableFile Checks if the path is excluded
 func IsSkippableDir(fs afero.Fs, path string, baseDir string) bool {
 	hostMountPath := *session.Options.HostMountPath
