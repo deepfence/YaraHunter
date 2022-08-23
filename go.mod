@@ -5,6 +5,7 @@ go 1.18
 replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
 
 require (
+	github.com/Jeffail/tunny v0.1.4
 	github.com/deepfence/vessel v0.6.0
 	github.com/fatih/color v1.13.0
 	github.com/hillu/go-yara/v4 v4.2.3
@@ -51,6 +52,6 @@ require (
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/grpc v1.47.0
 )

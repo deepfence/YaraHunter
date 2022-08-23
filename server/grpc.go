@@ -31,17 +31,17 @@ func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
 	return &pb.Uid { Str: fmt.Sprintf("%s-%s", s.plugin_name, s.socket_path) }, nil
 }
 
-func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.FindRequest) (*pb.FindResult, error) {
+func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
 	if r.GetPath()  != "" {
 		var malwares []output.IOCFound
 	    err := scan.ScanIOCInDir("", "", r.GetPath(), nil, &malwares)
 		if err != nil {
 			return nil, err
 		}
-		return &pb.FindResult{
+		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			Malwares: output.MalwaresToMalwareInfos(malwares),
-			Input: &pb.FindResult_Path{
+			Input: &pb.MalwareResult_Path{
 				Path: r.GetPath(),
 			},
 		}, nil
@@ -51,11 +51,11 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.FindRequest) (*pb.
 			return nil, err
 		}
 
-		return &pb.FindResult{
+		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			Malwares: output.MalwaresToMalwareInfos(res.IOCs),
-			Input: &pb.FindResult_Image{
-				Image: &pb.DockerImage{
+			Input: &pb.MalwareResult_Image{
+				Image: &pb.MalwareDockerImage{
 					Name: r.GetImage().Name,
 					Id: res.ImageId,
 				},
@@ -68,11 +68,11 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.FindRequest) (*pb.
 			return nil, err
 		}
 
-		return &pb.FindResult{
+		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			Malwares: output.MalwaresToMalwareInfos(malwares),
-			Input: &pb.FindResult_Container{
-				Container: &pb.Container{
+			Input: &pb.MalwareResult_Container{
+				Container: &pb.MalwareContainer{
 					Namespace: r.GetContainer().Namespace,
 					Id: r.GetContainer().Id,
 				},
@@ -88,6 +88,8 @@ func RunServer(socket_path string, plugin_name string) error {
 	done := make(chan bool, 1)
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	print("test")
 
 	lis, err := net.Listen("unix", fmt.Sprintf("%s", socket_path))
 	if err != nil {

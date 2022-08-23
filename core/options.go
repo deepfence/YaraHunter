@@ -24,6 +24,8 @@ type Options struct {
 	MaxIOC               *uint
 	ContainerId          *string
 	ContainerNS          *string
+	SocketPath			 *string
+	HttpPort			 *string
 	RulesPath            *string
 	FailOnCompileWarning *bool
 }
@@ -45,6 +47,9 @@ func ParseOptions() (*Options, error) {
 		MaxIOC:               flag.Uint("max-ioc", 1000, "Maximum number of indicator of compromise to find in one container image or file system."),
 		ContainerId:          flag.String("container-id", "", "Id of existing container ID"),
 		ContainerNS:          flag.String("container-ns", "", "Namespace of existing container to scan, empty for docker runtime"),
+		SocketPath:           flag.String("socket-path", "", "The gRPC server unix socket path"),
+		HttpPort: 			  flag.String("http-port", "", "When set the http server will come up at port with df es as output"),
+
 	}
 	flag.Parse()
 	return options, nil
