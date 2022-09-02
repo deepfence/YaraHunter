@@ -89,7 +89,7 @@ func RunServer(socket_path string, plugin_name string) error {
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	print("test")
+	fmt.Print("test")
 
 	lis, err := net.Listen("unix", fmt.Sprintf("%s", socket_path))
 	if err != nil {
@@ -103,10 +103,15 @@ func RunServer(socket_path string, plugin_name string) error {
 		done <- true
 	}()
 
+	fmt.Print("test 2")
+
 	impl := &gRPCServer{socket_path: socket_path, plugin_name: plugin_name}
+	fmt.Print(impl)
 	pb.RegisterAgentPluginServer(s, impl)
 	pb.RegisterMalwareScannerServer(s, impl)
+	fmt.Print("test 2 malware")
 	core.GetSession().Log.Info("main: server listening at %v", lis.Addr())
+	fmt.Print("main: server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		return err
 	}

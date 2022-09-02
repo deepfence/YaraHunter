@@ -12,7 +12,7 @@ const (
 
 type Options struct {
 	Threads              *int
-	LogLevel             *string
+	DebugLevel      	*string
 	MaximumFileSize      *int64
 	TempDirectory        *string
 	Local                *string

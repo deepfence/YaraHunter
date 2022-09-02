@@ -36,7 +36,7 @@ func (s *Session) Start() {
 
 func (s *Session) InitLogger() {
 	s.Log = &Logger{}
-	s.Log.SetLogLevel(*s.Options.LogLevel)
+	s.Log.SetLogLevel(*s.Options.DebugLevel)
 }
 
 func (s *Session) InitThreads() {
