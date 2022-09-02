@@ -35,7 +35,7 @@ func ParseOptions() (*Options, error) {
 		RulesPath:            flag.String("rules-path", "/home/deepfence/rules", "All .yar and .yara files in the given directory will be compiled"),
 		FailOnCompileWarning: flag.Bool("fail-on-rule-compile-warn", false, "Fail if yara rule compilation has warnings"),
 		Threads:              flag.Int("threads", 0, "Number of concurrent threads (default number of logical CPUs)"),
-		LogLevel:             flag.String("log-level", "ERROR", "Log levels are one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG. Only levels higher than the log-level are displayed"),
+		DebugLevel:      	  flag.String("debug-level", "ERROR", "Debug levels are one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG. Only levels higher than the debug-level are displayed"),
 		MaximumFileSize:      flag.Int64("maximum-file-size", 32*1024*1024, "Maximum file size to process in bytes"),
 		TempDirectory:        flag.String("temp-directory", os.TempDir(), "Directory to process and store repositories/matches"),
 		Local:                flag.String("local", "", "Specify local directory (absolute path) which to scan. Scans only given directory recursively."),
