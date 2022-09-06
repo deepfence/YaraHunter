@@ -148,15 +148,18 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound,layer string) (err error) {
 	f, err := fs.Open(path)
 	if err != nil {
+		fmt.Print("Scan File Path",err)
 		session.Log.Error("Error: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		fmt.Print("Scan File Path", err)
 		session.Log.Error("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
 	if e := ScanFile(f, &iocs, layer ); err == nil && e != nil {
+		fmt.Print("Scan Error", e)
 		err = e
 	}
 	return
@@ -331,7 +334,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		} else {
 			scanDirPath = path
 		}
-		fmt.Print("Scan Directory Path")
 
 		if info.IsDir() {
 			if core.IsSkippableDir(fs, path, baseDir) {
@@ -346,10 +348,9 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		if core.IsSkippableFileExtension(path) {
 			return nil
 		}
-		fmt.Print("Scan Directory Path iocs", path)
 		if err = ScanFilePath(fs, path, &iocs,layer); err != nil {
 
-			fmt.Print("Scan Directory Path iocs", iocs)
+			fmt.Print("Scan Directory Path iocs", err)
 		}
 		return nil
 	})
