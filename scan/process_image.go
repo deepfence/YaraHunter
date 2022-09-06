@@ -313,9 +313,12 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 	// var file core.MatchFile
 	// var relPath string
 
+	fmt.Print("Scan results in selected image with layer ", fullDir)
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
+		fmt.Print(err)
 		if err != nil {
+			fmt.Print("error", err)
 			return nil
 		}
 
@@ -328,6 +331,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		} else {
 			scanDirPath = path
 		}
+		fmt.Print("Scan Directory Path")
 
 		if info.IsDir() {
 			if core.IsSkippableDir(fs, path, baseDir) {
@@ -342,8 +346,10 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		if core.IsSkippableFileExtension(path) {
 			return nil
 		}
+		fmt.Print("Scan Directory Path iocs", path)
 		if err = ScanFilePath(fs, path, &iocs,layer); err != nil {
 
+			fmt.Print("Scan Directory Path iocs", iocs)
 		}
 		return nil
 	})
