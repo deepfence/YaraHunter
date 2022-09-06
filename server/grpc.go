@@ -36,6 +36,7 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 	if r.GetPath()  != "" {
 		var malwares []output.IOCFound
 	    err := scan.ScanIOCInDir("", "", r.GetPath(), nil, &malwares)
+		fmt.Print("test error",err)
 		fmt.Print("test malwares",malwares)
 		if err != nil {
 			return nil, err
