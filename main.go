@@ -25,7 +25,6 @@ package main
 // ------------------------------------------------------------------------------
 
 import (
-	"fmt"
 	"flag"
 	"github.com/deepfence/YaRadare/core"
 	"github.com/deepfence/YaRadare/output"
