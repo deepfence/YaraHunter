@@ -148,18 +148,15 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound,layer string) (err error) {
 	f, err := fs.Open(path)
 	if err != nil {
-		fmt.Print("Scan File Path",err)
 		session.Log.Error("Error: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		fmt.Print("Scan File Path", err)
 		session.Log.Error("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
 	if e := ScanFile(f, &iocs, layer ); err == nil && e != nil {
-		fmt.Print("Scan Error", e)
 		err = e
 	}
 	return
@@ -205,14 +202,11 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		session.Log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), maxFileSize)
 		return nil
 	}
-	fmt.Print("reached here",fileName)
 	if f, ok := f.(*os.File); ok {
 		fd := f.Fd()
 		err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
 		if err != nil {
-			fmt.Print(err)
 		}
-		fmt.Print(matches)
 	} else {
 		var buf []byte
 		if buf, err = ioutil.ReadAll(f); err != nil {
@@ -222,7 +216,6 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		}
 		err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
 		if err != nil {
-			fmt.Print(err)
 		}
 		
 	}
@@ -324,8 +317,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 	// maxFileSize := *session.Options.MaximumFileSize * 1024
 	// var file core.MatchFile
 	// var relPath string
-
-	fmt.Print("Scan results in selected image with layer ", fullDir)
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

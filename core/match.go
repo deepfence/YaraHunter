@@ -1,12 +1,14 @@
 package core
 
 import (
-	"github.com/deepfence/YaRadare/core/sys"
-	"github.com/spf13/afero"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"github.com/deepfence/YaRadare/core/sys"
+	"github.com/spf13/afero"
 )
 
 type MatchFile struct {
@@ -25,6 +27,11 @@ func IsSkippableDir(fs afero.Fs, path string, baseDir string) bool {
 
 	for _, skippablePathIndicator := range session.Config.ExcludedPaths {
 		if strings.HasPrefix(path, skippablePathIndicator) || strings.HasPrefix(path, filepath.Join(baseDir, skippablePathIndicator)) {
+			return true
+		}
+		fmt.Print("Path outside",path,baseDir)
+		if strings.Contains(path, skippablePathIndicator) || strings.Contains(path, filepath.Join(baseDir, skippablePathIndicator)) {
+			fmt.Print("Path here",path,baseDir)
 			return true
 		}
 	}

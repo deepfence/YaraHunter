@@ -32,12 +32,9 @@ func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
 }
 
 func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
-	fmt.Print("test everything inside malware",r.GetPath())
 	if r.GetPath()  != "" {
 		var malwares []output.IOCFound
 	    err := scan.ScanIOCInDir("", "", r.GetPath(), nil, &malwares)
-		fmt.Print("test error",err)
-		fmt.Print("test malwares",malwares)
 		if err != nil {
 			return nil, err
 		}
@@ -92,8 +89,6 @@ func RunServer(socket_path string, plugin_name string) error {
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	fmt.Print("test")
-
 	lis, err := net.Listen("unix", fmt.Sprintf("%s", socket_path))
 	if err != nil {
 		return err
@@ -105,14 +100,9 @@ func RunServer(socket_path string, plugin_name string) error {
 		s.GracefulStop()
 		done <- true
 	}()
-
-	fmt.Print("test 2")
-
 	impl := &gRPCServer{socket_path: socket_path, plugin_name: plugin_name}
-	fmt.Print(impl)
 	pb.RegisterAgentPluginServer(s, impl)
 	pb.RegisterMalwareScannerServer(s, impl)
-	fmt.Print("test 2 malware")
 	core.GetSession().Log.Info("main: server listening at %v", lis.Addr())
 	fmt.Print("main: server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {

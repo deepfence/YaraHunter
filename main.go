@@ -77,7 +77,6 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 // @returns
 // Error, if any. Otherwise, returns nil
 func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
-	fmt.Print("Usage")
 	var tempIOCsFound []output.IOCFound
 	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound)
 	if err != nil {
@@ -180,7 +179,6 @@ func runOnce() {
 }
 
 func main() {
-	fmt.Print("Usage")
 	flag.Parse()
 
 	if *session.Options.SocketPath != "" {
