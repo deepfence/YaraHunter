@@ -205,9 +205,14 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		session.Log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), maxFileSize)
 		return nil
 	}
+	fmt.Print("reached here",fileName)
 	if f, ok := f.(*os.File); ok {
 		fd := f.Fd()
 		err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
+		if err != nil {
+			fmt.Print(err)
+		}
+		fmt.Print(matches)
 	} else {
 		var buf []byte
 		if buf, err = ioutil.ReadAll(f); err != nil {
@@ -216,6 +221,10 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 			return err
 		}
 		err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
+		if err != nil {
+			fmt.Print(err)
+		}
+		
 	}
 	var iocsFound []output.IOCFound
 	totalMatchesStringData := make([]string, 0)
@@ -319,7 +328,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 	fmt.Print("Scan results in selected image with layer ", fullDir)
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
-		fmt.Print(err)
 		if err != nil {
 			fmt.Print("error", err)
 			return nil
