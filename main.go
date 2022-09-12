@@ -179,7 +179,7 @@ func runOnce() {
 
 func main() {
 	flag.Parse()
-
+	core.GetSession().Log.Info("server inside23 port",*session.Options)
 	if *session.Options.SocketPath != "" {
 		err := server.RunServer(*session.Options.SocketPath, PLUGIN_NAME)
 		if err != nil {

@@ -195,9 +195,9 @@ func RunHttpServer(listenPort string) error {
 	http.HandleFunc("/malware-scan/test", func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(writer, "Hello World!")
 	})
-
+	core.GetSession().Log.Info("Http Server listening before ")
 	http.ListenAndServe(":"+listenPort, nil)
-	fmt.Println("Http Server listening on " + listenPort)
+	core.GetSession().Log.Info("Http Server listening on " + listenPort)
 	return nil
 }
 
