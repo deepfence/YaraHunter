@@ -186,6 +186,7 @@ func main() {
 			core.GetSession().Log.Fatal("main: failed to serve: %v", err)
 		}
 	} else if *session.Options.HttpPort != "" {
+		core.GetSession().Log.Info("server inside port")
 		err := server.RunHttpServer(*session.Options.HttpPort)
 		if err != nil {
 			core.GetSession().Log.Fatal("main: failed to serve through http: %v", err)
