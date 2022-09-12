@@ -47,6 +47,8 @@ func init() {
 }
 
 func runMalwareScan(writer http.ResponseWriter, request *http.Request) {
+	fmt.Println("entered into scan here")
+	fmt.Println(writer,request)
 	if err := request.ParseForm(); err != nil {
 		fmt.Fprintf(writer, "ParseForm() err: %v", err)
 		return
@@ -187,6 +189,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 
 func RunHttpServer(listenPort string) error {
 	http.Handle("/malware-scan", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Print( "Entered scan")
 		runMalwareScan(writer, request)
 	}))
 	http.HandleFunc("/malware-scan/test", func(writer http.ResponseWriter, request *http.Request) {

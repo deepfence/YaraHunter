@@ -29,9 +29,7 @@ func IsSkippableDir(fs afero.Fs, path string, baseDir string) bool {
 		if strings.HasPrefix(path, skippablePathIndicator) || strings.HasPrefix(path, filepath.Join(baseDir, skippablePathIndicator)) {
 			return true
 		}
-		fmt.Print("Path outside",path,baseDir)
 		if strings.Contains(path, skippablePathIndicator) || strings.Contains(path, filepath.Join(baseDir, skippablePathIndicator)) {
-			fmt.Print("Path here",path,baseDir)
 			return true
 		}
 	}
