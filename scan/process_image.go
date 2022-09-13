@@ -100,7 +100,7 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 // []output.IOCFound - List of all IOCs found
 // Error - Errors, if any. Otherwise, returns nil
 func (imageScan *ImageScan) scan() ([]output.IOCFound, error) {
-	fmt.Printlnln("reached scan function")
+	fmt.Println("reached scan function")
 	tempDir := imageScan.tempDir
 	defer core.DeleteTmpDir(tempDir)
 
@@ -146,27 +146,27 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 	return updatedSeverity, math.Round(updatedScore*100) / 100
 }
 
-func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound,layer string) (err error) {
+func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound, layer string) (err error) {
 	f, err := fs.Open(path)
 	if err != nil {
-		fmt.Printlnln("Error opening file ", path, err)
+		fmt.Println("Error opening file ", path, err)
 		session.Log.Error("Error: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		fmt.Printlnln("Could not seek to start of file ", path, err)
+		fmt.Println("Could not seek to start of file ", path, err)
 		session.Log.Error("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
-	if e := ScanFile(f, &iocs, layer ); err == nil && e != nil {
-		fmt.Printlnln("the file error is", e)
+	if e := ScanFile(f, &iocs, layer); err == nil && e != nil {
+		fmt.Println("the file error is", e)
 		err = e
 	}
 	return
 }
 
-func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
+func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 	var (
 		matches yr.MatchRules
 		err     error
@@ -186,9 +186,9 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		{"extension", filepath.Ext(f.Name())},
 	}
 	for _, v := range variables {
-		fmt.Println("reached next here",v.name, v.value)
+		fmt.Println("reached next here", v.name, v.value)
 		if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
-			fmt.Printlnln("the error is", err)
+			fmt.Println("the error is", err)
 			return err
 		}
 	}
@@ -202,7 +202,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		return err
 	}
 	fileName := f.Name()
-	fmt.Println("reached next filename",fileName)
+	fmt.Println("reached next filename", fileName)
 	hostMountPath := *session.Options.HostMountPath
 	if hostMountPath != "" {
 		fileName = strings.TrimPrefix(fileName, hostMountPath)
@@ -213,7 +213,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 	}
 	if f, ok := f.(*os.File); ok {
 		fd := f.Fd()
-		fmt.Println("reached inside File Descriptor",fd)
+		fmt.Println("reached inside File Descriptor", fd)
 		err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
 		if err != nil {
 			fmt.Println("Scan File Descriptor error", err)
@@ -223,19 +223,19 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		if buf, err = ioutil.ReadAll(f); err != nil {
 			session.Log.Error("yara: %s: Error reading file, error=%s",
 				fileName, err.Error())
-			fmt.Println("Error reading file, error=%s",fileName, err.Error())
+			fmt.Println("Error reading file, error=%s", fileName, err.Error())
 			return err
 		}
 		err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
 		if err != nil {
 			fmt.Println("Scan File Mmory Error", err)
 		}
-		
+
 	}
 	var iocsFound []output.IOCFound
 	totalMatchesStringData := make([]string, 0)
 	for _, m := range matches {
-		fmt.Println("test rule",m.Rule)
+		fmt.Println("test rule", m.Rule)
 		matchesStringData := make([]string, len(m.Strings))
 		for _, str := range m.Strings {
 			if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
@@ -249,7 +249,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 			matchesMeta = append(matchesMeta, strMeta.Identifier)
 			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
 		}
-		fmt.Println(m.Rule,fileName)
+		fmt.Println(m.Rule, fileName)
 
 		iocsFound = append(iocsFound, output.IOCFound{
 			RuleName:         m.Rule,
@@ -271,10 +271,10 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		for _, m := range iocsFound {
 			m.FileSeverity = updatedSeverity
 			m.FileSevScore = updatedScore
-			StringsMatch := make([]string, 0) 		
+			StringsMatch := make([]string, 0)
 			for _, c := range m.StringsToMatch {
 				if len(c) > 0 {
-					StringsMatch = append(StringsMatch,c)
+					StringsMatch = append(StringsMatch, c)
 				}
 			}
 			m.StringsToMatch = StringsMatch
@@ -305,7 +305,6 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 
 	return err
 }
-
 
 // ScanIOCsInDir Scans a given directory recursively to find all IOCs inside any file in the dir
 // @parameters
@@ -362,7 +361,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		if core.IsSkippableFileExtension(path) {
 			return nil
 		}
-		if err = ScanFilePath(fs, path, &iocs,layer); err != nil {
+		if err = ScanFilePath(fs, path, &iocs, layer); err != nil {
 
 			fmt.Println("Scan Directory Path iocs", err)
 		}
@@ -380,7 +379,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
 func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]output.IOCFound, error) {
-	fmt.Printlnln("reached process image layers")
+	fmt.Println("reached process image layers")
 	var tempIOCsFound []output.IOCFound
 	var err error
 
@@ -665,14 +664,14 @@ func ExtractAndScanImage(image string) (*ImageExtractionResult, error) {
 
 func ExtractAndScanFromTar(tarFolder string, imageName string) (*ImageExtractionResult, error) {
 	// defer core.DeleteTmpDir(tarFolder)
-    fmt.Printlnln("image scan")
+	fmt.Println("image scan")
 	imageScan := ImageScan{imageName: imageName, imageId: "", tempDir: tarFolder}
 	err := imageScan.extractImage(false)
 
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printlnln("image scan before iocs")
+	fmt.Println("image scan before iocs")
 	IOCs, err := imageScan.scan()
 
 	if err != nil {
