@@ -149,15 +149,18 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound,layer string) (err error) {
 	f, err := fs.Open(path)
 	if err != nil {
+		fmt.Println("Error opening file ", path, err)
 		session.Log.Error("Error: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		fmt.Println("Could not seek to start of file ", path, err)
 		session.Log.Error("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
 	if e := ScanFile(f, &iocs, layer ); err == nil && e != nil {
+		fmt.Println("the file error is", e)
 		err = e
 	}
 	return
@@ -182,8 +185,10 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		{"filepath", filepath.ToSlash(f.Name())},
 		{"extension", filepath.Ext(f.Name())},
 	}
+	fmt.Println("the variables are", variables)
 	for _, v := range variables {
 		if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
+			fmt.Println("the error is", err)
 			return err
 		}
 	}
