@@ -48,7 +48,7 @@ func init() {
 
 func runMalwareScan(writer http.ResponseWriter, request *http.Request) {
 	core.GetSession().Log.Info("entered into scan here")
-	fmt.Println(writer,request)
+	fmt.Println("entered into scan here")
 	if err := request.ParseForm(); err != nil {
 		fmt.Fprintf(writer, "ParseForm() err: %v", err)
 		return
@@ -120,6 +120,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 			fmt.Println("Error in updating in_progress log" + err.Error())
 		}
 	}
+	fmt.Println("extracting scans")
 	res, err := scan.ExtractAndScanFromTar(tempDir, imageName)
 	if err != nil {
 		malwareScanLogDoc["scan_status"] = "ERROR"

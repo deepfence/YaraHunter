@@ -100,6 +100,7 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 // []output.IOCFound - List of all IOCs found
 // Error - Errors, if any. Otherwise, returns nil
 func (imageScan *ImageScan) scan() ([]output.IOCFound, error) {
+	fmt.Println("reached scan function")
 	tempDir := imageScan.tempDir
 	defer core.DeleteTmpDir(tempDir)
 
@@ -365,6 +366,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
 func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]output.IOCFound, error) {
+	fmt.Println("reached process image layers")
 	var tempIOCsFound []output.IOCFound
 	var err error
 
@@ -649,14 +651,14 @@ func ExtractAndScanImage(image string) (*ImageExtractionResult, error) {
 
 func ExtractAndScanFromTar(tarFolder string, imageName string) (*ImageExtractionResult, error) {
 	// defer core.DeleteTmpDir(tarFolder)
-
+    fmt.Println("image scan")
 	imageScan := ImageScan{imageName: imageName, imageId: "", tempDir: tarFolder}
 	err := imageScan.extractImage(false)
 
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println("image scan before iocs")
 	IOCs, err := imageScan.scan()
 
 	if err != nil {
