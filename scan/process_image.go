@@ -185,13 +185,15 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		{"filepath", filepath.ToSlash(f.Name())},
 		{"extension", filepath.Ext(f.Name())},
 	}
-	fmt.Println("the variables are", variables)
 	for _, v := range variables {
+		fmt.Print("reached next here",v.name, v.value)
 		if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
 			fmt.Println("the error is", err)
 			return err
 		}
 	}
+
+	fmt.Print("reached next line")
 
 	fi, err := f.Stat()
 	if err != nil {
@@ -228,6 +230,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 	var iocsFound []output.IOCFound
 	totalMatchesStringData := make([]string, 0)
 	for _, m := range matches {
+		fmt.Print("test rule",m.Rule)
 		matchesStringData := make([]string, len(m.Strings))
 		for _, str := range m.Strings {
 			if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
@@ -241,6 +244,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 			matchesMeta = append(matchesMeta, strMeta.Identifier)
 			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
 		}
+		fmt.Print(m.Rule,fileName)
 
 		iocsFound = append(iocsFound, output.IOCFound{
 			RuleName:         m.Rule,
