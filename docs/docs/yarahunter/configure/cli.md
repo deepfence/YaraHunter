@@ -58,7 +58,7 @@ Scans can be fine-tuned using settings in `config.yaml`:
 # YaraHunter Configuration File
 
 exclude_strings: [] # skip matches containing any of these strings (case sensitive)
-exclude_extensions: [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".psd", ".xcf", ".zip", ".tar.gz", ".ttf", ".lock"] 
+exclude_extensions: [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".psd", ".xcf", ".zip", ".tar.gz", ".ttf", ".lock", ".prerm"] 
 # need to confirm as windows hides file extensions
 exclude_paths: ["/var/lib/docker", "/var/lib/containerd", "/bin", "/boot", "/dev", "/lib", "/lib64", "/media", "/proc", "/run", "/sbin", "/usr/lib", "/sys"] # use \ for windows paths
 ```
