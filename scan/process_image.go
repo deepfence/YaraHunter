@@ -166,17 +166,6 @@ func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound, layer stri
 	return
 }
 
-func containsNumber(s string)(bool)   {
-	var b bool = false
-	for _, c := range s {
-		if c >= '0' || c <= '9' {
-			b = true
-			break
-		}
-	}
-	return b;
-}
-
 func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 	var (
 		matches yr.MatchRules
@@ -191,7 +180,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		value interface{}
 	}
 
-	if  filepath.Ext(f.Name()) != "" && !containsNumber(filepath.Ext(f.Name())) {
+	if  filepath.Ext(f.Name()) != ""  {
 
 		variables := []ruleVariable{
 			{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
