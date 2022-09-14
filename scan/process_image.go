@@ -186,11 +186,12 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		{"extension", filepath.Ext(f.Name())},
 	}
 	for _, v := range variables {
-		fmt.Println("reached next here", v.name, v.value)
-		if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
-			fmt.Println("the error is", err)
-			return err
-		}
+		if v.value != ""  {
+			if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
+				fmt.Println("the error is", err)
+				return err
+			}
+		} 
 	}
 
 	fmt.Println("reached next line")
@@ -223,7 +224,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		if buf, err = ioutil.ReadAll(f); err != nil {
 			session.Log.Error("yara: %s: Error reading file, error=%s",
 				fileName, err.Error())
-			fmt.Println("Error reading file, error=%s", fileName, err.Error())
+			fmt.Println("Error reading file, error", fileName, err.Error())
 			return err
 		}
 		err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
@@ -258,6 +259,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			Meta:             matchesMetaData,
 			CompleteFilename: fileName,
 		})
+		fmt.Println(m.Rule, iocsFound)
 	}
 	var fileMat fileMatches
 	fileMat.fileName = fileName
@@ -265,6 +267,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 	updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
 	fileMat.updatedSeverity = updatedSeverity
 	fileMat.updatedScore = updatedScore
+	fmt.Println("file matches",fileMat)
 	//var isFirstIOC bool = true
 	if len(matches) > 0 {
 		//output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
@@ -302,6 +305,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			*(*(*iocs)) = append(*(*(*iocs)), m)
 		}
 	}
+	fmt.Println("file match iocs",iocs)
 
 	return err
 }
