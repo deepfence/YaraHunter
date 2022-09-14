@@ -187,6 +187,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 	}
 	fmt.Println("the variable values here are",variables)
 	for _, v := range variables {
+		fmt.Printf("%v\n",v)
 		if v.value != ""  {
 			if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
 				fmt.Println("the error is", err)
