@@ -185,6 +185,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		{"filepath", filepath.ToSlash(f.Name())},
 		{"extension", filepath.Ext(f.Name())},
 	}
+	fmt.Println("the variable values here are",variables)
 	for _, v := range variables {
 		if v.value != ""  {
 			if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
