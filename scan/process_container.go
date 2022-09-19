@@ -107,7 +107,7 @@ func  GetFileSystemPathsForContainer(containerId string, namespace string) ([]by
             fmt.Println("cmd.Wait: ", err)
         }
     }
-	return exec.Command("docker", "inspect", strings.TrimSpace(containerId), "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'").Output()
+	return cmd.Output()
 }
 
 func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOCFound, error) {
