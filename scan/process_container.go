@@ -5,7 +5,6 @@ import (
 	"github.com/deepfence/YaRadare/core"
 	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/vessel"
-	"bytes"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	dockerRuntime "github.com/deepfence/vessel/docker"
