@@ -95,7 +95,7 @@ type ContainerExtractionResult struct {
 
 func  GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
 	// fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
-	return exec.Command("bash", "-c", "docker inspect" + strings.TrimSpace(containerId) + "| grep MergedDir").Output()
+	return exec.Command("bash", "-c", "docker inspect" + strings.TrimSpace(containerId) + " | grep MergedDir").Output()
 }
 
 func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOCFound, error) {
