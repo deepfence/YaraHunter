@@ -2,14 +2,16 @@ package scan
 
 import (
 	"errors"
+	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/deepfence/YaRadare/core"
 	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	dockerRuntime "github.com/deepfence/vessel/docker"
-	"os/exec"
-	"strings"
 )
 
 type ContainerScan struct {
@@ -107,10 +109,13 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 	containerRuntime, _, err := vessel.AutoDetectRuntime()
 	switch containerRuntime {
 	case vesselConstants.DOCKER:
+		fmt.Println("reached here")
 		containerPath, err := GetFileSystemPathsForContainer(containerId, namespace) 
 		if err != nil {
+			fmt.Println("the error here is", err)
 			return nil, err
 		}
+		fmt.Println("the file system paths for container")
 		iocsFound, err = containerScan.scanPath(strings.TrimSpace(string(containerPath)))
 	case vesselConstants.CONTAINERD:
 		containerScan.extractFileSystem()

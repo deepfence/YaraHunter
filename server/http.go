@@ -48,7 +48,6 @@ func init() {
 
 func runMalwareScan(writer http.ResponseWriter, request *http.Request) {
 	core.GetSession().Log.Info("entered into scan here")
-	fmt.Println("entered into scan here")
 	if err := request.ParseForm(); err != nil {
 		fmt.Fprintf(writer, "ParseForm() err: %v", err)
 		return
