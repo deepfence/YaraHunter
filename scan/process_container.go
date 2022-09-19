@@ -94,7 +94,8 @@ type ContainerExtractionResult struct {
 }
 
 func  GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
-	return exec.Command("docker", "inspect", strings.TrimSpace(containerId), "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\t\\(.[1])\"'").Output()
+	fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
+	return exec.Command("docker", "inspect", strings.TrimSpace(containerId), "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'").Output()
 }
 
 func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOCFound, error) {
@@ -116,7 +117,10 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 			return nil, err
 		}
 		fmt.Println("the file system paths for container")
-		iocsFound, err = containerScan.scanPath(strings.TrimSpace(string(containerPath)))
+		if strings.Contains(string(containerPath), " ") {
+			fmt.Println("the file system paths for container",strings.Split(string(containerPath), " "))
+			iocsFound, err = containerScan.scanPath(strings.Split(string(containerPath), " ")[0])
+		}
 	case vesselConstants.CONTAINERD:
 		containerScan.extractFileSystem()
 		err = containerScan.extractFileSystem()
