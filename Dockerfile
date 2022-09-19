@@ -36,7 +36,7 @@ ENV MGMT_CONSOLE_URL=deepfence-internal-router \
     MGMT_CONSOLE_PORT=443 \
     LD_LIBRARY_PATH=/usr/local/yara/lib \
     DOCKERVERSION=20.10.17
-RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl1.1 libmagic1 libstdc++6 bash skopeo curl python3-pip \
+RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl1.1 libmagic1 libstdc++6 jq bash skopeo curl python3-pip \
     && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.18.0/nerdctl-0.18.0-linux-amd64.tar.gz \
     && tar Cxzvvf /usr/local/bin nerdctl-0.18.0-linux-amd64.tar.gz \
     && rm nerdctl-0.18.0-linux-amd64.tar.gz \

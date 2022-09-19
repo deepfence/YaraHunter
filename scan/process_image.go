@@ -323,7 +323,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound) error {
+func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
 	var fs afero.Fs
 	if layer != "" {
 		session.Log.Info("Scan results in selected image with layer ", layer)
@@ -339,10 +339,10 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 	// maxFileSize := *session.Options.MaximumFileSize * 1024
 	// var file core.MatchFile
 	// var relPath string
+
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			fmt.Println("error", err)
 			return nil
 		}
 
@@ -357,10 +357,17 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		}
 
 		if info.IsDir() {
-			if core.IsSkippableDir(fs, path, baseDir) {
-				return filepath.SkipDir
+			if isContainerRunTime {
+				if core.IsSkippableContainerRuntimeDir(fs, path, baseDir)  {
+					return filepath.SkipDir
+				}
+			} else {
+				if core.IsSkippableDir(fs, path, baseDir)  {
+					return filepath.SkipDir
+				}
 			}
 			return nil
+			
 		}
 		const specialMode = os.ModeSymlink | os.ModeDevice | os.ModeNamedPipe | os.ModeSocket | os.ModeCharDevice
 		if info.Mode()&specialMode != 0 {
@@ -369,9 +376,8 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		if core.IsSkippableFileExtension(path) {
 			return nil
 		}
-		if err = ScanFilePath(fs, path, &iocs, layer); err != nil {
-
-			fmt.Println("Scan Directory Path iocs", err)
+		if err = ScanFilePath(fs, path, &iocs,layer); err != nil {
+             fmt.Println("afero path", )
 		}
 		return nil
 	})
@@ -421,7 +427,7 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 			// return tempIOCsFound, error
 		}
 		core.GetSession().Log.Debug("Analyzing dir: %s", targetDir)
-		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs)
+		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs, false)
 		tempIOCsFound = append(tempIOCsFound, IOCs...)
 		if err != nil {
 			core.GetSession().Log.Error("ProcessImageLayers: %s", err)
