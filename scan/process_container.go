@@ -94,20 +94,8 @@ type ContainerExtractionResult struct {
 }
 
 func  GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
-	fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
-	cmd := exec.Command("docker", "inspect", strings.TrimSpace(containerId), "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'")
-	if err := cmd.Start(); err != nil {
-        fmt.Println("cmd.Start:", err)
-    }
-
-    if err := cmd.Wait(); err != nil {
-        if exiterr, ok := err.(*exec.ExitError); ok {
-            fmt.Println("Exit Status:", exiterr.ExitCode(), exiterr.Error(), exiterr.Stderr)
-        } else {
-            fmt.Println("cmd.Wait: ", err)
-        }
-    }
-	return cmd.Output()
+	// fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
+	return exec.Command("bash", "-c", "docker inspect" + strings.TrimSpace(containerId) + "| grep MergedDir").Output()
 }
 
 func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOCFound, error) {
@@ -123,12 +111,12 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 	switch containerRuntime {
 	case vesselConstants.DOCKER:
 		fmt.Println("reached here")
-		containerPath, err := GetFileSystemPathsForContainer(containerId, namespace) 
+		containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
 		if err != nil {
 			fmt.Println("the error here is", err)
 			return nil, err
 		}
-		fmt.Println("the file system paths for container")
+		fmt.Println("the file system paths for container",string(containerPath))
 		if strings.Contains(string(containerPath), " ") {
 			fmt.Println("the file system paths for container",strings.Split(string(containerPath), " "))
 			iocsFound, err = containerScan.scanPath(strings.Split(string(containerPath), " ")[0])
