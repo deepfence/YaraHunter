@@ -102,7 +102,7 @@ func  GetFileSystemPathsForContainer(containerId string, namespace string) ([]by
 
     if err := cmd.Wait(); err != nil {
         if exiterr, ok := err.(*exec.ExitError); ok {
-            fmt.Println("Exit Status:", exiterr.ExitCode())
+            fmt.Println("Exit Status:", exiterr.ExitCode(), exiterr.Error(), exiterr.Stderr)
         } else {
             fmt.Println("cmd.Wait: ", err)
         }
