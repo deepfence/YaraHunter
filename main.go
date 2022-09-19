@@ -77,7 +77,7 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 // Error, if any. Otherwise, returns nil
 func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
 	var tempIOCsFound []output.IOCFound
-	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound)
+	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound, false)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInDir: %s", err)
 		return nil, err
