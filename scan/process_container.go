@@ -117,9 +117,12 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 			return nil, err
 		}
 		fmt.Println("the file system paths for container",string(containerPath))
-		if strings.Contains(string(containerPath), " ") {
-			fmt.Println("the file system paths for container",strings.Split(string(containerPath), " "))
-			iocsFound, err = containerScan.scanPath(strings.Split(string(containerPath), " ")[0])
+		if strings.Contains(string(containerPath), "\"MergedDir\":") {
+            if(strings.Contains(strings.Split(string(containerPath),"\"MergedDir\": \"")[1], "/merged\"")) {
+				containerPathToScan := strings.Split(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"")[0] + "/merged"
+				fmt.Println("Container Scan Path",containerPathToScan)
+				iocsFound, err = containerScan.scanPath(containerPathToScan)
+			}
 		}
 	case vesselConstants.CONTAINERD:
 		containerScan.extractFileSystem()
