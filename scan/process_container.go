@@ -116,7 +116,6 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 			fmt.Println("the error here is", err)
 			return nil, err
 		}
-		fmt.Println("the file system paths for container",string(containerPath))
 		if strings.Contains(string(containerPath), "\"MergedDir\":") {
             if(strings.Contains(strings.Split(string(containerPath),"\"MergedDir\": \"")[1], "/merged\"")) {
 				containerPathToScan := strings.Split(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"")[0] + "/merged"

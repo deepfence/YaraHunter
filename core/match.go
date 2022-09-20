@@ -27,6 +27,9 @@ func IsSkippableContainerRuntimeDir(fs afero.Fs, path string, baseDir string) bo
 		if strings.HasPrefix(path, skippablePathIndicator) || strings.HasPrefix(path, filepath.Join(baseDir, skippablePathIndicator)) {
 			return true
 		}
+		if strings.Contains(path, skippablePathIndicator) || strings.Contains(path, filepath.Join(baseDir, skippablePathIndicator)) {
+			return true
+		}
 	}
 
 	file, err := fs.Open(path)

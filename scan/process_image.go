@@ -323,6 +323,8 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 	// var file core.MatchFile
 	// var relPath string
 
+	fmt.Println("full directory is",fullDir,isContainerRunTime)
+
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -341,6 +343,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 
 		if info.IsDir() {
 			if isContainerRunTime {
+				fmt.Println("full directory is",fullDir,path)
 				if core.IsSkippableContainerRuntimeDir(fs, path, baseDir)  {
 					return filepath.SkipDir
 				}
@@ -360,7 +363,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 			return nil
 		}
 		if err = ScanFilePath(fs, path, &iocs,layer); err != nil {
-             fmt.Println("afero path", )
+             fmt.Println("afero path",err )
 		}
 		return nil
 	})
