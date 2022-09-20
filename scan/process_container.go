@@ -64,7 +64,7 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 // Error - Errors, if any. Otherwise, returns nil
 func (containerScan *ContainerScan) scanPath(containerPath string) ([]output.IOCFound, error) {
 	var iocsFound []output.IOCFound
-	err := ScanIOCInDir("", "", containerPath, nil, &iocsFound, true)
+	err := ScanIOCInDir("", "", "/fenced/mnt/host/"+containerPath, nil, &iocsFound, true)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInContainer: %s", err)
 		return iocsFound, err
