@@ -329,7 +329,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
 		fmt.Println("inside directory is",path)
 		if err != nil {
-			fmt.Println("the error path is",path)
+			fmt.Println("the error path is",err)
 			return nil
 		}
 
