@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -19,9 +21,9 @@ import (
 )
 
 const (
-	scanStatusComplete      = "COMPLETE"
-	scanStatusError         = "ERROR"
-	defaultScanConcurrency  = 5
+	scanStatusComplete       = "COMPLETE"
+	scanStatusError          = "ERROR"
+	defaultScanConcurrency   = 5
 	malwareScanIndexName     = "malware-scan"
 	malwareScanLogsIndexName = "malware-scan-logs"
 )
@@ -30,6 +32,10 @@ var (
 	scanConcurrency    int
 	httpScanWorkerPool *tunny.Pool
 )
+
+type standaloneRequest struct {
+	ImageNameWithTag string `json:"image_name_with_tag"`
+}
 
 type imageParameters struct {
 	imageName string
@@ -59,6 +65,57 @@ func runMalwareScan(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(writer, "{\"status\": \"Scan Queued\"}")
 		go processScans(request.PostForm)
 	}
+}
+
+func runMalwareScanStandalone(writer http.ResponseWriter, request *http.Request) {
+	fmt.Printf("rbody: %s\n", request.Body)
+	requestDump, err := httputil.DumpRequest(request, true)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(requestDump))
+
+	b, err := ioutil.ReadAll(request.Body)
+	defer request.Body.Close()
+	if err != nil {
+		http.Error(writer, err.Error(), 500)
+		return
+	}
+
+	// decoder := json.NewDecoder(request.Body)
+	var req standaloneRequest
+	// err = decoder.Decode(&req)
+	err = json.Unmarshal(b, &req)
+	if err != nil {
+		fmt.Fprintf(writer, "Parse err: %v", err)
+		return
+	}
+
+	fmt.Printf("Malware scan Scan triggered for %s: ", req.ImageNameWithTag)
+
+	fmt.Printf("Malware Scan triggered for %s: ", req.ImageNameWithTag)
+	res, err := scan.ExtractAndScanImage(req.ImageNameWithTag)
+	if err != nil {
+		fmt.Fprintf(writer, "Image scan err: %v", err)
+		return
+	}
+
+	JsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: req.ImageNameWithTag}
+	JsonImageIOCOutput.SetTime()
+	JsonImageIOCOutput.SetImageId(res.ImageId)
+	JsonImageIOCOutput.PrintJsonHeader()
+	JsonImageIOCOutput.PrintJsonFooter()
+	JsonImageIOCOutput.SetIOC(res.IOCs)
+
+	outByte, err := json.Marshal(JsonImageIOCOutput)
+	if err != nil {
+		fmt.Fprintf(writer, "report marshaling error: %v", err)
+		return
+	}
+
+	fmt.Fprintf(writer, string(outByte))
+	return
+
 }
 
 func processScans(form url.Values) {
@@ -194,6 +251,21 @@ func RunHttpServer(listenPort string) error {
 	}))
 	http.HandleFunc("/malware-scan/test", func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(writer, "Hello World!")
+	})
+	core.GetSession().Log.Info("Http Server listening before ")
+	http.ListenAndServe(":"+listenPort, nil)
+	core.GetSession().Log.Info("Http Server listening on " + listenPort)
+	return nil
+}
+
+func RunStandaloneHttpServer(listenPort string) error {
+	fmt.Println("Trying to start Http Server on " + listenPort)
+	http.Handle("/malware-scan", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		core.GetSession().Log.Info("Entered scan")
+		runMalwareScanStandalone(writer, request)
+	}))
+	http.HandleFunc("/malware-scan/ping", func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Fprintf(writer, "Connection is successful")
 	})
 	core.GetSession().Log.Info("Http Server listening before ")
 	http.ListenAndServe(":"+listenPort, nil)
