@@ -186,7 +186,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		for _, v := range variables {
 			if v.value != nil  {
 				if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
-					return err
+					return filepath.SkipDir
 				}
 			} 
 		}
@@ -211,17 +211,19 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
 			if err != nil {
 				fmt.Println("Scan File Descriptor error", err)
+				return filepath.SkipDir
 			}
 		} else {
 			var buf []byte
 			if buf, err = ioutil.ReadAll(f); err != nil {
 				session.Log.Error("yara: %s: Error reading file, error=%s",
 					fileName, err.Error())
-				return err
+				return filepath.SkipDir
 			}
 			err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
 			if err != nil {
 				fmt.Println("Scan File Mmory Error", err)
+				return filepath.SkipDir
 			}
 
 		}
@@ -293,6 +295,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 				*(*(*iocs)) = append(*(*(*iocs)), m)
 			}
 		}
+		
 	}
 	return err
 }
