@@ -29,18 +29,9 @@ import (
 	"github.com/deepfence/YaRadare/core"
 	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/YaRadare/scan"
-	"github.com/deepfence/YaRadare/server"
 	"github.com/fatih/color"
 	"strings"
 )
-
-
-
-const (
-	PLUGIN_NAME = "MalwareScanner"
-)
-
-
 
 // Read the regex signatures from config file, options etc.
 // and setup the session to start scanning for IOC
@@ -77,7 +68,7 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 // Error, if any. Otherwise, returns nil
 func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
 	var tempIOCsFound []output.IOCFound
-	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound, false)
+	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInDir: %s", err)
 		return nil, err
@@ -179,19 +170,6 @@ func runOnce() {
 
 func main() {
 	flag.Parse()
-	core.GetSession().Log.Info("server inside23 port",*session.Options)
-	if *session.Options.SocketPath != "" {
-		err := server.RunServer(*session.Options.SocketPath, PLUGIN_NAME)
-		if err != nil {
-			core.GetSession().Log.Fatal("main: failed to serve: %v", err)
-		}
-	} else if *session.Options.HttpPort != "" {
-		core.GetSession().Log.Info("server inside port")
-		err := server.RunHttpServer(*session.Options.HttpPort)
-		if err != nil {
-			core.GetSession().Log.Fatal("main: failed to serve through http: %v", err)
-		}
-	} else {
-		runOnce()
-	}
+
+	runOnce()
 }
