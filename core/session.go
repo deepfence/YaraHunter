@@ -2,13 +2,15 @@ package core
 
 import (
 	"context"
-	"github.com/hillu/go-yara/v4"
+	"fmt"
 	"math/rand"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/hillu/go-yara/v4"
 )
 
 type Session struct {
@@ -36,7 +38,7 @@ func (s *Session) Start() {
 
 func (s *Session) InitLogger() {
 	s.Log = &Logger{}
-	s.Log.SetLogLevel(*s.Options.LogLevel)
+	s.Log.SetLogLevel(*s.Options.DebugLevel)
 }
 
 func (s *Session) InitThreads() {
@@ -55,6 +57,7 @@ func GetSession() *Session {
 		}
 
 		if session.Options, err = ParseOptions(); err != nil {
+			fmt.Println(err)
 			session.Log.Error(err.Error())
 			os.Exit(1)
 		}
