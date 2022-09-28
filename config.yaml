@@ -1,5 +1,7 @@
 # Iac Scanner Configuration File
 
-exclude_extensions: [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".psd", ".xcf", ".zip", ".tar.gz", ".ttf", ".lock"]
+exclude_extensions: [ ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif", ".psd", ".xcf", ".zip", ".tar.gz",".gz", ".0", ".1", ".2", ".3",".5",".6",".7",".8",".9","", ".ttf", ".lock"]
 # need to confirm as windows hides file extensions
 exclude_paths: ["{sep}var{sep}lib{sep}docker", "{sep}var{sep}lib{sep}containerd", "{sep}dev", "{sep}proc", "{sep}usr{sep}lib", "{sep}sys"] # use {sep} for the OS' path seperator (i.e. / or \)
+exclude_container_paths: ["{sep}dev", "{sep}proc", "{sep}usr{sep}lib", "{sep}sys", "{sep}tmp"] # use {sep} for the OS' path seperator (i.e. / or \)
+
