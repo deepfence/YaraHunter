@@ -31,7 +31,6 @@ import (
 	"github.com/deepfence/YaRadare/core"
 	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/YaRadare/scan"
-	"github.com/deepfence/YaRadare/server"
 	"github.com/fatih/color"
 )
 
@@ -74,7 +73,7 @@ func findIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 // Error, if any. Otherwise, returns nil
 func findIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
 	var tempIOCsFound []output.IOCFound
-	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound, false)
+	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInDir: %s", err)
 		return nil, err
@@ -197,4 +196,6 @@ func main() {
 	} else {
 		runOnce()
 	}
+
+	runOnce()
 }

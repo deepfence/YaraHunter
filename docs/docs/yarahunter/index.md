@@ -16,7 +16,7 @@ Key capabilities:
 
 ## YaraHunter in Action
 
-![Yadare in Action](img/yarahunter-demo.gif)
+![Yadare in Action](img/yarahunter.svg)
 
 
 ## Example: Finding Indicators of Compromise in a Container Image
