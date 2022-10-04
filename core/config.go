@@ -11,6 +11,7 @@ import (
 type Config struct {
 	ExcludedExtensions []string `yaml:"exclude_extensions"`
 	ExcludedPaths      []string `yaml:"exclude_paths"`
+	ExcludedContainerPaths      []string `yaml:"exclude_container_paths"`
 }
 
 func ParseConfig(options *Options) (*Config, error) {

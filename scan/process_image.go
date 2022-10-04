@@ -145,7 +145,7 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 	return updatedSeverity, math.Round(updatedScore*100) / 100
 }
 
-func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound,layer string) (err error) {
+func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound, layer string) (err error) {
 	f, err := fs.Open(path)
 	if err != nil {
 		session.Log.Error("Error: %v", err)
@@ -156,13 +156,13 @@ func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound,layer strin
 		session.Log.Error("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
-	if e := ScanFile(f, &iocs, layer ); err == nil && e != nil {
+	if e := ScanFile(f, &iocs, layer); err == nil && e != nil {
 		err = e
 	}
 	return
 }
 
-func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
+func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 	var (
 		matches yr.MatchRules
 		err     error
@@ -176,113 +176,124 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 		value interface{}
 	}
 
-	variables := []ruleVariable{
-		{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
-		{"filepath", filepath.ToSlash(f.Name())},
-		{"extension", filepath.Ext(f.Name())},
-	}
-	for _, v := range variables {
-		if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
-			return err
-		}
-	}
+	if  filepath.Ext(f.Name()) != ""  {
 
-	fi, err := f.Stat()
-	if err != nil {
-		// report.AddStringf("yara: %s: Error accessing file information, error=%s",
-		// 	f.Name(), err.Error())
-		return err
-	}
-	fileName := f.Name()
-	hostMountPath := *session.Options.HostMountPath
-	if hostMountPath != "" {
-		fileName = strings.TrimPrefix(fileName, hostMountPath)
-	}
-	if maxFileSize > 0 && fi.Size() > maxFileSize {
-		session.Log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), maxFileSize)
-		return nil
-	}
-	if f, ok := f.(*os.File); ok {
-		fd := f.Fd()
-		err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
-	} else {
-		var buf []byte
-		if buf, err = ioutil.ReadAll(f); err != nil {
-			session.Log.Error("yara: %s: Error reading file, error=%s",
-				fileName, err.Error())
+		variables := []ruleVariable{
+			{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
+			{"filepath", filepath.ToSlash(f.Name())},
+			{"extension", filepath.Ext(f.Name())},
+		}
+		for _, v := range variables {
+			if v.value != nil  {
+				if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
+					return err
+				}
+			} 
+		}
+
+		fi, err := f.Stat()
+		if err != nil {
+			// report.AddStringf("yara: %s: Error accessing file information, error=%s",
+			// 	f.Name(), err.Error())
 			return err
 		}
-		err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
-	}
-	var iocsFound []output.IOCFound
-	totalMatchesStringData := make([]string, 0)
-	for _, m := range matches {
-		matchesStringData := make([]string, len(m.Strings))
-		for _, str := range m.Strings {
-			if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
-				matchesStringData = append(matchesStringData, string(str.Data))
-				totalMatchesStringData = append(totalMatchesStringData, string(str.Data))
+		fileName := f.Name()
+		hostMountPath := *session.Options.HostMountPath
+		if hostMountPath != "" {
+			fileName = strings.TrimPrefix(fileName, hostMountPath)
+		}
+		if maxFileSize > 0 && fi.Size() > maxFileSize {
+			session.Log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), maxFileSize)
+			return nil
+		}
+		if f, ok := f.(*os.File); ok {
+			fd := f.Fd()
+			err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
+			if err != nil {
+				fmt.Println("Scan File Descriptor error", err)
 			}
-		}
-		matchesMeta := make([]string, len(m.Metas))
-		matchesMetaData := make([]string, len(m.Metas))
-		for _, strMeta := range m.Metas {
-			matchesMeta = append(matchesMeta, strMeta.Identifier)
-			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
-		}
+		} else {
+			var buf []byte
+			if buf, err = ioutil.ReadAll(f); err != nil {
+				session.Log.Error("yara: %s: Error reading file, error=%s",
+					fileName, err.Error())
+				return err
+			}
+			err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
+			if err != nil {
+				fmt.Println("Scan File Mmory Error", err)
+			}
 
-		iocsFound = append(iocsFound, output.IOCFound{
-			RuleName:         m.Rule,
-			CategoryName:     m.Tags,
-			StringsToMatch:   matchesStringData,
-			Meta:             matchesMetaData,
-			CompleteFilename: fileName,
-		})
-	}
-	var fileMat fileMatches
-	fileMat.fileName = fileName
-	fileMat.iocs = iocsFound
-	updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
-	fileMat.updatedSeverity = updatedSeverity
-	fileMat.updatedScore = updatedScore
-	//var isFirstIOC bool = true
-	if len(matches) > 0 {
-		//output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
-		for _, m := range iocsFound {
-			m.FileSeverity = updatedSeverity
-			m.FileSevScore = updatedScore
-			StringsMatch := make([]string, 0) 		
-			for _, c := range m.StringsToMatch {
-				if len(c) > 0 {
-					StringsMatch = append(StringsMatch,c)
+		}
+		var iocsFound []output.IOCFound
+		totalMatchesStringData := make([]string, 0)
+		for _, m := range matches {
+			matchesStringData := make([]string, len(m.Strings))
+			for _, str := range m.Strings {
+				if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
+					matchesStringData = append(matchesStringData, string(str.Data))
+					totalMatchesStringData = append(totalMatchesStringData, string(str.Data))
 				}
 			}
-			m.StringsToMatch = StringsMatch
-			m.LayerID = layer
-			summary := ""
-			m.MetaRules = make(map[string]string)
-			for _, c := range m.Meta {
-				var metaSplit = strings.Split(c, " : ")
-				if len(metaSplit) > 1 {
+			matchesMeta := make([]string, len(m.Metas))
+			matchesMetaData := make([]string, len(m.Metas))
+			for _, strMeta := range m.Metas {
+				matchesMeta = append(matchesMeta, strMeta.Identifier)
+				matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
+			}
 
-					//fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.Replace(metaSplit[1], "\n", "", -1))+",\n")
-					m.MetaRules[metaSplit[0]] = strings.Replace(metaSplit[1], "\n", "", -1)
-					if metaSplit[0] == "description" {
-						str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
-						summary = summary + strings.Join(str, " ")
-					} else {
-						if len(metaSplit[0]) > 0 {
-							str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
+			iocsFound = append(iocsFound, output.IOCFound{
+				RuleName:         m.Rule,
+				CategoryName:     m.Tags,
+				StringsToMatch:   matchesStringData,
+				Meta:             matchesMetaData,
+				CompleteFilename: fileName,
+			})
+		}
+		var fileMat fileMatches
+		fileMat.fileName = fileName
+		fileMat.iocs = iocsFound
+		updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
+		fileMat.updatedSeverity = updatedSeverity
+		fileMat.updatedScore = updatedScore
+		//var isFirstIOC bool = true
+		if len(matches) > 0 {
+			//output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
+			for _, m := range iocsFound {
+				m.FileSeverity = updatedSeverity
+				m.FileSevScore = updatedScore
+				StringsMatch := make([]string, 0)
+				for _, c := range m.StringsToMatch {
+					if len(c) > 0 {
+						StringsMatch = append(StringsMatch, c)
+					}
+				}
+				m.StringsToMatch = StringsMatch
+				m.LayerID = layer
+				summary := ""
+				m.MetaRules = make(map[string]string)
+				for _, c := range m.Meta {
+					var metaSplit = strings.Split(c, " : ")
+					if len(metaSplit) > 1 {
+
+						//fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.Replace(metaSplit[1], "\n", "", -1))+",\n")
+						m.MetaRules[metaSplit[0]] = strings.Replace(metaSplit[1], "\n", "", -1)
+						if metaSplit[0] == "description" {
+							str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
 							summary = summary + strings.Join(str, " ")
+						} else {
+							if len(metaSplit[0]) > 0 {
+								str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
+								summary = summary + strings.Join(str, " ")
+							}
 						}
 					}
 				}
+				m.Summary = summary
+				*(*(*iocs)) = append(*(*(*iocs)), m)
 			}
-			m.Summary = summary
-			*(*(*iocs)) = append(*(*(*iocs)), m)
 		}
 	}
-
 	return err
 }
 
@@ -295,7 +306,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound,layer string) error {
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound) error {
+func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
 	var fs afero.Fs
 	if layer != "" {
 		session.Log.Info("Scan results in selected image with layer ", layer)
@@ -312,9 +323,13 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 	// var file core.MatchFile
 	// var relPath string
 
+	fmt.Println("full directory is",fullDir,isContainerRunTime)
+
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
+		fmt.Println("inside directory is",path)
 		if err != nil {
+			fmt.Println("the error path is",err)
 			return nil
 		}
 
@@ -329,10 +344,18 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		}
 
 		if info.IsDir() {
-			if core.IsSkippableDir(fs, path, baseDir) {
-				return filepath.SkipDir
+			if isContainerRunTime {
+				fmt.Println("full directory is",fullDir,path)
+				if core.IsSkippableContainerRuntimeDir(fs, path, baseDir)  {
+					return filepath.SkipDir
+				}
+			} else {
+				if core.IsSkippableDir(fs, path, baseDir)  {
+					return filepath.SkipDir
+				}
 			}
 			return nil
+			
 		}
 		const specialMode = os.ModeSymlink | os.ModeDevice | os.ModeNamedPipe | os.ModeSocket | os.ModeCharDevice
 		if info.Mode()&specialMode != 0 {
@@ -342,7 +365,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 			return nil
 		}
 		if err = ScanFilePath(fs, path, &iocs,layer); err != nil {
-
+             fmt.Println("afero path",err )
 		}
 		return nil
 	})
@@ -391,7 +414,7 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 			// return tempIOCsFound, error
 		}
 		core.GetSession().Log.Debug("Analyzing dir: %s", targetDir)
-		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs)
+		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs, false)
 		tempIOCsFound = append(tempIOCsFound, IOCs...)
 		if err != nil {
 			core.GetSession().Log.Error("ProcessImageLayers: %s", err)
@@ -642,14 +665,12 @@ func ExtractAndScanImage(image string) (*ImageExtractionResult, error) {
 
 func ExtractAndScanFromTar(tarFolder string, imageName string) (*ImageExtractionResult, error) {
 	// defer core.DeleteTmpDir(tarFolder)
-
 	imageScan := ImageScan{imageName: imageName, imageId: "", tempDir: tarFolder}
 	err := imageScan.extractImage(false)
 
 	if err != nil {
 		return nil, err
 	}
-
 	IOCs, err := imageScan.scan()
 
 	if err != nil {

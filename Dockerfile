@@ -1,8 +1,10 @@
 FROM golang:1.18.3-bullseye AS builder
 MAINTAINER DeepFence
 
+
+
 RUN apt-get update  \
-    && apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev \
+    && apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev git protoc-gen-go \
     libjansson-dev libmagic-dev \
     && cd /root  \
     && wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.2.1.tar.gz \
@@ -17,6 +19,7 @@ RUN apt-get update  \
 
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
+
 
 WORKDIR /home/deepfence/src/YaRadare
 COPY . .
@@ -33,7 +36,7 @@ ENV MGMT_CONSOLE_URL=deepfence-internal-router \
     MGMT_CONSOLE_PORT=443 \
     LD_LIBRARY_PATH=/usr/local/yara/lib \
     DOCKERVERSION=20.10.17
-RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl1.1 libmagic1 bash curl python3-pip \
+RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl1.1 libmagic1 libstdc++6 jq bash skopeo curl python3-pip \
     && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.18.0/nerdctl-0.18.0-linux-amd64.tar.gz \
     && tar Cxzvvf /usr/local/bin nerdctl-0.18.0-linux-amd64.tar.gz \
     && rm nerdctl-0.18.0-linux-amd64.tar.gz \
@@ -46,6 +49,8 @@ WORKDIR /home/deepfence/usr
 COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
 COPY --from=builder /home/deepfence/src/YaRadare/YaRadare .
 COPY --from=builder /home/deepfence/src/YaRadare/config.yaml .
+COPY --from=builder /home/deepfence/src/YaRadare/registry_image_save .
+RUN pip3 install -r requirements.txt
 RUN cd /usr/local/ \
     && tar -xzf yara.tar.gz
 WORKDIR /home/deepfence/output
