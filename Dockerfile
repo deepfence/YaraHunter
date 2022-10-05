@@ -24,9 +24,7 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
 WORKDIR /home/deepfence/src/YaRadare
 COPY . .
 RUN make clean \
-    && make all \
-    && cd /home/deepfence \
-    && git clone https://github.com/deepfence/yara-rules
+    && make all 
 
 FROM debian:bullseye
 MAINTAINER DeepFence
@@ -43,8 +41,6 @@ RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4
     && curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
     && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
     && rm docker-${DOCKERVERSION}.tgz
-WORKDIR /home/deepfence/rules
-COPY --from=builder /home/deepfence/yara-rules .
 WORKDIR /home/deepfence/usr
 COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
 COPY --from=builder /home/deepfence/src/YaRadare/YaRadare .

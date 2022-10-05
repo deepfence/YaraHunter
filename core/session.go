@@ -50,6 +50,16 @@ func (s *Session) InitThreads() {
 	runtime.GOMAXPROCS(*s.Options.Threads + 1)
 }
 
+func AddSessionRules(rulesSession *Session) *Session {
+	rules, err := compile(filescan, rulesSession)
+	if err != nil {
+		rulesSession.Log.Error("compiling rules issue: %s", err)
+		os.Exit(1)
+	}
+	rulesSession.YaraRules = rules
+	return rulesSession
+}
+
 func GetSession() *Session {
 	sessionSync.Do(func() {
 		session = &Session{
@@ -76,12 +86,7 @@ func GetSession() *Session {
 
 		session.Start()
 
-		rules, err := compile(filescan, session)
-		if err != nil {
-			session.Log.Error("compiling rules issue: %s", err)
-			os.Exit(1)
-		}
-		session.YaraRules = rules
+
 	})
 
 	return session
