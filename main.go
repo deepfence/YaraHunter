@@ -253,7 +253,7 @@ func NewYaraRuleUpdater() (error, *YaraRuleUpdater) {
 	return nil, updater
 }
 
-func untar(dst string, r io.Reader) error {
+func untar(d *os.File, r io.Reader) error {
 
 	gzr, err := gzip.NewReader(r)
 	if err != nil {
@@ -275,8 +275,9 @@ func untar(dst string, r io.Reader) error {
 			continue
 		}
 		// the target location where the dir/file should be created
-		target := filepath.Join(dst, header.Name)
-		fmt.Println("the target is", target)
+		// target := filepath.Join(dst, strings.Replace(header.Name,"yara-rules/", "", -1))
+		// fmt.Println("the target main is", header.Name,strings.Replace(header.Name,"yara-rules/", "", -1))
+		// fmt.Println("the target is", target)
 		// the following switch could also be done using fi.Mode(), not sure if there
 		// a benefit of using one vs. the other.
 		// fi := header.FileInfo()
@@ -288,23 +289,30 @@ func untar(dst string, r io.Reader) error {
 		case tar.TypeReg:
 			fmt.Println("the j is", header.Name)
 			if strings.Contains(header.Name ,".yar") {
-				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-				fmt.Println("the target is", header.Name)
-				if err != nil {
-					return err
-				}
-				// copy over contents
-				if _, err := io.Copy(f, tr); err != nil {
+			 
+				if _, err := io.Copy(d, tr); err != nil {
+					fmt.Println("copying err",err)
 					return err
 				}
 
 				// manually close here after each file operation; defering would cause each file close
 				// to wait until all operations have completed.
-				f.Close()
+				d.Close()
 			}
 
 		}
 	}
+}
+
+
+func createFile( dest string) (error, *os.File){
+    // Create blank file
+    file, err := os.Create(filepath.Join(dest,"malware.yar"))
+    if err != nil {
+		fmt.Println("test why error", err)
+        return err, nil
+    }
+	return nil,file
 }
 
 func downloadFile(dUrl string, dest string) (error,string){
@@ -347,7 +355,7 @@ func downloadFile(dUrl string, dest string) (error,string){
     }
     fmt.Println("the dynamic url is",fileURL)
     defer file.Close()
-	return nil,fileName
+	 return nil,fileName
 
 }
 
@@ -392,65 +400,99 @@ func writeToFile(dUrl string, dest string) error{
 
 }
 
+func runYaraUpdate() error{
+	err, yaraRuleUpdater := NewYaraRuleUpdater()
+	if err != nil {
+		core.GetSession().Log.Error("main: failed to serve: %v", err)
+		return err
+	}
+	downloadError,_ := downloadFile("https://threat-intel.deepfence.io/yara-rules/listing.json",*core.GetSession().Options.ConfigPath)
+	if downloadError != nil {
+		core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
+		return err
+	}
+	core.GetSession().Log.Error("reached here 2")
+	content, err := ioutil.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath,"/listing.json"))
+	if err != nil {
+		core.GetSession().Log.Error("main: failed to serve: %v", err)
+		return err
+	}
+	var yaraRuleListingJson YaraRuleListing
+	err = json.Unmarshal(content, &yaraRuleListingJson)
+	if err != nil {
+		core.GetSession().Log.Error("main: failed to serve: %v", err)
+		return err
+	}
+	if len(yaraRuleListingJson.Available.V3) > 0 {
+		core.GetSession().Log.Error("reached here 4 %v", yaraRuleListingJson.Available.V3[0].Checksum)
+		if yaraRuleListingJson.Available.V3[0].Checksum != yaraRuleUpdater.currentFileChecksum {
+			yaraRuleUpdater.currentFileChecksum = yaraRuleListingJson.Available.V3[0].Checksum
+			file, _ := json.MarshalIndent(yaraRuleUpdater, "", " ")
+			writeErr := ioutil.WriteFile(path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"),file,0644)
+
+			if writeErr != nil {
+				core.GetSession().Log.Error("main: failed to serve: %v", writeErr)
+				return writeErr
+			}
+			downloadError,fileName := downloadFile(yaraRuleListingJson.Available.V3[0].URL,*core.GetSession().Options.ConfigPath)
+			fmt.Println("reached here 5 times", fileName)
+
+			if downloadError != nil {
+				core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
+				return downloadError
+			}
+			if fileExists(filepath.Join(*core.GetSession().Options.ConfigPath,fileName)) {
+				fmt.Println("the file exists")
+					
+				readFile, readErr := os.OpenFile(filepath.Join(*core.GetSession().Options.ConfigPath,fileName), os.O_CREATE|os.O_RDWR, 0755)
+				if readErr != nil {
+					core.GetSession().Log.Error("main: failed to serve: %v", readErr)
+					return readErr
+				}
+				createErr,newFile := createFile(*core.GetSession().Options.ConfigPath)
+				if createErr != nil {
+					core.GetSession().Log.Error("main: failed to create: %v", createErr)
+					return createErr
+				}
+				fmt.Println("the new file created is",newFile)
+				unTarErr := untar(newFile,readFile)
+				if unTarErr != nil {
+					core.GetSession().Log.Error("main: failed to serve: %v", unTarErr)
+					return unTarErr
+				}
+				defer newFile.Close()
+				defer readFile.Close()
+					
+			}
+				
+		}
+	}
+	return nil
+}
+
 func main() {
 	flag.Parse()
 	core.GetSession().Log.Error("reached here")
-	ch := make(chan bool)
 	go func() {
-		err, yaraRuleUpdater := NewYaraRuleUpdater()
-		if err != nil {
-			core.GetSession().Log.Error("main: failed to serve: %v", err)
-		}
-		downloadError,_ := downloadFile("https://threat-intel.deepfence.io/yara-rules/listing.json",*core.GetSession().Options.ConfigPath)
-		if downloadError != nil {
-			core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
-		}
-		core.GetSession().Log.Error("reached here 2")
-		content, err := ioutil.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath,"/listing.json"))
-		if err != nil {
-			core.GetSession().Log.Error("main: failed to serve: %v", err)
-		}
-		var yaraRuleListingJson YaraRuleListing
-		err = json.Unmarshal(content, &yaraRuleListingJson)
-		if err != nil {
-			core.GetSession().Log.Error("main: failed to serve: %v", err)
-		}
-		if len(yaraRuleListingJson.Available.V3) > 0 {
-			core.GetSession().Log.Error("reached here 4 %v", yaraRuleListingJson.Available.V3[0].Checksum)
-			if yaraRuleListingJson.Available.V3[0].Checksum != yaraRuleUpdater.currentFileChecksum {
-				yaraRuleUpdater.currentFileChecksum = yaraRuleListingJson.Available.V3[0].Checksum
-				file, _ := json.MarshalIndent(yaraRuleUpdater, "", " ")
-				ioutil.WriteFile(path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"),file,0644)
-				downloadError,fileName := downloadFile(yaraRuleListingJson.Available.V3[0].URL,*core.GetSession().Options.ConfigPath)
-				fmt.Println("reached here 5 times", fileName)
+		ticker := time.NewTicker(4 * time.Hour)
+		var err error
+		for {
+			select {
+			case <-ticker.C:
+				err = runYaraUpdate()
+				if err != nil {
+					core.GetSession().Log.Error("main: failed to serve: %v", err)
+				}
+				_,err := core.AddSessionRules(core.GetSession())
+				core.GetSession().Log.Error("main: failed to serve: %v", err)
 
-				if downloadError != nil {
-					core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
-				}
-				if fileExists(filepath.Join(*core.GetSession().Options.ConfigPath,fileName)) {
-					fmt.Println("the file exists")
-					readFile, readErr := os.Open(filepath.Join(*core.GetSession().Options.ConfigPath,fileName))
-					if readErr != nil {
-						core.GetSession().Log.Error("main: failed to serve: %v", readErr)
-					}
-					unTarErr := untar(*core.GetSession().Options.RulesPath,readFile)
-					if unTarErr != nil {
-						core.GetSession().Log.Error("main: failed to serve: %v", unTarErr)
-					}
-					defer readFile.Close()
-					
-				}
 				
 			}
 		}
-
-		ch <- true
-
 	}()
-	<-ch
 	fmt.Println("server inside23 port", *session.Options)
 
-	//core.AddSessionRules(core.GetSession())
+	
 	if *session.Options.SocketPath != "" {
 		err := server.RunServer(*session.Options.SocketPath, PLUGIN_NAME)
 		if err != nil {
