@@ -80,7 +80,7 @@ func (containerScan *ContainerScan) scanPath(containerPath string) ([]output.IOC
 // Error - Errors, if any. Otherwise, returns nil
 func (containerScan *ContainerScan) scan() ([]output.IOCFound, error) {
 	var iocsFound []output.IOCFound
-	err := ScanIOCInDir("", "", containerScan.tempDir, nil, &iocsFound,false)
+	err := ScanIOCInDir("", "", containerScan.tempDir, nil, &iocsFound, false)
 	if err != nil {
 		core.GetSession().Log.Error("findIOCInContainer: %s", err)
 		return iocsFound, err
@@ -93,9 +93,9 @@ type ContainerExtractionResult struct {
 	ContainerId string
 }
 
-func  GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
+func GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
 	// fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
-	return exec.Command("docker", "inspect" , strings.TrimSpace(containerId)).Output()
+	return exec.Command("docker", "inspect", strings.TrimSpace(containerId)).Output()
 }
 
 func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOCFound, error) {
@@ -117,9 +117,9 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 			return nil, err
 		}
 		if strings.Contains(string(containerPath), "\"MergedDir\":") {
-            if(strings.Contains(strings.Split(string(containerPath),"\"MergedDir\": \"")[1], "/merged\"")) {
+			if strings.Contains(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"") {
 				containerPathToScan := strings.Split(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"")[0] + "/merged"
-				fmt.Println("Container Scan Path",containerPathToScan)
+				fmt.Println("Container Scan Path", containerPathToScan)
 				iocsFound, err = containerScan.scanPath(containerPathToScan)
 			}
 		}
@@ -137,4 +137,3 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 	}
 	return iocsFound, nil
 }
-
