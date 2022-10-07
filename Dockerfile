@@ -24,8 +24,7 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
 WORKDIR /home/deepfence/src/YaRadare
 COPY . .
 RUN make clean \
-    && make all 
-    RUN make clean \
+    && make all \
     && cd /home/deepfence \
     && git clone https://github.com/deepfence/yara-rules
 
