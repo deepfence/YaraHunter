@@ -48,7 +48,6 @@ COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
 COPY --from=builder /home/deepfence/src/YaRadare/YaRadare .
 COPY --from=builder /home/deepfence/src/YaRadare/config.yaml .
 COPY --from=builder /home/deepfence/src/YaRadare/registry_image_save .
-COPY --from=builder /home/deepfence/src/YaRadare/registry_image_save .
 COPY --from=builder /home/deepfence/yara-rules .
 RUN pip3 install -r requirements.txt
 RUN cd /usr/local/ \
