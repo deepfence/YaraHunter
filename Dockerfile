@@ -43,17 +43,17 @@ RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4
     && curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
     && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
     && rm docker-${DOCKERVERSION}.tgz
-WORKDIR /home/deepfence/rules
-COPY --from=builder /home/deepfence/yara-rules .
 WORKDIR /home/deepfence/usr
+COPY --from=builder /home/deepfence/yara-rules .
 COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
 COPY --from=builder /home/deepfence/src/YaRadare/YaRadare .
 COPY --from=builder /home/deepfence/src/YaRadare/config.yaml .
 COPY --from=builder /home/deepfence/src/YaRadare/registry_image_save .
+
 RUN pip3 install -r requirements.txt
 RUN cd /usr/local/ \
     && tar -xzf yara.tar.gz
 WORKDIR /home/deepfence/output
 
-ENTRYPOINT ["/home/deepfence/usr/YaRadare", "-config-path", "/home/deepfence/usr"]
+ENTRYPOINT ["/home/deepfence/usr/YaRadare", "-config-path", "≈", "-rules-path", "/home/deepfence/usr"]
 CMD ["-h"]
