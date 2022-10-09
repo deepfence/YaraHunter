@@ -240,7 +240,7 @@ func downloadFile(dUrl string, dest string) (error,string){
     }
     // Put content on file
     resp, err := client.Get(fullUrlFile)
-	fmt.Println("the dynamic url is",fileName)
+	fmt.Println(" The dynamic url is ",fileName)
     if err != nil {
         return err, ""
     }
