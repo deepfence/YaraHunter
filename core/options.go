@@ -26,15 +26,13 @@ type Options struct {
 	ContainerNS          *string
 	SocketPath			 *string
 	HttpPort			 *string
-	StandAloneHttpPort   *string
 	RulesPath            *string
 	FailOnCompileWarning *bool
-	
 }
 
 func ParseOptions() (*Options, error) {
 	options := &Options{
-		RulesPath:            flag.String("rules-path", "", "All .yar and .yara files in the given directory will be compiled"),
+		RulesPath:            flag.String("rules-path", "/home/deepfence/rules", "All .yar and .yara files in the given directory will be compiled"),
 		FailOnCompileWarning: flag.Bool("fail-on-rule-compile-warn", false, "Fail if yara rule compilation has warnings"),
 		Threads:              flag.Int("threads", 0, "Number of concurrent threads (default number of logical CPUs)"),
 		DebugLevel:      	  flag.String("debug-level", "ERROR", "Debug levels are one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG. Only levels higher than the debug-level are displayed"),
@@ -51,7 +49,6 @@ func ParseOptions() (*Options, error) {
 		ContainerNS:          flag.String("container-ns", "", "Namespace of existing container to scan, empty for docker runtime"),
 		SocketPath:           flag.String("socket-path", "", "The gRPC server unix socket path"),
 		HttpPort: 			  flag.String("http-port", "", "When set the http server will come up at port with df es as output"),
-		StandAloneHttpPort:   flag.String("standalone-http-port", "", "use to run malware scanner as a standalone service"),
 
 	}
 	flag.Parse()
