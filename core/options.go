@@ -26,7 +26,6 @@ type Options struct {
 	ContainerNS          *string
 	SocketPath           *string
 	HttpPort             *string
-  main
 	StandAloneHttpPort   *string
 	RulesPath            *string
 	FailOnCompileWarning *bool
