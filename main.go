@@ -30,11 +30,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"flag"
-	"github.com/deepfence/YaRadare/core"
-	"github.com/deepfence/YaRadare/output"
-	"github.com/deepfence/YaRadare/scan"
-	"github.com/deepfence/YaRadare/server"
-	"github.com/fatih/color"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -46,6 +41,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/deepfence/YaRadare/core"
+	"github.com/deepfence/YaRadare/output"
+	"github.com/deepfence/YaRadare/scan"
+	"github.com/deepfence/YaRadare/server"
+	"github.com/fatih/color"
 )
 
 type YaraRuleDetail struct {
@@ -72,12 +73,9 @@ type YaraRuleUpdater struct {
 	sync.RWMutex
 }
 
-
 const (
 	PLUGIN_NAME = "MalwareScanner"
 )
-
-
 
 // Read the regex signatures from config file, options etc.
 // and setup the session to start scanning for IOC
@@ -478,7 +476,6 @@ func runOnce() {
 	}
 }
 
-
 func yaraUpdate() {
 	if *session.Options.SocketPath != "" && *session.Options.HttpPort != "" {
 		flag.Parse()
@@ -523,10 +520,266 @@ func yaraResults() {
 	
 }
 
+func sha256sum(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("sha256:%x", hash.Sum(nil)), nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+	return false
+}
+
+func NewYaraRuleUpdater() (error, *YaraRuleUpdater) {
+	updater := &YaraRuleUpdater{
+		yaraRuleListingJson:  YaraRuleListing{},
+		yaraRulePath:         path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"),
+		downloadYaraRulePath: "",
+	}
+	if fileExists(updater.yaraRulePath) {
+		content, err := ioutil.ReadFile(updater.yaraRulePath)
+		if err != nil {
+			return err, nil
+		}
+		err = json.Unmarshal(content, &updater)
+		if err != nil {
+			return err, nil
+		}
+	}
+	return nil, updater
+}
+
+func untar(d *os.File, r io.Reader) error {
+
+	gzr, err := gzip.NewReader(r)
+	if err != nil {
+		return err
+	}
+	defer gzr.Close()
+	tr := tar.NewReader(gzr)
+	for {
+		header, err := tr.Next()
+		switch {
+		// if no more files are found return
+		case err == io.EOF:
+			return nil
+		// return any other error
+		case err != nil:
+			return err
+		// if the header is nil, just skip it (not sure how this happens)
+		case header == nil:
+			continue
+		}
+		// the target location where the dir/file should be created
+		// target := filepath.Join(dst, strings.Replace(header.Name,"yara-rules/", "", -1))
+		// fmt.Println("the target main is", header.Name,strings.Replace(header.Name,"yara-rules/", "", -1))
+		// fmt.Println("the target is", target)
+		// the following switch could also be done using fi.Mode(), not sure if there
+		// a benefit of using one vs. the other.
+		// fi := header.FileInfo()
+
+		// check the file type
+		switch header.Typeflag {
+		// if its a dir and it doesn't exist create it
+		// if it's a file create it
+		case tar.TypeReg:
+			fmt.Println("the j is", header.Name)
+			if strings.Contains(header.Name ,".yar") {
+			 
+				if _, err := io.Copy(d, tr); err != nil {
+					fmt.Println("copying err",err)
+					return err
+				}
+
+				// manually close here after each file operation; defering would cause each file close
+				// to wait until all operations have completed.
+				d.Close()
+			}
+
+		}
+	}
+}
+
+
+func createFile( dest string) (error, *os.File){
+    // Create blank file
+    file, err := os.Create(filepath.Join(dest,"malware.yar"))
+    if err != nil {
+		fmt.Println("test why error", err)
+        return err, nil
+    }
+	return nil,file
+}
+
+func downloadFile(dUrl string, dest string) (error,string){
+	fmt.Println("the dynamic url is",dUrl)
+	fullUrlFile := dUrl
+ 
+    // Build fileName from fullPath
+    fileURL, err := url.Parse(fullUrlFile)
+    if err != nil {
+        return err, ""
+    }
+	fmt.Println("the dynamic url is",fileURL)
+    path := fileURL.Path
+    segments := strings.Split(path, "/")
+    fileName := segments[len(segments)-1]
+ 
+    // Create blank file
+    file, err := os.Create(filepath.Join(dest,fileName))
+    if err != nil {
+        return err, ""
+    }
+    client := http.Client{
+        CheckRedirect: func(r *http.Request, via []*http.Request) error {
+            r.URL.Opaque = r.URL.Path
+            return nil
+        },
+    }
+    // Put content on file
+    resp, err := client.Get(fullUrlFile)
+	fmt.Println("the dynamic url is",fileName)
+    if err != nil {
+        return err, ""
+    }
+    defer resp.Body.Close()
+ 
+    size, err := io.Copy(file, resp.Body)
+	fmt.Println("copied size", size)
+	if err != nil {
+        return err, ""
+    }
+    fmt.Println("the dynamic url is",fileURL)
+    defer file.Close()
+	 return nil,fileName
+
+}
+
+func writeToFile(dUrl string, dest string) error{
+	fullUrlFile := dUrl
+ 
+    // Build fileName from fullPath
+    fileURL, err := url.Parse(fullUrlFile)
+    if err != nil {
+        return err
+    }
+    path := fileURL.Path
+    segments := strings.Split(path, "/")
+    fileName := segments[len(segments)-1]
+ 
+    // Create blank file
+    file, err := os.Create(filepath.Join(dest,fileName))
+    if err != nil {
+        return err
+    }
+    client := http.Client{
+        CheckRedirect: func(r *http.Request, via []*http.Request) error {
+            r.URL.Opaque = r.URL.Path
+            return nil
+        },
+    }
+    // Put content on file
+    resp, err := client.Get(fullUrlFile)
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+ 
+    size, err := io.Copy(file, resp.Body)
+	fmt.Println("copied size", size)
+	if err != nil {
+        return err
+    }
+ 
+    defer file.Close()
+	 return nil
+
+}
+
+func runYaraUpdate() error{
+	err, yaraRuleUpdater := NewYaraRuleUpdater()
+	if err != nil {
+		core.GetSession().Log.Error("main: failed to serve: %v", err)
+		return err
+	}
+	downloadError,_ := downloadFile("https://threat-intel.deepfence.io/yara-rules/listing.json",*core.GetSession().Options.ConfigPath)
+	if downloadError != nil {
+		core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
+		return err
+	}
+	core.GetSession().Log.Error("reached here 2")
+	content, err := ioutil.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath,"/listing.json"))
+	if err != nil {
+		core.GetSession().Log.Error("main: failed to serve: %v", err)
+		return err
+	}
+	var yaraRuleListingJson YaraRuleListing
+	err = json.Unmarshal(content, &yaraRuleListingJson)
+	if err != nil {
+		core.GetSession().Log.Error("main: failed to serve: %v", err)
+		return err
+	}
+	if len(yaraRuleListingJson.Available.V3) > 0 {
+		core.GetSession().Log.Error("reached here 4 %v", yaraRuleListingJson.Available.V3[0].Checksum)
+		if yaraRuleListingJson.Available.V3[0].Checksum != yaraRuleUpdater.currentFileChecksum {
+			yaraRuleUpdater.currentFileChecksum = yaraRuleListingJson.Available.V3[0].Checksum
+			file, _ := json.MarshalIndent(yaraRuleUpdater, "", " ")
+			writeErr := ioutil.WriteFile(path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"),file,0644)
+
+			if writeErr != nil {
+				core.GetSession().Log.Error("main: failed to serve: %v", writeErr)
+				return writeErr
+			}
+			downloadError,fileName := downloadFile(yaraRuleListingJson.Available.V3[0].URL,*core.GetSession().Options.ConfigPath)
+			fmt.Println("reached here 5 times", fileName)
+
+			if downloadError != nil {
+				core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
+				return downloadError
+			}
+			if fileExists(filepath.Join(*core.GetSession().Options.ConfigPath,fileName)) {
+				fmt.Println("the file exists")
+					
+				readFile, readErr := os.OpenFile(filepath.Join(*core.GetSession().Options.ConfigPath,fileName), os.O_CREATE|os.O_RDWR, 0755)
+				if readErr != nil {
+					core.GetSession().Log.Error("main: failed to serve: %v", readErr)
+					return readErr
+				}
+				createErr,newFile := createFile(*core.GetSession().Options.ConfigPath)
+				if createErr != nil {
+					core.GetSession().Log.Error("main: failed to create: %v", createErr)
+					return createErr
+				}
+				fmt.Println("the new file created is",newFile)
+				unTarErr := untar(newFile,readFile)
+				if unTarErr != nil {
+					core.GetSession().Log.Error("main: failed to serve: %v", unTarErr)
+					return unTarErr
+				}
+				defer newFile.Close()
+				defer readFile.Close()
+					
+			}
+				
+		}
+	}
+	return nil
+}
+
 
 func main() {
-
-
 	fmt.Println(" Welcome to concurrency")
     wg.Add(2)
     go yaraUpdate()
