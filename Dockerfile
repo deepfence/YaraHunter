@@ -25,7 +25,7 @@ WORKDIR /home/deepfence/src/YaRadare
 COPY . .
 RUN make clean \
     && make all \
-    && cd /home/deepfence/usr \
+    && cd /home/deepfence \
     && git clone https://github.com/deepfence/yara-rules
 
 FROM debian:bullseye
