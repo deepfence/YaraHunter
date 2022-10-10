@@ -310,7 +310,6 @@ func runYaraUpdate() error{
 		core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
 		return err
 	}
-	core.GetSession().Log.Error("reached here 2")
 	content, err := ioutil.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath,"/listing.json"))
 	if err != nil {
 		core.GetSession().Log.Error("main: failed to serve: %v", err)
@@ -323,7 +322,6 @@ func runYaraUpdate() error{
 		return err
 	}
 	if len(yaraRuleListingJson.Available.V3) > 0 {
-		core.GetSession().Log.Error("reached here 4 %v", yaraRuleListingJson.Available.V3[0].Checksum)
 		if yaraRuleListingJson.Available.V3[0].Checksum != yaraRuleUpdater.currentFileChecksum {
 			yaraRuleUpdater.currentFileChecksum = yaraRuleListingJson.Available.V3[0].Checksum
 			file, _ := json.MarshalIndent(yaraRuleUpdater, "", " ")
