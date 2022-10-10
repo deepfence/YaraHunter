@@ -494,7 +494,8 @@ func yaraUpdate() {
 			err := runYaraUpdate()
 			core.GetSession().Log.Fatal("main: failed to serve: %v", err)
 		}
-	}
+	} 
+	wg.Done()
 }
 
 func yaraResults() {
@@ -520,6 +521,7 @@ func yaraResults() {
 	} else {
 		runOnce()
 	}
+	wg.Done()
 	
 }
 
