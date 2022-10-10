@@ -25,7 +25,7 @@ WORKDIR /home/deepfence/src/YaRadare
 COPY . .
 RUN make clean \
     && make all \
-    && cd /home/deepfence \
+    && cd /home/deepfence/usr \
     && git clone https://github.com/deepfence/yara-rules
 
 FROM debian:bullseye
@@ -44,6 +44,7 @@ RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4
     && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
     && rm docker-${DOCKERVERSION}.tgz
 WORKDIR /home/deepfence/usr
+COPY --from=builder /home/deepfence/yara-rules .
 COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
 COPY --from=builder /home/deepfence/src/YaRadare/YaRadare .
 COPY --from=builder /home/deepfence/src/YaRadare/config.yaml .
