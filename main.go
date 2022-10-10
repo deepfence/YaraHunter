@@ -186,7 +186,7 @@ func untar(d *os.File, r io.Reader) error {
 		// if its a dir and it doesn't exist create it
 		// if it's a file create it
 		case tar.TypeReg:
-			fmt.Println("the j is", header.Name)
+			//fmt.Println("the j is", header.Name)
 			if strings.Contains(header.Name ,".yar") {
 
 				if _, err := io.Copy(d, tr); err != nil {
@@ -214,7 +214,7 @@ func createFile( dest string) (error, *os.File){
 }
 
 func downloadFile(dUrl string, dest string) (error,string){
-	fmt.Println("the dynamic url is",dUrl)
+	//fmt.Println("the dynamic url is",dUrl)
 	fullUrlFile := dUrl
 
     // Build fileName from fullPath
@@ -222,7 +222,7 @@ func downloadFile(dUrl string, dest string) (error,string){
     if err != nil {
         return err, ""
     }
-	fmt.Println("the dynamic url is",fileURL)
+	//fmt.Println("the dynamic url is",fileURL)
     path := fileURL.Path
     segments := strings.Split(path, "/")
     fileName := segments[len(segments)-1]
@@ -240,7 +240,7 @@ func downloadFile(dUrl string, dest string) (error,string){
     }
     // Put content on file
     resp, err := client.Get(fullUrlFile)
-	fmt.Println(" The dynamic url is ",fileName)
+	//fmt.Println(" The dynamic url is ",fileName)
     if err != nil {
         return err, ""
     }
@@ -251,7 +251,7 @@ func downloadFile(dUrl string, dest string) (error,string){
 	if err != nil {
         return err, ""
     }
-    fmt.Println("the dynamic url is",fileURL)
+    //fmt.Println("the dynamic url is",fileURL)
     defer file.Close()
 	 return nil,fileName
 
@@ -334,14 +334,14 @@ func runYaraUpdate() error{
 				return writeErr
 			}
 			downloadError,fileName := downloadFile(yaraRuleListingJson.Available.V3[0].URL,*core.GetSession().Options.ConfigPath)
-			fmt.Println("reached here 5 times", fileName)
+			//fmt.Println("reached here 5 times", fileName)
 
 			if downloadError != nil {
 				core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
 				return downloadError
 			}
 			if fileExists(filepath.Join(*core.GetSession().Options.ConfigPath,fileName)) {
-				fmt.Println("the file exists")
+				//fmt.Println("the file exists")
 
 				readFile, readErr := os.OpenFile(filepath.Join(*core.GetSession().Options.ConfigPath,fileName), os.O_CREATE|os.O_RDWR, 0755)
 				if readErr != nil {
@@ -353,7 +353,7 @@ func runYaraUpdate() error{
 					core.GetSession().Log.Error("main: failed to create: %v", createErr)
 					return createErr
 				}
-				fmt.Println("the new file created is",newFile)
+				//fmt.Println("the new file created is",newFile)
 				unTarErr := untar(newFile,readFile)
 				if unTarErr != nil {
 					core.GetSession().Log.Error("main: failed to serve: %v", unTarErr)
@@ -479,7 +479,8 @@ func runOnce() {
 }
 
 
-func yaraUpdate() {
+func yaraUpdate( newwg *sync.WaitGroup) {
+	defer newwg.Done()
 	if *session.Options.SocketPath != "" && *session.Options.HttpPort != "" {
 		flag.Parse()
 		fmt.Println("Go Tickers Tutorial")
@@ -497,8 +498,8 @@ func yaraUpdate() {
 	}
 }
 
-func yaraResults() {
-	
+func yaraResults( newwg *sync.WaitGroup) {
+	defer newwg.Done()
 	flag.Parse()
 	err := runYaraUpdate()
 	if err != nil {
@@ -527,12 +528,12 @@ func yaraResults() {
 func main() {
 
 
-	fmt.Println(" Welcome to concurrency")
+	//fmt.Println(" Welcome to concurrency")
     wg.Add(2)
-    go yaraUpdate()
-    go yaraResults()
-    fmt.Println("Waiting To Finish")
+    go yaraUpdate(&wg)
+    go yaraResults(&wg)
+    //fmt.Println("Waiting To Finish")
     wg.Wait()
-    fmt.Println("\nTerminating Program")
+    //fmt.Println("\nTerminating Program")
 	//f2(<-out1, <-out2)
 }
