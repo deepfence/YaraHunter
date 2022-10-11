@@ -30,22 +30,23 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"flag"
-	"github.com/deepfence/YaRadare/core"
-	"github.com/deepfence/YaRadare/output"
-	"github.com/deepfence/YaRadare/scan"
-	"github.com/deepfence/YaRadare/server"
-	"github.com/fatih/color"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/deepfence/YaRadare/core"
+	"github.com/deepfence/YaRadare/output"
+	"github.com/deepfence/YaRadare/scan"
+	"github.com/deepfence/YaRadare/server"
+	"github.com/fatih/color"
 )
 
 type YaraRuleDetail struct {
@@ -72,18 +73,15 @@ type YaraRuleUpdater struct {
 	sync.RWMutex
 }
 
-
 const (
 	PLUGIN_NAME = "MalwareScanner"
 )
-
-
 
 // Read the regex signatures from config file, options etc.
 // and setup the session to start scanning for IOC
 var session = core.GetSession()
 
-var wg  sync.WaitGroup
+var wg sync.WaitGroup
 
 // Scan a container image for IOC layer by layer
 // @parameters
@@ -131,7 +129,6 @@ func fileExists(path string) bool {
 	return false
 }
 
-
 func NewYaraRuleUpdater() (error, *YaraRuleUpdater) {
 	updater := &YaraRuleUpdater{
 		yaraRuleListingJson:  YaraRuleListing{},
@@ -150,7 +147,6 @@ func NewYaraRuleUpdater() (error, *YaraRuleUpdater) {
 	}
 	return nil, updater
 }
-
 
 func untar(d *os.File, r io.Reader) error {
 
@@ -187,10 +183,10 @@ func untar(d *os.File, r io.Reader) error {
 		// if it's a file create it
 		case tar.TypeReg:
 			//fmt.Println("the j is", header.Name)
-			if strings.Contains(header.Name ,".yar") {
+			if strings.Contains(header.Name, ".yar") {
 
 				if _, err := io.Copy(d, tr); err != nil {
-					fmt.Println("copying err",err)
+					fmt.Println("copying err", err)
 					return err
 				}
 
@@ -203,114 +199,113 @@ func untar(d *os.File, r io.Reader) error {
 	}
 }
 
-func createFile( dest string) (error, *os.File){
-    // Create blank file
-    file, err := os.Create(filepath.Join(dest,"malware.yar"))
-    if err != nil {
+func createFile(dest string) (error, *os.File) {
+	// Create blank file
+	file, err := os.Create(filepath.Join(dest, "malware.yar"))
+	if err != nil {
 		fmt.Println("test why error", err)
-        return err, nil
-    }
-	return nil,file
+		return err, nil
+	}
+	return nil, file
 }
 
-func downloadFile(dUrl string, dest string) (error,string){
+func downloadFile(dUrl string, dest string) (error, string) {
 	//fmt.Println("the dynamic url is",dUrl)
 	fullUrlFile := dUrl
 
-    // Build fileName from fullPath
-    fileURL, err := url.Parse(fullUrlFile)
-    if err != nil {
-        return err, ""
-    }
+	// Build fileName from fullPath
+	fileURL, err := url.Parse(fullUrlFile)
+	if err != nil {
+		return err, ""
+	}
 	//fmt.Println("the dynamic url is",fileURL)
-    path := fileURL.Path
-    segments := strings.Split(path, "/")
-    fileName := segments[len(segments)-1]
+	path := fileURL.Path
+	segments := strings.Split(path, "/")
+	fileName := segments[len(segments)-1]
 
-    // Create blank file
-    file, err := os.Create(filepath.Join(dest,fileName))
-    if err != nil {
-        return err, ""
-    }
-    client := http.Client{
-        CheckRedirect: func(r *http.Request, via []*http.Request) error {
-            r.URL.Opaque = r.URL.Path
-            return nil
-        },
-    }
-    // Put content on file
-    resp, err := client.Get(fullUrlFile)
+	// Create blank file
+	file, err := os.Create(filepath.Join(dest, fileName))
+	if err != nil {
+		return err, ""
+	}
+	client := http.Client{
+		CheckRedirect: func(r *http.Request, via []*http.Request) error {
+			r.URL.Opaque = r.URL.Path
+			return nil
+		},
+	}
+	// Put content on file
+	resp, err := client.Get(fullUrlFile)
 	//fmt.Println(" The dynamic url is ",fileName)
-    if err != nil {
-        return err, ""
-    }
-    defer resp.Body.Close()
+	if err != nil {
+		return err, ""
+	}
+	defer resp.Body.Close()
 
-    size, err := io.Copy(file, resp.Body)
+	size, err := io.Copy(file, resp.Body)
 	fmt.Println("copied size", size)
 	if err != nil {
-        return err, ""
-    }
-    //fmt.Println("the dynamic url is",fileURL)
-    defer file.Close()
-	 return nil,fileName
+		return err, ""
+	}
+	//fmt.Println("the dynamic url is",fileURL)
+	defer file.Close()
+	return nil, fileName
 
 }
 
-
-func writeToFile(dUrl string, dest string) error{
+func writeToFile(dUrl string, dest string) error {
 	fullUrlFile := dUrl
 
-    // Build fileName from fullPath
-    fileURL, err := url.Parse(fullUrlFile)
-    if err != nil {
-        return err
-    }
-    path := fileURL.Path
-    segments := strings.Split(path, "/")
-    fileName := segments[len(segments)-1]
+	// Build fileName from fullPath
+	fileURL, err := url.Parse(fullUrlFile)
+	if err != nil {
+		return err
+	}
+	path := fileURL.Path
+	segments := strings.Split(path, "/")
+	fileName := segments[len(segments)-1]
 
-    // Create blank file
-    file, err := os.Create(filepath.Join(dest,fileName))
-    if err != nil {
-        return err
-    }
-    client := http.Client{
-        CheckRedirect: func(r *http.Request, via []*http.Request) error {
-            r.URL.Opaque = r.URL.Path
-            return nil
-        },
-    }
-    // Put content on file
-    resp, err := client.Get(fullUrlFile)
-    if err != nil {
-        return err
-    }
-    defer resp.Body.Close()
+	// Create blank file
+	file, err := os.Create(filepath.Join(dest, fileName))
+	if err != nil {
+		return err
+	}
+	client := http.Client{
+		CheckRedirect: func(r *http.Request, via []*http.Request) error {
+			r.URL.Opaque = r.URL.Path
+			return nil
+		},
+	}
+	// Put content on file
+	resp, err := client.Get(fullUrlFile)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
-    size, err := io.Copy(file, resp.Body)
+	size, err := io.Copy(file, resp.Body)
 	fmt.Println("copied size", size)
 	if err != nil {
-        return err
-    }
+		return err
+	}
 
-    defer file.Close()
-	 return nil
+	defer file.Close()
+	return nil
 
 }
 
-func runYaraUpdate() error{
+func runYaraUpdate() error {
 	err, yaraRuleUpdater := NewYaraRuleUpdater()
 	if err != nil {
 		core.GetSession().Log.Error("main: failed to serve: %v", err)
 		return err
 	}
-	downloadError,_ := downloadFile("https://threat-intel.deepfence.io/yara-rules/listing.json",*core.GetSession().Options.ConfigPath)
+	downloadError, _ := downloadFile("https://threat-intel.deepfence.io/yara-rules/listing.json", *core.GetSession().Options.ConfigPath)
 	if downloadError != nil {
 		core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
 		return err
 	}
-	content, err := ioutil.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath,"/listing.json"))
+	content, err := ioutil.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath, "/listing.json"))
 	if err != nil {
 		core.GetSession().Log.Error("main: failed to serve: %v", err)
 		return err
@@ -325,34 +320,34 @@ func runYaraUpdate() error{
 		if yaraRuleListingJson.Available.V3[0].Checksum != yaraRuleUpdater.currentFileChecksum {
 			yaraRuleUpdater.currentFileChecksum = yaraRuleListingJson.Available.V3[0].Checksum
 			file, _ := json.MarshalIndent(yaraRuleUpdater, "", " ")
-			writeErr := ioutil.WriteFile(path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"),file,0644)
+			writeErr := ioutil.WriteFile(path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"), file, 0644)
 
 			if writeErr != nil {
 				core.GetSession().Log.Error("main: failed to serve: %v", writeErr)
 				return writeErr
 			}
-			downloadError,fileName := downloadFile(yaraRuleListingJson.Available.V3[0].URL,*core.GetSession().Options.ConfigPath)
+			downloadError, fileName := downloadFile(yaraRuleListingJson.Available.V3[0].URL, *core.GetSession().Options.ConfigPath)
 			//fmt.Println("reached here 5 times", fileName)
 
 			if downloadError != nil {
 				core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
 				return downloadError
 			}
-			if fileExists(filepath.Join(*core.GetSession().Options.ConfigPath,fileName)) {
+			if fileExists(filepath.Join(*core.GetSession().Options.ConfigPath, fileName)) {
 				//fmt.Println("the file exists")
 
-				readFile, readErr := os.OpenFile(filepath.Join(*core.GetSession().Options.ConfigPath,fileName), os.O_CREATE|os.O_RDWR, 0755)
+				readFile, readErr := os.OpenFile(filepath.Join(*core.GetSession().Options.ConfigPath, fileName), os.O_CREATE|os.O_RDWR, 0755)
 				if readErr != nil {
 					core.GetSession().Log.Error("main: failed to serve: %v", readErr)
 					return readErr
 				}
-				createErr,newFile := createFile(*core.GetSession().Options.ConfigPath)
+				createErr, newFile := createFile(*core.GetSession().Options.ConfigPath)
 				if createErr != nil {
 					core.GetSession().Log.Error("main: failed to create: %v", createErr)
 					return createErr
 				}
 				//fmt.Println("the new file created is",newFile)
-				unTarErr := untar(newFile,readFile)
+				unTarErr := untar(newFile, readFile)
 				if unTarErr != nil {
 					core.GetSession().Log.Error("main: failed to serve: %v", unTarErr)
 					return unTarErr
@@ -367,7 +362,6 @@ func runYaraUpdate() error{
 	}
 	return nil
 }
-
 
 // Scan a directory
 // @parameters
@@ -476,8 +470,7 @@ func runOnce() {
 	}
 }
 
-
-func yaraUpdate( newwg *sync.WaitGroup) {
+func yaraUpdate(newwg *sync.WaitGroup) {
 	defer newwg.Done()
 	if *session.Options.SocketPath != "" && *session.Options.HttpPort != "" {
 		flag.Parse()
@@ -496,7 +489,7 @@ func yaraUpdate( newwg *sync.WaitGroup) {
 	}
 }
 
-func yaraResults( newwg *sync.WaitGroup) {
+func yaraResults(newwg *sync.WaitGroup) {
 	defer newwg.Done()
 	flag.Parse()
 	err := runYaraUpdate()
@@ -504,7 +497,7 @@ func yaraResults( newwg *sync.WaitGroup) {
 		core.GetSession().Log.Fatal("main: failed to serve: %v", err)
 	}
 	fmt.Println("server inside23 port", *session.Options)
-	core.GetSession().Log.Info("server inside23 port",*session.Options)
+	core.GetSession().Log.Info("server inside23 port", *session.Options)
 	if *session.Options.SocketPath != "" {
 		err := server.RunServer(*session.Options.SocketPath, PLUGIN_NAME)
 		if err != nil {
@@ -516,22 +509,26 @@ func yaraResults( newwg *sync.WaitGroup) {
 		if err != nil {
 			core.GetSession().Log.Fatal("main: failed to serve through http: %v", err)
 		}
+	} else if *session.Options.StandAloneHttpPort != "" {
+		core.GetSession().Log.Info("server inside port")
+		err := server.RunStandaloneHttpServer(*session.Options.StandAloneHttpPort)
+		if err != nil {
+			core.GetSession().Log.Fatal("main: failed to serve through http: %v", err)
+		}
 	} else {
 		runOnce()
 	}
-	
-}
 
+}
 
 func main() {
 
-
 	//fmt.Println(" Welcome to concurrency")
-    wg.Add(2)
-    go yaraUpdate(&wg)
-    go yaraResults(&wg)
-    //fmt.Println("Waiting To Finish")
-    wg.Wait()
-    //fmt.Println("\nTerminating Program")
+	wg.Add(2)
+	go yaraUpdate(&wg)
+	go yaraResults(&wg)
+	//fmt.Println("Waiting To Finish")
+	wg.Wait()
+	//fmt.Println("\nTerminating Program")
 	//f2(<-out1, <-out2)
 }
