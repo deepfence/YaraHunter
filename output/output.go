@@ -27,8 +27,10 @@ type IOCFound struct {
 	FileSevScore     float64  `json:"File Severity Score,omitempty"`
 	CompleteFilename string   `json:"Full File Name,omitempty"`
 	Meta             []string `json:"rule meta"`
-	MetaRules        map[string]string `json:"rule metadata"`
-	Summary          string   `json:"Summary,omitempty"`
+
+	MetaRules map[string]string `json:"rule metadata"`
+	Summary   string            `json:"Summary,omitempty"`
+	Class     string            `json:"Class,omitempty"`
 }
 
 type IOCOutput interface {
@@ -98,7 +100,6 @@ func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 	return nil
 }
 
-
 func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 	res := make([]*pb.MalwareInfo, 0)
 	for _, v := range out {
@@ -109,19 +110,19 @@ func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 
 func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	return &pb.MalwareInfo{
-		ImageLayerId: out.LayerID,
-		RuleName: out.RuleName,
-    	StringsToMatch: out.StringsToMatch,
-		SeverityScore: out.SeverityScore,
-		FileSeverity: out.FileSeverity,
-		FileSevScore: out.FileSevScore,
+		ImageLayerId:     out.LayerID,
+		RuleName:         out.RuleName,
+		StringsToMatch:   out.StringsToMatch,
+		SeverityScore:    out.SeverityScore,
+		FileSeverity:     out.FileSeverity,
+		FileSevScore:     out.FileSevScore,
 		CompleteFilename: out.CompleteFilename,
-		Meta: out.Meta,
-		MetaRules: out.MetaRules,
-		Summary: out.Summary,
+		Meta:             out.Meta,
+		MetaRules:        out.MetaRules,
+		Summary:          out.Summary,
+		Class:            out.Class,
 	}
 }
-
 
 func (imageOutput JsonImageIOCOutput) PrintJsonHeader() {
 	fmt.Fprintf(os.Stdout, "{\n")
@@ -176,7 +177,7 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 	}
 	fmt.Fprintf(os.Stdout, Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(IOC.RuleName))
 	fmt.Fprintf(os.Stdout, Indent3+"\"Strings to match are\": [\n")
-    var count = 0
+	var count = 0
 	for _, c := range IOC.StringsToMatch {
 		if len(c) > 0 {
 			if count == 0 {
@@ -184,20 +185,21 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 			} else {
 				fmt.Fprintf(os.Stdout, Indent3+Indent3+","+jsonMarshal(c)+"\n")
 			}
-			
-			count ++
+
+			count++
 		}
 	}
-	fmt.Fprintf(os.Stdout,Indent3+"],\n")
+	fmt.Fprintf(os.Stdout, Indent3+"],\n")
 	summary := ""
+	class := ""
 	categoryName := "["
 	for i, c := range IOC.CategoryName {
 		if len(c) > 0 {
 			str := []string{"The file", IOC.CompleteFilename, "has a", c, "match."}
 			summary = strings.Join(str, " ")
-			categoryName = categoryName +jsonMarshal(c)
-			if (i==0 && len(IOC.CategoryName)>1) {
-				categoryName = categoryName +","
+			categoryName = categoryName + jsonMarshal(c)
+			if i == 0 && len(IOC.CategoryName) > 1 {
+				categoryName = categoryName + ","
 			}
 		}
 	}
@@ -216,14 +218,21 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 				str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
 				summary = summary + strings.Join(str, " ")
 			} else {
-				if len(metaSplit[0]) > 0 {
-					str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
-					summary = summary + strings.Join(str, " ")
+				if metaSplit[0] == "info" {
+					class = metaSplit[1]
+				} else {
+					if len(metaSplit[0]) > 0 {
+						str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
+						summary = summary + strings.Join(str, " ")
+					}
 				}
+
 			}
 		}
 	}
 	fmt.Fprintf(os.Stdout, Indent3+"\"Summary\": %s\n", jsonMarshal(summary))
+
+	fmt.Fprintf(os.Stdout, Indent3+"\"Class\": %s\n", class)
 
 	fmt.Fprintf(os.Stdout, Indent+Indent+"}\n")
 }
