@@ -176,7 +176,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		value interface{}
 	}
 
-	if  filepath.Ext(f.Name()) != ""  {
+	if filepath.Ext(f.Name()) != "" {
 
 		variables := []ruleVariable{
 			{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
@@ -184,11 +184,11 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			{"extension", filepath.Ext(f.Name())},
 		}
 		for _, v := range variables {
-			if v.value != nil  {
+			if v.value != nil {
 				if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
 					return filepath.SkipDir
 				}
-			} 
+			}
 		}
 
 		fi, err := f.Stat()
@@ -273,6 +273,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 				m.StringsToMatch = StringsMatch
 				m.LayerID = layer
 				summary := ""
+				class := ""
 				m.MetaRules = make(map[string]string)
 				for _, c := range m.Meta {
 					var metaSplit = strings.Split(c, " : ")
@@ -284,18 +285,23 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 							str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
 							summary = summary + strings.Join(str, " ")
 						} else {
-							if len(metaSplit[0]) > 0 {
-								str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
-								summary = summary + strings.Join(str, " ")
+							if metaSplit[0] == "info" {
+								class = metaSplit[1]
+							} else {
+								if len(metaSplit[0]) > 0 {
+									str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
+									summary = summary + strings.Join(str, " ")
+								}
 							}
 						}
 					}
 				}
 				m.Summary = summary
+				m.Class = class
 				*(*(*iocs)) = append(*(*(*iocs)), m)
 			}
 		}
-		
+
 	}
 	return err
 }
@@ -331,7 +337,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			fmt.Println("the error path is",err)
+			fmt.Println("the error path is", err)
 			return nil
 		}
 
@@ -348,16 +354,16 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		if info.IsDir() {
 			if isContainerRunTime {
 				//fmt.Println("full directory is",fullDir,path)
-				if core.IsSkippableContainerRuntimeDir(fs, path, baseDir)  {
+				if core.IsSkippableContainerRuntimeDir(fs, path, baseDir) {
 					return filepath.SkipDir
 				}
 			} else {
-				if core.IsSkippableDir(fs, path, baseDir)  {
+				if core.IsSkippableDir(fs, path, baseDir) {
 					return filepath.SkipDir
 				}
 			}
 			return nil
-			
+
 		}
 		const specialMode = os.ModeSymlink | os.ModeDevice | os.ModeNamedPipe | os.ModeSocket | os.ModeCharDevice
 		if info.Mode()&specialMode != 0 {
@@ -366,8 +372,8 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		if core.IsSkippableFileExtension(path) {
 			return nil
 		}
-		if err = ScanFilePath(fs, path, &iocs,layer); err != nil {
-             fmt.Println("afero path",err )
+		if err = ScanFilePath(fs, path, &iocs, layer); err != nil {
+			fmt.Println("afero path", err)
 		}
 		return nil
 	})
