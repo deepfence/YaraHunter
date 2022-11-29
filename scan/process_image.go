@@ -208,6 +208,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		}
 		if f, ok := f.(*os.File); ok {
 			fd := f.Fd()
+			session.Log.Error("test file", fileName, fd, fi, variables)
 			err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
 			if err != nil {
 				fmt.Println("Scan File Descriptor error", err)
