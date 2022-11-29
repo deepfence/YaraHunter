@@ -102,13 +102,16 @@ func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 
 func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 	res := make([]*pb.MalwareInfo, 0)
+	core.GetSession().Log.Info("reached here")
 	for _, v := range out {
+		core.GetSession().Log.Info("reached here 2", v)
 		res = append(res, MalwaresToMalwareInfo(v))
 	}
 	return res
 }
 
 func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
+	core.GetSession().Log.Info("reached here 2", out)
 	return &pb.MalwareInfo{
 		ImageLayerId:     out.LayerID,
 		RuleName:         out.RuleName,

@@ -24,23 +24,24 @@ type gRPCServer struct {
 }
 
 func (s *gRPCServer) GetName(context.Context, *pb.Empty) (*pb.Name, error) {
-	return &pb.Name { Str: s.plugin_name }, nil
+	return &pb.Name{Str: s.plugin_name}, nil
 }
 
 func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
-	return &pb.Uid { Str: fmt.Sprintf("%s-%s", s.plugin_name, s.socket_path) }, nil
+	return &pb.Uid{Str: fmt.Sprintf("%s-%s", s.plugin_name, s.socket_path)}, nil
 }
 
 func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
-	if r.GetPath()  != "" {
+	if r.GetPath() != "" {
 		var malwares []output.IOCFound
-	    err := scan.ScanIOCInDir("", "", r.GetPath(), nil, &malwares, false)
+		core.GetSession().Log.Info("find malwares", malwares)
+		err := scan.ScanIOCInDir("", "", r.GetPath(), nil, &malwares, false)
 		if err != nil {
 			return nil, err
 		}
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
-			Malwares: output.MalwaresToMalwareInfos(malwares),
+			Malwares:  output.MalwaresToMalwareInfos(malwares),
 			Input: &pb.MalwareResult_Path{
 				Path: r.GetPath(),
 			},
@@ -53,11 +54,11 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
-			Malwares: output.MalwaresToMalwareInfos(res.IOCs),
+			Malwares:  output.MalwaresToMalwareInfos(res.IOCs),
 			Input: &pb.MalwareResult_Image{
 				Image: &pb.MalwareDockerImage{
 					Name: r.GetImage().Name,
-					Id: res.ImageId,
+					Id:   res.ImageId,
 				},
 			},
 		}, nil
@@ -70,11 +71,11 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
-			Malwares: output.MalwaresToMalwareInfos(malwares),
+			Malwares:  output.MalwaresToMalwareInfos(malwares),
 			Input: &pb.MalwareResult_Container{
 				Container: &pb.MalwareContainer{
 					Namespace: r.GetContainer().Namespace,
-					Id: r.GetContainer().Id,
+					Id:        r.GetContainer().Id,
 				},
 			},
 		}, nil
