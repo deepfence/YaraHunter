@@ -319,7 +319,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
 	var fs afero.Fs
 	if layer != "" {
-		session.Log.Info("Scan results in selected image with layer ", layer)
+		session.Log.Error("Scan results in selected image with layer ", layer)
 	}
 	if matchedRuleSet == nil {
 		matchedRuleSet = make(map[uint]uint)
@@ -337,8 +337,10 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
+		session.Log.Error("find error ", err)
 		if err != nil {
 			fmt.Println("the error path is", err)
+			session.Log.Error("the error path isr ", layer)
 			return nil
 		}
 
