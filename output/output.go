@@ -111,7 +111,20 @@ func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 }
 
 func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
-	core.GetSession().Log.Error("reached malware here 2", out.Class)
+	core.GetSession().Log.Error("reached malware here 2 %v", out)
+	core.GetSession().Log.Error("test pb here %s", &pb.MalwareInfo{
+		ImageLayerId:     out.LayerID,
+		RuleName:         out.RuleName,
+		StringsToMatch:   out.StringsToMatch,
+		SeverityScore:    out.SeverityScore,
+		FileSeverity:     out.FileSeverity,
+		FileSevScore:     out.FileSevScore,
+		CompleteFilename: out.CompleteFilename,
+		Meta:             out.Meta,
+		MetaRules:        out.MetaRules,
+		Summary:          out.Summary,
+		Class:            out.Class,
+	})
 	return &pb.MalwareInfo{
 		ImageLayerId:     out.LayerID,
 		RuleName:         out.RuleName,
