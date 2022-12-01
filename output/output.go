@@ -106,53 +106,68 @@ func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 	core.GetSession().Log.Error("reached everywhere here", out)
 	for _, v := range out {
 		core.GetSession().Log.Error("did it reach to this point 1", v)
-		res = append(res, MalwaresToMalwareInfo(v))
+		if MalwaresToMalwareInfo(v) != nil {
+			res = append(res, MalwaresToMalwareInfo(v))
+		}
 		core.GetSession().Log.Error("did it reach to this point", v)
 	}
 	return res
 }
 
 func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
-	core.GetSession().Log.Error("reached malware here 2", utf8.ValidString(out.LayerID),
-		utf8.ValidString(out.RuleName), utf8.ValidString(out.Summary), utf8.ValidString(out.Class),
-		utf8.ValidString(out.FileSeverity), utf8.ValidString(out.CompleteFilename))
+	bool := true
+	if !(utf8.ValidString(out.LayerID) && utf8.ValidString(out.RuleName) && utf8.ValidString(out.Summary) && utf8.ValidString(out.Class) &&
+		utf8.ValidString(out.FileSeverity) && utf8.ValidString(out.CompleteFilename)) {
+		bool = false
+		core.GetSession().Log.Error("reached the point %s : %t", out.RuleName, utf8.ValidString(out.RuleName))
+		core.GetSession().Log.Error("reached the point %s : %t", out.Summary, utf8.ValidString(out.Summary))
+		core.GetSession().Log.Error("reached the point %s : %t", out.Class, utf8.ValidString(out.Class))
+
+		core.GetSession().Log.Error("reached the point %s : %t", out.FileSeverity, utf8.ValidString(out.FileSeverity))
+
+		core.GetSession().Log.Error("reached the point %s : %t", out.CompleteFilename, utf8.ValidString(out.CompleteFilename))
+
+		core.GetSession().Log.Error("reached the point %s : %t", out.LayerID, utf8.ValidString(out.LayerID))
+
+	}
+
 	for i := range out.Meta {
-		core.GetSession().Log.Error("reached Meta", utf8.ValidString(out.Meta[i]))
+		if !utf8.ValidString(out.Meta[i]) && bool {
+			core.GetSession().Log.Error("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
+			bool = false
+		}
 	}
 
 	for i := range out.MetaRules {
-		core.GetSession().Log.Error("reached Meta Rules", utf8.ValidString(out.MetaRules[i]))
+		if !utf8.ValidString(out.MetaRules[i]) && bool {
+			core.GetSession().Log.Error("reached the meta point %s : %t", out.MetaRules[i], utf8.ValidString(out.MetaRules[i]))
+			bool = false
+		}
 	}
 
 	for i := range out.StringsToMatch {
-		core.GetSession().Log.Error("reached Meta Match", utf8.ValidString(out.StringsToMatch[i]))
+		if !utf8.ValidString(out.StringsToMatch[i]) && bool {
+			core.GetSession().Log.Error("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
+			bool = false
+		}
 	}
 
-	core.GetSession().Log.Error("test pb here %s", &pb.MalwareInfo{
-		ImageLayerId:     out.LayerID,
-		RuleName:         out.RuleName,
-		StringsToMatch:   out.StringsToMatch,
-		SeverityScore:    out.SeverityScore,
-		FileSeverity:     out.FileSeverity,
-		FileSevScore:     out.FileSevScore,
-		CompleteFilename: out.CompleteFilename,
-		Meta:             out.Meta,
-		MetaRules:        out.MetaRules,
-		Summary:          out.Summary,
-		Class:            out.Class,
-	})
-	return &pb.MalwareInfo{
-		ImageLayerId:     out.LayerID,
-		RuleName:         out.RuleName,
-		StringsToMatch:   out.StringsToMatch,
-		SeverityScore:    out.SeverityScore,
-		FileSeverity:     out.FileSeverity,
-		FileSevScore:     out.FileSevScore,
-		CompleteFilename: out.CompleteFilename,
-		Meta:             out.Meta,
-		MetaRules:        out.MetaRules,
-		Summary:          out.Summary,
-		Class:            out.Class,
+	if bool {
+		return &pb.MalwareInfo{
+			ImageLayerId:     out.LayerID,
+			RuleName:         out.RuleName,
+			StringsToMatch:   out.StringsToMatch,
+			SeverityScore:    out.SeverityScore,
+			FileSeverity:     out.FileSeverity,
+			FileSevScore:     out.FileSevScore,
+			CompleteFilename: out.CompleteFilename,
+			Meta:             out.Meta,
+			MetaRules:        out.MetaRules,
+			Summary:          out.Summary,
+			Class:            out.Class,
+		}
+	} else {
+		return nil
 	}
 }
 
