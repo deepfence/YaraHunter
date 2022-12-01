@@ -134,7 +134,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 
 	for k, v := range out.MetaRules {
 		if !utf8.ValidString(v) && bool {
-			core.GetSession().Log.Error("reached the meta point %s : %t", out.MetaRules[i], utf8.ValidString(out.MetaRules[i]))
+			core.GetSession().Log.Error("reached the meta point %s : %t", v, utf8.ValidString(v))
 		} else {
 			metaRules[k] = v
 		}
