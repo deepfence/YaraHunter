@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -112,7 +113,21 @@ func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 }
 
 func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
-	core.GetSession().Log.Error("reached malware here 2 %v", out)
+	core.GetSession().Log.Error("reached malware here 2", utf8.ValidString(out.LayerID),
+		utf8.ValidString(out.RuleName), utf8.ValidString(out.Summary), utf8.ValidString(out.Class),
+		utf8.ValidString(out.FileSeverity), utf8.ValidString(out.CompleteFilename))
+	for i := range out.Meta {
+		core.GetSession().Log.Error("reached Meta", utf8.ValidString(out.Meta[i]))
+	}
+
+	for i := range out.MetaRules {
+		core.GetSession().Log.Error("reached Meta Rules", utf8.ValidString(out.MetaRules[i]))
+	}
+
+	for i := range out.StringsToMatch {
+		core.GetSession().Log.Error("reached Meta Match", utf8.ValidString(out.StringsToMatch[i]))
+	}
+
 	core.GetSession().Log.Error("test pb here %s", &pb.MalwareInfo{
 		ImageLayerId:     out.LayerID,
 		RuleName:         out.RuleName,
