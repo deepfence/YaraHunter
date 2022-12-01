@@ -274,7 +274,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 				m.StringsToMatch = StringsMatch
 				m.LayerID = layer
 				summary := ""
-				class := ""
+				class := "Undefined"
 				m.MetaRules = make(map[string]string)
 				for _, c := range m.Meta {
 					var metaSplit = strings.Split(c, " : ")
@@ -287,7 +287,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 							summary = summary + strings.Join(str, " ")
 						} else {
 							if metaSplit[0] == "info" {
-								class = metaSplit[1]
+								class = strings.TrimSpace(strings.Replace(metaSplit[1], "\n", "", -1))
 							} else {
 								if len(metaSplit[0]) > 0 {
 									str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
