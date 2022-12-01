@@ -119,38 +119,36 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	if !(utf8.ValidString(out.LayerID) && utf8.ValidString(out.RuleName) && utf8.ValidString(out.Summary) && utf8.ValidString(out.Class) &&
 		utf8.ValidString(out.FileSeverity) && utf8.ValidString(out.CompleteFilename)) {
 		bool = false
-		core.GetSession().Log.Error("reached the point %s : %t", out.RuleName, utf8.ValidString(out.RuleName))
-		core.GetSession().Log.Error("reached the point %s : %t", out.Summary, utf8.ValidString(out.Summary))
-		core.GetSession().Log.Error("reached the point %s : %t", out.Class, utf8.ValidString(out.Class))
-
-		core.GetSession().Log.Error("reached the point %s : %t", out.FileSeverity, utf8.ValidString(out.FileSeverity))
-
-		core.GetSession().Log.Error("reached the point %s : %t", out.CompleteFilename, utf8.ValidString(out.CompleteFilename))
-
-		core.GetSession().Log.Error("reached the point %s : %t", out.LayerID, utf8.ValidString(out.LayerID))
-
 	}
-
+	meta := make([]string, 0)
+	metaRules := make(map[string]string)
+	stringsToMatch := make([]string, 0)
 	for i := range out.Meta {
 		if !utf8.ValidString(out.Meta[i]) && bool {
 			core.GetSession().Log.Error("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
-			bool = false
+		} else {
+			meta = append(meta, out.Meta[i])
 		}
 	}
+	out.Meta = meta
 
-	for i := range out.MetaRules {
-		if !utf8.ValidString(out.MetaRules[i]) && bool {
+	for k, v := range out.MetaRules {
+		if !utf8.ValidString(v) && bool {
 			core.GetSession().Log.Error("reached the meta point %s : %t", out.MetaRules[i], utf8.ValidString(out.MetaRules[i]))
-			bool = false
+		} else {
+			metaRules[k] = v
 		}
 	}
+	out.MetaRules = metaRules
 
 	for i := range out.StringsToMatch {
 		if !utf8.ValidString(out.StringsToMatch[i]) && bool {
 			core.GetSession().Log.Error("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
-			bool = false
+		} else {
+			stringsToMatch = append(stringsToMatch, out.StringsToMatch[i])
 		}
 	}
+	out.StringsToMatch = stringsToMatch
 
 	if bool {
 		return &pb.MalwareInfo{

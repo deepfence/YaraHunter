@@ -40,7 +40,6 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 			core.GetSession().Log.Error("finding new err", err)
 			return nil, err
 		}
-		core.GetSession().Log.Error("reached this point", malwares)
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			Malwares:  output.MalwaresToMalwareInfos(malwares),
