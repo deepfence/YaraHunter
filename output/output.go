@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -102,25 +103,69 @@ func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 
 func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 	res := make([]*pb.MalwareInfo, 0)
+	core.GetSession().Log.Error("reached everywhere here", out)
 	for _, v := range out {
-		res = append(res, MalwaresToMalwareInfo(v))
+		core.GetSession().Log.Error("did it reach to this point 1", v)
+		if MalwaresToMalwareInfo(v) != nil {
+			res = append(res, MalwaresToMalwareInfo(v))
+		}
+		//core.GetSession().Log.Error("did it reach to this point", v)
 	}
 	return res
 }
 
 func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
-	return &pb.MalwareInfo{
-		ImageLayerId:     out.LayerID,
-		RuleName:         out.RuleName,
-		StringsToMatch:   out.StringsToMatch,
-		SeverityScore:    out.SeverityScore,
-		FileSeverity:     out.FileSeverity,
-		FileSevScore:     out.FileSevScore,
-		CompleteFilename: out.CompleteFilename,
-		Meta:             out.Meta,
-		MetaRules:        out.MetaRules,
-		Summary:          out.Summary,
-		Class:            out.Class,
+	bool := true
+	if !(utf8.ValidString(out.LayerID) && utf8.ValidString(out.RuleName) && utf8.ValidString(out.Summary) && utf8.ValidString(out.Class) &&
+		utf8.ValidString(out.FileSeverity) && utf8.ValidString(out.CompleteFilename)) {
+		bool = false
+	}
+	meta := make([]string, 0)
+	metaRules := make(map[string]string)
+	stringsToMatch := make([]string, 0)
+	for i := range out.Meta {
+		if !utf8.ValidString(out.Meta[i]) && bool {
+			core.GetSession().Log.Error("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
+		} else {
+			meta = append(meta, out.Meta[i])
+		}
+	}
+	out.Meta = meta
+
+	for k, v := range out.MetaRules {
+		if !utf8.ValidString(v) && bool {
+			core.GetSession().Log.Error("reached the meta point %s : %t", v, utf8.ValidString(v))
+		} else {
+			metaRules[k] = v
+		}
+	}
+	out.MetaRules = metaRules
+
+	for i := range out.StringsToMatch {
+		if !utf8.ValidString(out.StringsToMatch[i]) && bool {
+			core.GetSession().Log.Error("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
+		} else {
+			stringsToMatch = append(stringsToMatch, out.StringsToMatch[i])
+		}
+	}
+	out.StringsToMatch = stringsToMatch
+
+	if bool {
+		return &pb.MalwareInfo{
+			ImageLayerId:     out.LayerID,
+			RuleName:         out.RuleName,
+			StringsToMatch:   out.StringsToMatch,
+			SeverityScore:    out.SeverityScore,
+			FileSeverity:     out.FileSeverity,
+			FileSevScore:     out.FileSevScore,
+			CompleteFilename: out.CompleteFilename,
+			Meta:             out.Meta,
+			MetaRules:        out.MetaRules,
+			Summary:          out.Summary,
+			Class:            out.Class,
+		}
+	} else {
+		return nil
 	}
 }
 
@@ -191,7 +236,7 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 	}
 	fmt.Fprintf(os.Stdout, Indent3+"],\n")
 	summary := ""
-	class := ""
+	class := "Undefined"
 	categoryName := "["
 	for i, c := range IOC.CategoryName {
 		if len(c) > 0 {
@@ -219,7 +264,7 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 				summary = summary + strings.Join(str, " ")
 			} else {
 				if metaSplit[0] == "info" {
-					class = metaSplit[1]
+					class = strings.TrimSpace(strings.Replace(metaSplit[1], "\n", "", -1))
 				} else {
 					if len(metaSplit[0]) > 0 {
 						str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}

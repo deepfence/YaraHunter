@@ -208,6 +208,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		}
 		if f, ok := f.(*os.File); ok {
 			fd := f.Fd()
+			session.Log.Error("test file", fileName, fd, fi, variables)
 			err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
 			if err != nil {
 				fmt.Println("Scan File Descriptor error", err)
@@ -273,7 +274,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 				m.StringsToMatch = StringsMatch
 				m.LayerID = layer
 				summary := ""
-				class := ""
+				class := "Undefined"
 				m.MetaRules = make(map[string]string)
 				for _, c := range m.Meta {
 					var metaSplit = strings.Split(c, " : ")
@@ -286,7 +287,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 							summary = summary + strings.Join(str, " ")
 						} else {
 							if metaSplit[0] == "info" {
-								class = metaSplit[1]
+								class = strings.TrimSpace(strings.Replace(metaSplit[1], "\n", "", -1))
 							} else {
 								if len(metaSplit[0]) > 0 {
 									str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
@@ -318,7 +319,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
 	var fs afero.Fs
 	if layer != "" {
-		session.Log.Info("Scan results in selected image with layer ", layer)
+		session.Log.Error("Scan results in selected image with layer ", layer)
 	}
 	if matchedRuleSet == nil {
 		matchedRuleSet = make(map[uint]uint)
@@ -336,8 +337,10 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
+		session.Log.Error("find error ", err)
 		if err != nil {
 			fmt.Println("the error path is", err)
+			session.Log.Error("the error path isr ", layer)
 			return nil
 		}
 
