@@ -109,7 +109,7 @@ func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 		if MalwaresToMalwareInfo(v) != nil {
 			res = append(res, MalwaresToMalwareInfo(v))
 		}
-		core.GetSession().Log.Error("did it reach to this point", v)
+		//core.GetSession().Log.Error("did it reach to this point", v)
 	}
 	return res
 }

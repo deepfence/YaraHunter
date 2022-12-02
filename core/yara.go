@@ -42,14 +42,14 @@ func getRuleFiles(rulesPath string) ([]string, error) {
 
 func compile(purpose int, session *Session) (*yr.Rules, error) {
 	var c *yr.Compiler
-	session.Log.Info("including yara rule file ")
+	//session.Log.Info("including yara rule file ")
 
 	var err error
 	if c, err = yr.NewCompiler(); err != nil {
 		return nil, err
 	}
 
-	session.Log.Info("including yara rule file ")
+	//session.Log.Info("including yara rule file ")
 
 	for k, v := range extvars[purpose] {
 		if err = c.DefineVariable(k, v); err != nil {
@@ -57,8 +57,8 @@ func compile(purpose int, session *Session) (*yr.Rules, error) {
 		}
 	}
 
-	session.Log.Info("including yara rule file ")
-	session.Log.Info("including yara rule file ")
+	//session.Log.Info("including yara rule file ")
+	//session.Log.Info("including yara rule file ")
 
 	paths, err := getRuleFiles(*session.Options.RulesPath)
 	session.Log.Error("including yara rule file %s", err)
@@ -98,6 +98,6 @@ func compile(purpose int, session *Session) (*yr.Rules, error) {
 	if len(rs.GetRules()) == 0 {
 		return nil, errors.New("No YARA rules defined")
 	}
-	session.Log.Info("number of rules", len(rs.GetRules()))
+	//session.Log.Info("number of rules", len(rs.GetRules()))
 	return rs, nil
 }
