@@ -65,7 +65,6 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 	tempDir := imageScan.tempDir
 	imageScan.numIOCs = 0
 
-	core.GetSession().Log.Error("saveImage %s", saveImage)
 	if saveImage {
 		err := imageScan.saveImageData()
 		if err != nil {
@@ -78,7 +77,7 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 
 	_, err := extractTarFile(imageName, path.Join(tempDir, imageTarFileName), tempDir)
 	if err != nil {
-		core.GetSession().Log.Error("scanImage test: Could not extract image tar file: %s", err)
+		core.GetSession().Log.Error("scanImage: Could not extract image tar file: %s", err)
 		return err
 	}
 
@@ -453,14 +452,10 @@ func (imageScan *ImageScan) saveImageData() error {
 	imageName := imageScan.imageName
 	outputParam := path.Join(imageScan.tempDir, imageTarFileName)
 	drun, err := vessel.NewRuntime()
-	core.GetSession().Log.Error("inside the functions %s %s", imageName, outputParam)
 	if err != nil {
-		core.GetSession().Log.Error("it has come to the error block")
 		return err
 	}
 	_, err = drun.Save(imageName, outputParam)
-
-	core.GetSession().Log.Info("Image %s will be saved in %s", imageName, imageScan.tempDir)
 
 	if err != nil {
 		return err
