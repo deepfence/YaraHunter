@@ -75,7 +75,7 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 
 	_, err := extractTarFile(imageName, path.Join(tempDir, imageTarFileName), tempDir)
 	if err != nil {
-		core.GetSession().Log.Error("scanImage: Could not extract image tar file: %s", err)
+		core.GetSession().Log.Error("scanImage test: Could not extract image tar file: %s", err)
 		return err
 	}
 
