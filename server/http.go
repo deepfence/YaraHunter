@@ -23,7 +23,7 @@ import (
 const (
 	scanStatusComplete       = "COMPLETE"
 	scanStatusError          = "ERROR"
-	defaultScanConcurrency   = 5
+	defaultScanConcurrency   = 1
 	malwareScanIndexName     = "malware-scan"
 	malwareScanLogsIndexName = "malware-scan-logs"
 )
