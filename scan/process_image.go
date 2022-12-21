@@ -682,7 +682,7 @@ func ExtractAndScanImage(image string) (*ImageExtractionResult, error) {
 func ExtractAndScanFromTar(tarFolder string, imageName string) (*ImageExtractionResult, error) {
 	// defer core.DeleteTmpDir(tarFolder)
 	imageScan := ImageScan{imageName: imageName, imageId: "", tempDir: tarFolder}
-	err := imageScan.extractImage(false)
+	err := imageScan.extractImage(true)
 
 	if err != nil {
 		return nil, err
