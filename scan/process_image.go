@@ -455,6 +455,8 @@ func (imageScan *ImageScan) saveImageData() error {
 	}
 	_, err = drun.Save(imageName, outputParam)
 
+	core.GetSession().Log.Info("Image %s will be saved in %s", imageName, imageScan.tempDir)
+
 	if err != nil {
 		return err
 	}
