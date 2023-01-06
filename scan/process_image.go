@@ -208,7 +208,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		}
 		if f, ok := f.(*os.File); ok {
 			fd := f.Fd()
-			session.Log.Error("test file", fileName, fd, fi, variables)
+			//session.Log.Error("test file", fileName, fd, fi, variables)
 			err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
 			if err != nil {
 				fmt.Println("Scan File Descriptor error", err)
@@ -337,7 +337,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 
 	fs = afero.NewOsFs()
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
-		session.Log.Error("find error ", err)
+		//session.Log.Error("find error ", err)
 		if err != nil {
 			fmt.Println("the error path is", err)
 			session.Log.Error("the error path isr ", layer)
