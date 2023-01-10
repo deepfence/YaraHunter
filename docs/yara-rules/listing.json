@@ -4,8 +4,8 @@
       {
         "built": "2022-09-23T00:30:13.10358216Z",
         "version": 3,
-        "url": "https://threat-intel.deepfence.io/yara-rules/releases/download/threatintel-yara-2023-01-09_00-07-40/threatintel-yara-rules-2023-01-09_00-07-40.tar.gz",
-        "checksum": "15bd1768c0d0e2278b793a3c241463b570e0e16c49022f8963ddac4d053592e4"
+        "url": "https://threat-intel.deepfence.io/yara-rules/releases/download/threatintel-yara-2023-01-10_00-07-34/threatintel-yara-rules-2023-01-10_00-07-34.tar.gz",
+        "checksum": "264bc201c1fa527880ad4ead55cd771c6d46311b0d0305fbf4ddd980a6684b62"
       }
     ]
   }
