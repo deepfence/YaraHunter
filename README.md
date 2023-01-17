@@ -27,7 +27,7 @@ YaraHunter is a work-in-progress (check the [Roadmap](https://github.com/orgs/de
 
 ## Quick Start
 
-For full instructions, refer to the [YaraHunter Documentation](https://docs.deepfence.io/yarahunter/).
+For full instructions, refer to the [YaraHunter Documentation](https://docs.deepfence.io/docs/yarahunter/).
 
 ![demo gif](demo.gif)
 
@@ -66,7 +66,7 @@ This returns a list of the IOCs identified in the container we scanned.
 
 Thank you for using YaraHunter.
 
- * [<img src="https://img.shields.io/badge/documentation-read-green">](https://docs.deepfence.io/yarahunter/) Start with the documentation
+ * [<img src="https://img.shields.io/badge/documentation-read-green">](https://docs.deepfence.io/docs/yarahunter/) Start with the documentation
  * [<img src="https://img.shields.io/badge/slack-@deepfence-blue.svg?logo=slack">](https://join.slack.com/t/deepfence-community/shared_invite/zt-podmzle9-5X~qYx8wMaLt9bGWwkSdgQ) Got a question, need some help?  Find the Deepfence team on Slack
  * [![GitHub issues](https://img.shields.io/github/issues/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/issues) Got a feature request or found a bug? Raise an issue
  * [productsecurity *at* deepfence *dot* io](SECURITY.md): Found a security issue? Share it in confidence
