@@ -499,8 +499,10 @@ func yaraResults(newwg *sync.WaitGroup) {
 		core.GetSession().Log.Fatal("main: failed to serve: %v", err)
 	}
 	fmt.Println("server inside23 port", *session.Options)
+	fmt.Println("get Socket Path", *session.Options.SocketPath)
 	core.GetSession().Log.Info("server inside23 port", *session.Options)
 	if *session.Options.SocketPath != "" {
+		fmt.Println("reached inside server")
 		//core.GetSession().Log.Info("reached inside server")
 		err := server.RunServer(*session.Options.SocketPath, PLUGIN_NAME)
 		if err != nil {
@@ -509,6 +511,7 @@ func yaraResults(newwg *sync.WaitGroup) {
 		//core.GetSession().Log.Info("reached at this point")
 	} else if *session.Options.HttpPort != "" {
 		core.GetSession().Log.Info("server inside port")
+		fmt.Println("server inside port")
 		err := server.RunHttpServer(*session.Options.HttpPort)
 		if err != nil {
 			core.GetSession().Log.Fatal("main: failed to serve through http: %v", err)

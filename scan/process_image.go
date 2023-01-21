@@ -321,7 +321,8 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
 	var fs afero.Fs
 	if layer != "" {
-		session.Log.Error("Scan results in selected image with layer ", layer)
+		fmt.Println("Scan results in selected image with layer", layer)
+		session.Log.Info("Scan results in selected image with layer ", layer)
 	}
 	if matchedRuleSet == nil {
 		matchedRuleSet = make(map[uint]uint)

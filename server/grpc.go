@@ -32,6 +32,7 @@ func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
 }
 
 func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
+	fmt.Println("Reached malware info", malware)
 	if r.GetPath() != "" {
 		var malwares []output.IOCFound
 		err := scan.ScanIOCInDir("", "", r.GetPath(), nil, &malwares, false)
