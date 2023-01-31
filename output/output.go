@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"github.com/deepfence/YaRadare/core"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
-	// "github.com/fatih/color"
-	"io/ioutil"
+
 	"os"
 	"strings"
 	"time"
@@ -92,7 +91,7 @@ func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 		core.GetSession().Log.Error("printIOCToJsonFile: Couldn't format json output: %s", err)
 		return err
 	}
-	err = ioutil.WriteFile(outputFilename, file, os.ModePerm)
+	err = os.WriteFile(outputFilename, file, os.ModePerm)
 	if err != nil {
 		core.GetSession().Log.Error("printIOCToJsonFile: Couldn't write json output to file: %s", err)
 		return err

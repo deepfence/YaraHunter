@@ -32,7 +32,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -136,7 +135,7 @@ func NewYaraRuleUpdater() (error, *YaraRuleUpdater) {
 		downloadYaraRulePath: "",
 	}
 	if fileExists(updater.yaraRulePath) {
-		content, err := ioutil.ReadFile(updater.yaraRulePath)
+		content, err := os.ReadFile(updater.yaraRulePath)
 		if err != nil {
 			return err, nil
 		}
@@ -305,7 +304,7 @@ func runYaraUpdate() error {
 		core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
 		return err
 	}
-	content, err := ioutil.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath, "/listing.json"))
+	content, err := os.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath, "/listing.json"))
 	if err != nil {
 		core.GetSession().Log.Error("main: failed to serve: %v", err)
 		return err
@@ -320,7 +319,7 @@ func runYaraUpdate() error {
 		if yaraRuleListingJson.Available.V3[0].Checksum != yaraRuleUpdater.currentFileChecksum {
 			yaraRuleUpdater.currentFileChecksum = yaraRuleListingJson.Available.V3[0].Checksum
 			file, _ := json.MarshalIndent(yaraRuleUpdater, "", " ")
-			writeErr := ioutil.WriteFile(path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"), file, 0644)
+			writeErr := os.WriteFile(path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"), file, 0644)
 
 			if writeErr != nil {
 				core.GetSession().Log.Error("main: failed to serve: %v", writeErr)
@@ -353,6 +352,7 @@ func runYaraUpdate() error {
 					return unTarErr
 				}
 				session = core.GetSession()
+				session.
 				defer newFile.Close()
 				defer readFile.Close()
 

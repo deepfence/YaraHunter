@@ -2,16 +2,15 @@ package core
 
 import (
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 )
 
 type Config struct {
-	ExcludedExtensions []string `yaml:"exclude_extensions"`
-	ExcludedPaths      []string `yaml:"exclude_paths"`
-	ExcludedContainerPaths      []string `yaml:"exclude_container_paths"`
+	ExcludedExtensions     []string `yaml:"exclude_extensions"`
+	ExcludedPaths          []string `yaml:"exclude_paths"`
+	ExcludedContainerPaths []string `yaml:"exclude_container_paths"`
 }
 
 func ParseConfig(options *Options) (*Config, error) {
@@ -22,7 +21,7 @@ func ParseConfig(options *Options) (*Config, error) {
 	)
 
 	if len(*options.ConfigPath) > 0 {
-		data, err = ioutil.ReadFile(path.Join(*options.ConfigPath, "config.yaml"))
+		data, err = os.ReadFile(path.Join(*options.ConfigPath, "config.yaml"))
 		if err != nil {
 			return config, err
 		}
@@ -31,10 +30,10 @@ func ParseConfig(options *Options) (*Config, error) {
 		// Helps e.g. with Drone where workdir is different than shhgit dir
 		ex, err := os.Executable()
 		dir := filepath.Dir(ex)
-		data, err = ioutil.ReadFile(path.Join(dir, "config.yaml"))
+		data, err = os.ReadFile(path.Join(dir, "config.yaml"))
 		if err != nil {
 			dir, _ = os.Getwd()
-			data, err = ioutil.ReadFile(path.Join(dir, "config.yaml"))
+			data, err = os.ReadFile(path.Join(dir, "config.yaml"))
 			if err != nil {
 				return config, err
 			}
