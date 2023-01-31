@@ -352,7 +352,6 @@ func runYaraUpdate() error {
 					return unTarErr
 				}
 				session = core.GetSession()
-				session.
 				defer newFile.Close()
 				defer readFile.Close()
 
