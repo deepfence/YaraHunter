@@ -178,20 +178,20 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 		value interface{}
 	}
 
-	if filepath.Ext(f.Name()) != "" {
-
-		variables := []ruleVariable{
-			{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
-			{"filepath", filepath.ToSlash(f.Name())},
-			{"extension", filepath.Ext(f.Name())},
-		}
-		for _, v := range variables {
-			if v.value != nil {
-				if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
-					return filepath.SkipDir
-				}
+	variables := []ruleVariable{
+		{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
+		{"filepath", filepath.ToSlash(f.Name())},
+		{"extension", filepath.Ext(f.Name())},
+	}
+	for _, v := range variables {
+		if v.value != nil {
+			if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
+				return filepath.SkipDir
 			}
 		}
+	}
+
+	if filepath.Ext(f.Name()) != "" {
 
 		fi, err := f.Stat()
 		if err != nil {
