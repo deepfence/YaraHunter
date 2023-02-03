@@ -2,7 +2,6 @@ package scan
 
 import (
 	"errors"
-	"fmt"
 	"os/exec"
 	"strings"
 
@@ -110,16 +109,14 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 	containerRuntime, _, err := vessel.AutoDetectRuntime()
 	switch containerRuntime {
 	case vesselConstants.DOCKER:
-		fmt.Println("reached here")
 		containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
 		if err != nil {
-			fmt.Println("the error here is", err)
 			return nil, err
 		}
 		if strings.Contains(string(containerPath), "\"MergedDir\":") {
 			if strings.Contains(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"") {
 				containerPathToScan := strings.Split(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"")[0] + "/merged"
-				fmt.Println("Container Scan Path", containerPathToScan)
+				session.Log.Debug("Container Scan Path %v", containerPathToScan)
 				iocsFound, err = containerScan.scanPath(containerPathToScan)
 			}
 		}

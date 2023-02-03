@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"os"
 	"runtime"
@@ -57,7 +56,6 @@ func GetSession() *Session {
 		}
 
 		if session.Options, err = ParseOptions(); err != nil {
-			fmt.Println(err)
 			session.Log.Error(err.Error())
 			os.Exit(1)
 		}

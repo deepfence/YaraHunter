@@ -213,7 +213,6 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			//session.Log.Error("test file", fileName, fd, fi, variables)
 			err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
 			if err != nil {
-				fmt.Println("Scan File Descriptor error", err)
 				return filepath.SkipDir
 			}
 		} else {
@@ -225,7 +224,6 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			}
 			err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
 			if err != nil {
-				fmt.Println("Scan File Mmory Error", err)
 				return filepath.SkipDir
 			}
 
@@ -245,9 +243,6 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			for _, strMeta := range m.Metas {
 				matchesMeta = append(matchesMeta, strMeta.Identifier)
 				matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
-			}
-			if fileName == "/tmp/Deepfence/YaRadare/df_nodelatest/ExtractedFiles/73b95e6452b3078e8435f39b90086ed8a7f26f48579bf8f3c116607f317f019d/lib/x86_64-linux-gnu/libext2fs.so.2.4" {
-				fmt.Println("check dilename rule name", m.Rule)
 			}
 
 			iocsFound = append(iocsFound, output.IOCFound{
@@ -339,7 +334,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
 		//session.Log.Error("find error ", err)
 		if err != nil {
-			fmt.Println("the error path is", err)
 			session.Log.Error("the error path isr ", layer)
 			return nil
 		}
@@ -376,7 +370,7 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 			return nil
 		}
 		if err = ScanFilePath(fs, path, &iocs, layer); err != nil {
-			fmt.Println("afero path", err)
+			session.Log.Error("afero path %v", err)
 		}
 		return nil
 	})

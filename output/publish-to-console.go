@@ -33,7 +33,6 @@ func IngestMalwareScanResults(malwareScanMsg string, index string) error {
 	retryCount := 0
 	httpClient, err := buildClient()
 	if err != nil {
-		fmt.Println("Error building http client " + err.Error())
 		return err
 	}
 	for {
