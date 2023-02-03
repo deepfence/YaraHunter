@@ -497,9 +497,6 @@ func yaraResults(newwg *sync.WaitGroup) {
 	if err != nil {
 		core.GetSession().Log.Fatal("main: failed to serve: %v", err)
 	}
-	fmt.Println("server inside23 port", *session.Options)
-	fmt.Println("get Socket Path", *session.Options.SocketPath)
-	core.GetSession().Log.Info("server inside23 port", *session.Options)
 	if *session.Options.SocketPath != "" {
 		fmt.Println("reached inside server")
 		//core.GetSession().Log.Info("reached inside server")
