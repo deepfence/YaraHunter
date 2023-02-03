@@ -230,7 +230,7 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			}
 
 		}
-		var iocsFound []output.IOCFound
+		iocsFound := make([]output.IOCFound, 0)
 		totalMatchesStringData := make([]string, 0)
 		for _, m := range matches {
 			matchesStringData := make([]string, len(m.Strings))
@@ -246,6 +246,9 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 				matchesMeta = append(matchesMeta, strMeta.Identifier)
 				matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
 			}
+			if fileName == "/tmp/Deepfence/YaRadare/df_nodelatest/ExtractedFiles/73b95e6452b3078e8435f39b90086ed8a7f26f48579bf8f3c116607f317f019d/lib/x86_64-linux-gnu/libext2fs.so.2.4" {
+				fmt.Println("check dilename rule name", m.Rule)
+			}
 
 			iocsFound = append(iocsFound, output.IOCFound{
 				RuleName:         m.Rule,
@@ -255,14 +258,9 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 				CompleteFilename: fileName,
 			})
 		}
-		var fileMat fileMatches
-		fileMat.fileName = fileName
-		fileMat.iocs = iocsFound
 		updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
-		fileMat.updatedSeverity = updatedSeverity
-		fileMat.updatedScore = updatedScore
-		//var isFirstIOC bool = true
-		if len(matches) > 0 {
+
+		if len(iocsFound) > 0 {
 			//output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
 			for _, m := range iocsFound {
 				m.FileSeverity = updatedSeverity
@@ -321,7 +319,6 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
 	var fs afero.Fs
 	if layer != "" {
-		fmt.Println("Scan results in selected image with layer", layer)
 		session.Log.Info("Scan results in selected image with layer ", layer)
 	}
 	if matchedRuleSet == nil {
@@ -395,7 +392,6 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
 func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]output.IOCFound, error) {
-	var tempIOCsFound []output.IOCFound
 	var err error
 
 	// extractPath - Base directory where all the layers should be extracted to
@@ -418,7 +414,7 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 		if err != nil {
 			core.GetSession().Log.Error("ProcessImageLayers: Unable to create target directory"+
 				" to extract image layers... %s", err)
-			return tempIOCsFound, err
+			return nil, err
 		}
 
 		_, error := extractTarFile("", completeLayerPath, targetDir)
@@ -429,7 +425,6 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 		}
 		core.GetSession().Log.Debug("Analyzing dir: %s", targetDir)
 		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs, false)
-		tempIOCsFound = append(tempIOCsFound, IOCs...)
 		if err != nil {
 			core.GetSession().Log.Error("ProcessImageLayers: %s", err)
 			// return tempIOCsFound, err
@@ -437,11 +432,11 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 
 		// Don't report IOCs if number of IOCs exceeds MAX value
 		if imageScan.numIOCs >= *core.GetSession().Options.MaxIOC {
-			return tempIOCsFound, nil
+			return IOCs, nil
 		}
 	}
 
-	return tempIOCsFound, nil
+	return IOCs, nil
 }
 
 // Save container image as tar file in specified directory
