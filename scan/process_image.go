@@ -64,7 +64,8 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 	imageName := imageScan.imageName
 	tempDir := imageScan.tempDir
 	imageScan.numIOCs = 0
-
+	core.GetSession().Log.Error("imageScan %v", imageScan)
+	core.GetSession().Log.Error("imageName %s", imageName)
 	if saveImage {
 		err := imageScan.saveImageData()
 		if err != nil {
