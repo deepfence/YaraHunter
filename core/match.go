@@ -6,7 +6,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/deepfence/YaRadare/core/sys"
+	"github.com/deepfence/YaraHunter/core/sys"
 	"github.com/spf13/afero"
 )
 
@@ -16,6 +16,7 @@ type MatchFile struct {
 	Extension string
 	Contents  []byte
 }
+
 // IsSkippableFile Checks if the path is excluded
 func IsSkippableContainerRuntimeDir(fs afero.Fs, path string, baseDir string) bool {
 	hostMountPath := *session.Options.HostMountPath

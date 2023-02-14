@@ -2,7 +2,7 @@
 
 This project demonstrates using Deepfence YaRadare in Jenkins build pipeline.
 After customer's image is built, Deepfence YaRadare is run on the image and Malware results are either shown in STDOUT(build logs) or in a JSON file.
-Refer [this](https://github.com/deepfence/YaRadare#command-line-options) for command line options
+Refer [this](https://github.com/deepfence/YaraHunter#command-line-options) for command line options
 
 
 ## Steps

@@ -19,8 +19,8 @@ import (
 
 	"fmt"
 
-	"github.com/deepfence/YaRadare/core"
-	"github.com/deepfence/YaRadare/output"
+	"github.com/deepfence/YaraHunter/core"
+	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
 	"github.com/spf13/afero"

@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/deepfence/YaRadare/core"
-	"github.com/deepfence/YaRadare/output"
+	"github.com/deepfence/YaraHunter/core"
+	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"

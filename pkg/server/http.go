@@ -15,9 +15,9 @@ import (
 	"strconv"
 
 	"github.com/Jeffail/tunny"
-	"github.com/deepfence/YaRadare/core"
-	"github.com/deepfence/YaRadare/output"
-	"github.com/deepfence/YaRadare/scan"
+	"github.com/deepfence/YaraHunter/core"
+	"github.com/deepfence/YaraHunter/pkg/output"
+	"github.com/deepfence/YaraHunter/pkg/scan"
 )
 
 const (

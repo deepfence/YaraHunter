@@ -3,7 +3,7 @@ package output
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/deepfence/YaRadare/core"
+	"github.com/deepfence/YaraHunter/core"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
 	// "github.com/fatih/color"
 	"io/ioutil"

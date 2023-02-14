@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/deepfence/YaRadare/core"
-	"github.com/deepfence/YaRadare/output"
-	"github.com/deepfence/YaRadare/scan"
+	"github.com/deepfence/YaraHunter/core"
+	"github.com/deepfence/YaraHunter/pkg/output"
+	"github.com/deepfence/YaraHunter/pkg/scan"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
 	"google.golang.org/grpc"
 )
