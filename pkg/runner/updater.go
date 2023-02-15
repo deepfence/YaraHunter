@@ -2,7 +2,6 @@ package runner
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -19,8 +18,7 @@ import (
 func ScheduleYaraHunterUpdater(opts *config.Options, newwg *sync.WaitGroup) {
 	defer newwg.Done()
 	if *opts.SocketPath != "" && *opts.HttpPort != "" {
-		flag.Parse()
-		fmt.Println("Go Tickers Tutorial")
+		// fmt.Println("Go Tickers Tutorial")
 		// this creates a new ticker which will
 		// `tick` every 1 second.
 		ticker := time.NewTicker(10 * time.Hour)

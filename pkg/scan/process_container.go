@@ -101,7 +101,7 @@ func GetFileSystemPathsForContainer(containerId string, namespace string) ([]byt
 
 func (s *Scanner) ExtractAndScanContainer(containerId string, namespace string) ([]output.IOCFound, error) {
 	var iocsFound []output.IOCFound
-	tempDir, err := core.GetTmpDir(containerId)
+	tempDir, err := core.GetTmpDir(containerId, *s.TempDirectory)
 	if err != nil {
 		return iocsFound, err
 	}
