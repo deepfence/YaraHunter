@@ -59,11 +59,15 @@ func main() {
 	if err != nil {
 		log.Fatal("main: failed to parse options: %v", err)
 	}
+	config, err := config.ParseConfig(*opts.ConfigPath)
+	if err != nil {
+		log.Fatal("main: failed to parse options: %v", err)
+	}
 
 	wg.Add(2)
 	// go yaraUpdate(&wg)
 	go runner.ScheduleYaraHunterUpdater(opts, &wg)
 	// go yaraResults(&wg)
-	go runner.StartYaraHunter(opts, &wg)
+	go runner.StartYaraHunter(opts, config, &wg)
 	wg.Wait()
 }
