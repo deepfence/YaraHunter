@@ -1,7 +1,5 @@
 FROM golang:1.18.3-bullseye AS builder
-MAINTAINER DeepFence
-
-
+LABEL MAINTAINER Deepfence
 
 RUN apt-get update  \
     && apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev git protoc-gen-go \
@@ -21,7 +19,7 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 
 
-WORKDIR /home/deepfence/src/YaRadare
+WORKDIR /home/deepfence/src/YaraHunter
 COPY . .
 RUN make clean \
     && make all \
@@ -29,7 +27,7 @@ RUN make clean \
     && git clone https://github.com/deepfence/yara-rules
 
 FROM debian:bullseye
-MAINTAINER DeepFence
+LABEL MAINTAINER Deepfence
 LABEL deepfence.role=system
 
 ENV MGMT_CONSOLE_URL=deepfence-internal-router \
@@ -46,14 +44,14 @@ RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4
 WORKDIR /home/deepfence/usr
 COPY --from=builder /home/deepfence/yara-rules .
 COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
-COPY --from=builder /home/deepfence/src/YaRadare/YaRadare .
-COPY --from=builder /home/deepfence/src/YaRadare/config.yaml .
-COPY --from=builder /home/deepfence/src/YaRadare/registry_image_save .
+COPY --from=builder /home/deepfence/src/YaraHunter/YaraHunter .
+COPY --from=builder /home/deepfence/src/YaraHunter/config.yaml .
+COPY --from=builder /home/deepfence/src/YaraHunter/registry_image_save .
 
 RUN pip3 install -r requirements.txt
 RUN cd /usr/local/ \
     && tar -xzf yara.tar.gz
 WORKDIR /home/deepfence/output
 
-ENTRYPOINT ["/home/deepfence/usr/YaRadare", "-config-path", "/home/deepfence/usr", "-rules-path", "/home/deepfence/usr"]
+ENTRYPOINT ["/home/deepfence/usr/YaraHunter", "-config-path", "/home/deepfence/usr", "-rules-path", "/home/deepfence/usr"]
 CMD ["-h"]

@@ -70,7 +70,6 @@ func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) (*yara.Rule
 	//log.Info("including yara rule file ")
 
 	paths, err := getRuleFiles(yr.RulesPath)
-	log.Error("including yara rule file %s", err)
 	if len(paths) == 0 {
 		return nil, errors.New("no Yara rule files found")
 	}

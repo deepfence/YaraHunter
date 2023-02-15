@@ -2,7 +2,7 @@ module github.com/deepfence/YaraHunter
 
 go 1.18
 
-replace github.com/deepfence/agent-plugins-grpc => ../agent-plugins-grpc
+replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
 
 require (
 	github.com/Jeffail/tunny v0.1.4

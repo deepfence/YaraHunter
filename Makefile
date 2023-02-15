@@ -3,7 +3,6 @@ all: yarahunter
 $(PWD)/agent-plugins-grpc/proto/*.proto:
 	$(PWD)/bootstrap.sh
 
-
 $(PWD)/agent-plugins-grpc/proto/*.go: $(PWD)/agent-plugins-grpc/proto/*.proto
 	(cd agent-plugins-grpc && make go)
 
