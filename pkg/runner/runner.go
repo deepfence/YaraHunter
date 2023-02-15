@@ -1,94 +1,104 @@
 package runner
 
 import (
-	"flag"
 	"sync"
 
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/deepfence/YaraHunter/constants"
 	"github.com/deepfence/YaraHunter/core"
+	"github.com/deepfence/YaraHunter/pkg/config"
+	"github.com/deepfence/YaraHunter/pkg/scan"
 	"github.com/deepfence/YaraHunter/pkg/server"
+	"github.com/deepfence/YaraHunter/pkg/yararules"
 	"github.com/fatih/color"
+	log "github.com/sirupsen/logrus"
 )
 
-func StartYaraHunter(newwg *sync.WaitGroup) {
+func StartYaraHunter(opts *config.Options, config *config.Config, newwg *sync.WaitGroup) {
 	defer newwg.Done()
-	flag.Parse()
-	// err := runYaraUpdate()
-	err := StartYaraHunterUpdater()
+
+	err := StartYaraHunterUpdater(*opts.ConfigPath, *opts.RulesPath)
 	if err != nil {
-		core.GetSession().Log.Fatal("main: failed to serve: %v", err)
+		log.Fatal("main: failed to serve: %v", err)
 	}
-	if *session.Options.SocketPath != "" {
-		err := server.RunServer(*session.Options.SocketPath, PLUGIN_NAME)
+	if *opts.SocketPath != "" {
+		err := server.RunServer(opts, constants.PLUGIN_NAME)
 		if err != nil {
-			core.GetSession().Log.Fatal("main: failed to serve: %v", err)
+			log.Fatal("main: failed to serve: %v", err)
 		}
-	} else if *session.Options.HttpPort != "" {
-		core.GetSession().Log.Info("server inside port")
-		err := server.RunHttpServer(*session.Options.HttpPort)
+	} else if *opts.HttpPort != "" {
+		err := server.RunHttpServer(*opts.HttpPort)
 		if err != nil {
-			core.GetSession().Log.Fatal("main: failed to serve through http: %v", err)
+			log.Fatal("main: failed to serve through http: %v", err)
 		}
-	} else if *session.Options.StandAloneHttpPort != "" {
-		core.GetSession().Log.Info("server inside port")
-		err := server.RunStandaloneHttpServer(*session.Options.StandAloneHttpPort)
+	} else if *opts.StandAloneHttpPort != "" {
+		err := server.RunStandaloneHttpServer(*opts.StandAloneHttpPort)
 		if err != nil {
-			core.GetSession().Log.Fatal("main: failed to serve through http: %v", err)
+			log.Fatal("main: failed to serve through http: %v", err)
 		}
 	} else {
-		runOnce()
+		runOnce(opts, config)
 	}
 
 }
 
-func runOnce() {
+func runOnce(opts *config.Options, config *config.Config) {
 	var jsonOutput IOCWriter
-	var err error
 
+	yaraRules, err := yararules.New(*opts.RulesPath).Compile(constants.Filescan, *opts.FailOnCompileWarning)
+	if err != nil {
+		log.Error("error compiling yara rules: %s", err)
+		return
+	}
+
+	scanner, err := scan.New(opts, config, yaraRules)
+	if err != nil {
+		log.Fatalf("error creating scanner: %s", err)
+		return
+	}
 	// Scan container image for IOC
-	if len(*session.Options.ImageName) > 0 {
-		session.Log.Info("Scanning image %s for IOC...\n", *session.Options.ImageName)
-		jsonOutput, err = findIOCInImage(*session.Options.ImageName)
+	if len(*opts.ImageName) > 0 {
+		log.Info("Scanning image %s for IOC...\n", *opts.ImageName)
+		jsonOutput, err = FindIOCInImage(scanner)
 		if err != nil {
-			core.GetSession().Log.Error("error scanning the image: %s", err)
+			log.Error("error scanning the image: %s", err)
 			return
 		}
 	}
 
 	// Scan local directory for IOC
-	if len(*session.Options.Local) > 0 {
-		session.Log.Info("[*] Scanning local directory: %s\n", color.BlueString(*session.Options.Local))
-		jsonOutput, err = findIOCInDir(*session.Options.Local)
+	if len(*opts.Local) > 0 {
+		log.Info("[*] Scanning local directory: %s\n", color.BlueString(*opts.Local))
+		jsonOutput, err = FindIOCInDir(scanner)
 		if err != nil {
-			core.GetSession().Log.Error("error scanning the dir: %s", err)
+			log.Error("error scanning the dir: %s", err)
 			return
 		}
 	}
 
 	// Scan existing container for IOC
-	if len(*session.Options.ContainerId) > 0 {
-		session.Log.Info("Scanning container %s for IOC...\n", *session.Options.ContainerId)
-		jsonOutput, err = findIOCInContainer(*session.Options.ContainerId, *session.Options.ContainerNS)
+	if len(*opts.ContainerId) > 0 {
+		log.Info("Scanning container %s for IOC...\n", *opts.ContainerId)
+		jsonOutput, err = FindIOCInContainer(scanner)
 		if err != nil {
-			core.GetSession().Log.Error("error scanning the container: %s", err)
+			log.Error("error scanning the container: %s", err)
 			return
 		}
 	}
 
 	if jsonOutput == nil {
-		core.GetSession().Log.Error("set either -local or -image-name flag")
+		log.Error("set either -local or -image-name flag")
 		return
 	}
 
-	jsonFilename, err := core.GetJsonFilepath()
+	jsonFilename, err := core.GetJsonFilepath(*opts.JsonFilename, *opts.OutputPath)
 	if err != nil {
-		core.GetSession().Log.Error("error while retrieving json output: %s", err)
+		log.Error("error while retrieving json output: %s", err)
 		return
 	}
 	if jsonFilename != "" {
 		err = jsonOutput.WriteIOC(jsonFilename)
 		if err != nil {
-			core.GetSession().Log.Error("error while writing IOC: %s", err)
+			log.Error("error while writing IOC: %s", err)
 			return
 		}
 	}

@@ -25,27 +25,45 @@ package main
 // ------------------------------------------------------------------------------
 
 import (
+	"os"
+	"path"
+	"runtime"
+	"strconv"
 	"sync"
 
-	"github.com/deepfence/YaraHunter/core"
+	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/runner"
-)
-
-const (
-	PLUGIN_NAME = "MalwareScanner"
+	log "github.com/sirupsen/logrus"
 )
 
 // Read the regex signatures from config file, options etc.
 // and setup the session to start scanning for IOC
-var session = core.GetSession()
+// var session = core.GetSession()
 
 var wg sync.WaitGroup
 
 func main() {
+	log.SetOutput(os.Stderr)
+	log.SetLevel(log.InfoLevel)
+	log.SetReportCaller(true)
+	log.SetFormatter(&log.TextFormatter{
+		DisableColors: false,
+		ForceColors:   true,
+		FullTimestamp: true,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			return "", " " + path.Base(f.File) + ":" + strconv.Itoa(f.Line)
+		},
+	})
+
+	opts, err := config.ParseOptions()
+	if err != nil {
+		log.Fatal("main: failed to parse options: %v", err)
+	}
+
 	wg.Add(2)
 	// go yaraUpdate(&wg)
-	go runner.ScheduleYaraHunterUpdater(&wg)
+	go runner.ScheduleYaraHunterUpdater(opts, &wg)
 	// go yaraResults(&wg)
-	go runner.StartYaraHunter(&wg)
+	go runner.StartYaraHunter(opts, &wg)
 	wg.Wait()
 }

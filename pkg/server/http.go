@@ -18,6 +18,7 @@ import (
 	"github.com/deepfence/YaraHunter/core"
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -38,9 +39,9 @@ type standaloneRequest struct {
 }
 
 type imageParameters struct {
-	imageName string
-	scanId    string
-	form      url.Values
+	scanner *scan.Scanner
+	scanId  string
+	form    url.Values
 }
 
 func init() {
@@ -53,7 +54,7 @@ func init() {
 }
 
 func runMalwareScan(writer http.ResponseWriter, request *http.Request) {
-	core.GetSession().Log.Info("entered into scan here")
+	log.Info("entered into scan here")
 	if err := request.ParseForm(); err != nil {
 		fmt.Fprintf(writer, "ParseForm() err: %v", err)
 		return
@@ -67,6 +68,8 @@ func runMalwareScan(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
+// runMalwareScanStandalone is used to run malware scan on image and publish the result in stdout
+// this doesnot publish the result to any http endpoint, ex: mgmt console
 func runMalwareScanStandalone(writer http.ResponseWriter, request *http.Request) {
 	fmt.Printf("rbody: %s\n", request.Body)
 	requestDump, err := httputil.DumpRequest(request, true)
@@ -85,6 +88,11 @@ func runMalwareScanStandalone(writer http.ResponseWriter, request *http.Request)
 	// decoder := json.NewDecoder(request.Body)
 	var req standaloneRequest
 	// err = decoder.Decode(&req)
+	scanner := &scan.Scanner{}
+	*scanner.ConfigPath = "/home/deepfence/usr/config.yaml"
+	*scanner.RulesPath = "/home/deepfence/usr/yara_rules"
+	*scanner.ImageName = req.ImageNameWithTag
+
 	err = json.Unmarshal(b, &req)
 	if err != nil {
 		fmt.Fprintf(writer, "Parse err: %v", err)
@@ -94,7 +102,7 @@ func runMalwareScanStandalone(writer http.ResponseWriter, request *http.Request)
 	fmt.Printf("Malware scan Scan triggered for %s: ", req.ImageNameWithTag)
 
 	fmt.Printf("Malware Scan triggered for %s: ", req.ImageNameWithTag)
-	res, err := scan.ExtractAndScanImage(req.ImageNameWithTag)
+	res, err := scanner.ExtractAndScanImage()
 	if err != nil {
 		fmt.Fprintf(writer, "Image scan err: %v", err)
 		return
@@ -119,9 +127,18 @@ func runMalwareScanStandalone(writer http.ResponseWriter, request *http.Request)
 }
 
 func processScans(form url.Values) {
+	scanner := &scan.Scanner{}
+	if form.Get("config_path") == "" {
+		*scanner.ConfigPath = "/home/deepfence/usr/config.yaml"
+	}
+	if form.Get("rules_path") == "" {
+		*scanner.RulesPath = "/home/deepfence/usr/yara_rules"
+	}
+
 	imageNameList := form["image_name_with_tag_list"]
 	for index, imageName := range imageNameList {
-		go httpScanWorkerPool.Process(imageParameters{imageName: imageName, scanId: form["scan_id_list"][index], form: form})
+		*scanner.ImageName = imageName
+		go httpScanWorkerPool.Process(imageParameters{scanner: scanner, scanId: form["scan_id_list"][index], form: form})
 	}
 }
 
@@ -131,32 +148,32 @@ func processImageWrapper(imageParamsInterface interface{}) interface{} {
 		fmt.Println("Error reading input from API")
 		return nil
 	}
-	processImage(imageParams.imageName, imageParams.scanId, imageParams.form)
+	processImage(imageParams.scanner, imageParams.scanId, imageParams.form)
 	return nil
 }
 
-func processImage(imageName string, scanId string, form url.Values) {
-	tempFolder, err := core.GetTmpDir(imageName)
+func processImage(scanner *scan.Scanner, scanId string, form url.Values) {
+	tempFolder, err := core.GetTmpDir(*scanner.ImageName, *scanner.TempDirectory)
 	if err != nil {
 		fmt.Println("error creating temp dirs:" + err.Error())
 		return
 	}
-	imageSaveCommand := exec.Command("python3", "/home/deepfence/usr/registry_image_save.py", "--image_name_with_tag", imageName, "--registry_type", form.Get("registry_type"),
+	imageSaveCommand := exec.Command("python3", "/home/deepfence/usr/registry_image_save.py", "--image_name_with_tag", *scanner.ImageName, "--registry_type", form.Get("registry_type"),
 		"--mgmt_console_url", output.MgmtConsoleUrl, "--deepfence_key", output.DeepfenceKey, "--credential_id", form.Get("credential_id"),
 		"--output_folder", tempFolder)
-	_, err = runCommand(imageSaveCommand, "Image Save:"+imageName)
+	_, err = runCommand(imageSaveCommand, "Image Save:"+*scanner.ImageName)
 	if err != nil {
 		fmt.Println("error saving image:" + err.Error())
 		return
 	}
-	scanAndPublish(imageName, scanId, tempFolder, form)
+	scanAndPublish(scanner, scanId, tempFolder, form)
 }
 
-func scanAndPublish(imageName string, scanId string, tempDir string, postForm url.Values) {
+func scanAndPublish(scanner *scan.Scanner, scanId string, tempDir string, postForm url.Values) {
 	var malwareScanLogDoc = make(map[string]interface{})
 	malwareScanLogDoc["scan_status"] = "IN_PROGRESS"
-	malwareScanLogDoc["node_id"] = imageName
-	malwareScanLogDoc["node_name"] = imageName
+	malwareScanLogDoc["node_id"] = *scanner.ImageName
+	malwareScanLogDoc["node_name"] = *scanner.ImageName
 	malwareScanLogDoc["time_stamp"] = core.GetTimestamp()
 	malwareScanLogDoc["@timestamp"] = core.GetCurrentTime()
 	malwareScanLogDoc["scan_id"] = scanId
@@ -177,7 +194,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 		}
 	}
 	fmt.Println("extracting scans")
-	res, err := scan.ExtractAndScanFromTar(tempDir, imageName)
+	res, err := scanner.ExtractAndScanFromTar(tempDir)
 	if err != nil {
 		malwareScanLogDoc["scan_status"] = "ERROR"
 		byteJson, err := json.Marshal(malwareScanLogDoc)
@@ -205,8 +222,8 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 		malwareScanDoc["scan_id_list"] = nil
 		malwareScanDoc["time_stamp"] = timestamp
 		malwareScanDoc["@timestamp"] = currTime
-		malwareScanDoc["node_id"] = imageName
-		malwareScanDoc["node_name"] = imageName
+		malwareScanDoc["node_id"] = *scanner.ImageName
+		malwareScanDoc["node_name"] = *scanner.ImageName
 		malwareScanDoc["scan_id"] = scanId
 		values := reflect.ValueOf(*malware)
 		typeOfS := values.Type()
@@ -246,30 +263,29 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 
 func RunHttpServer(listenPort string) error {
 	http.Handle("/malware-scan", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		core.GetSession().Log.Info("Entered scan")
+		log.Info("Entered scan")
 		runMalwareScan(writer, request)
 	}))
 	http.HandleFunc("/malware-scan/test", func(writer http.ResponseWriter, request *http.Request) {
 		fmt.Fprintf(writer, "Hello World!")
 	})
-	core.GetSession().Log.Info("Http Server listening before ")
+	log.Info("Http Server listening before ")
 	http.ListenAndServe(":"+listenPort, nil)
-	core.GetSession().Log.Info("Http Server listening on " + listenPort)
+	log.Info("Http Server listening on " + listenPort)
 	return nil
 }
 
 func RunStandaloneHttpServer(listenPort string) error {
 	fmt.Println("Trying to start Http Server on " + listenPort)
 	http.Handle("/malware-scan", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		core.GetSession().Log.Info("Entered scan")
+		log.Info("Entered scan")
 		runMalwareScanStandalone(writer, request)
 	}))
 	http.HandleFunc("/malware-scan/ping", func(writer http.ResponseWriter, request *http.Request) {
-		fmt.Fprintf(writer, "Connection is successful")
+		fmt.Fprintf(writer, "pong")
 	})
-	core.GetSession().Log.Info("Http Server listening before ")
 	http.ListenAndServe(":"+listenPort, nil)
-	core.GetSession().Log.Info("Http Server listening on " + listenPort)
+	log.Info("Http Server listening on " + listenPort)
 	return nil
 }
 

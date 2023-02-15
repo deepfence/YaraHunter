@@ -1,4 +1,4 @@
-package core
+package config
 
 import (
 	"flag"
@@ -29,7 +29,6 @@ type Options struct {
 	StandAloneHttpPort   *string
 	RulesPath            *string
 	FailOnCompileWarning *bool
-	
 }
 
 func ParseOptions() (*Options, error) {

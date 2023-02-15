@@ -3,8 +3,10 @@ package output
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/deepfence/YaraHunter/core"
+
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
+	log "github.com/sirupsen/logrus"
+
 	// "github.com/fatih/color"
 	"io/ioutil"
 	"os"
@@ -89,12 +91,12 @@ func (dirOutput JsonDirIOCOutput) WriteIOC(outputFilename string) error {
 func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 	file, err := json.MarshalIndent(IOCJson, "", Indent)
 	if err != nil {
-		core.GetSession().Log.Error("printIOCToJsonFile: Couldn't format json output: %s", err)
+		log.Error("printIOCToJsonFile: Couldn't format json output: %s", err)
 		return err
 	}
 	err = ioutil.WriteFile(outputFilename, file, os.ModePerm)
 	if err != nil {
-		core.GetSession().Log.Error("printIOCToJsonFile: Couldn't write json output to file: %s", err)
+		log.Error("printIOCToJsonFile: Couldn't write json output to file: %s", err)
 		return err
 	}
 
@@ -103,13 +105,13 @@ func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 
 func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 	res := make([]*pb.MalwareInfo, 0)
-	core.GetSession().Log.Error("reached everywhere here", out)
+	log.Error("reached everywhere here", out)
 	for _, v := range out {
-		core.GetSession().Log.Error("did it reach to this point 1", v)
+		log.Error("did it reach to this point 1", v)
 		if MalwaresToMalwareInfo(v) != nil {
 			res = append(res, MalwaresToMalwareInfo(v))
 		}
-		//core.GetSession().Log.Error("did it reach to this point", v)
+		//log.Error("did it reach to this point", v)
 	}
 	return res
 }
@@ -125,7 +127,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	stringsToMatch := make([]string, 0)
 	for i := range out.Meta {
 		if !utf8.ValidString(out.Meta[i]) && bool {
-			core.GetSession().Log.Error("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
+			log.Error("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
 		} else {
 			meta = append(meta, out.Meta[i])
 		}
@@ -134,7 +136,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 
 	for k, v := range out.MetaRules {
 		if !utf8.ValidString(v) && bool {
-			core.GetSession().Log.Error("reached the meta point %s : %t", v, utf8.ValidString(v))
+			log.Error("reached the meta point %s : %t", v, utf8.ValidString(v))
 		} else {
 			metaRules[k] = v
 		}
@@ -143,7 +145,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 
 	for i := range out.StringsToMatch {
 		if !utf8.ValidString(out.StringsToMatch[i]) && bool {
-			core.GetSession().Log.Error("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
+			log.Error("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
 		} else {
 			stringsToMatch = append(stringsToMatch, out.StringsToMatch[i])
 		}

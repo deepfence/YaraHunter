@@ -3,10 +3,9 @@ package runner
 import (
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/deepfence/YaraHunter/core"
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
+	log "github.com/sirupsen/logrus"
 )
 
 // Scan a container image for IOC layer by layer
@@ -14,12 +13,12 @@ import (
 // image - Name of the container image to scan (e.g. "alpine:3.5")
 // @returns
 // Error, if any. Otherwise, returns nil
-func FindIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
-	res, err := scan.ExtractAndScanImage(image)
+func FindIOCInImage(scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
+	res, err := scanner.ExtractAndScanImage()
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: image, IOC: res.IOCs}
+	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: *scanner.ImageName, IOC: res.IOCs}
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.SetImageId(res.ImageId)
 	jsonImageIOCOutput.SetIOC(res.IOCs)
@@ -37,15 +36,15 @@ func FindIOCInImage(image string) (*output.JsonImageIOCOutput, error) {
 // dir - Complete path of the directory to be scanned
 // @returns
 // Error, if any. Otherwise, returns nil
-func FindIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
+func FindIOCInDir(scanner *scan.Scanner) (*output.JsonDirIOCOutput, error) {
+	dirName := *scanner.Local
 	var tempIOCsFound []output.IOCFound
-	err := scan.ScanIOCInDir("", "", dir, nil, &tempIOCsFound, false)
+	err := scanner.ScanIOCInDir("", "", dirName, nil, &tempIOCsFound, false)
 	if err != nil {
-		core.GetSession().Log.Error("findIOCInDir: %s", err)
+		log.Error("findIOCInDir: %s", err)
 		return nil, err
 	}
-	dirName := *session.Options.Local
-	hostMountPath := *session.Options.HostMountPath
+	hostMountPath := *scanner.HostMountPath
 	if hostMountPath != "" {
 		dirName = strings.TrimPrefix(dirName, hostMountPath)
 	}
@@ -65,13 +64,13 @@ func FindIOCInDir(dir string) (*output.JsonDirIOCOutput, error) {
 // containerId - Id of the container to scan (e.g. "0fdasf989i0")
 // @returns
 // Error, if any. Otherwise, returns nil
-func FindIOCInContainer(containerId string, containerNS string) (*output.JsonImageIOCOutput, error) {
+func FindIOCInContainer(scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
 	var tempIOCsFound []output.IOCFound
-	tempIOCsFound, err := scan.ExtractAndScanContainer(containerId, containerNS)
+	tempIOCsFound, err := scanner.ExtractAndScanContainer(*scanner.ContainerId, *scanner.ContainerNS)
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ContainerId: containerId, IOC: tempIOCsFound}
+	jsonImageIOCOutput := output.JsonImageIOCOutput{ContainerId: *scanner.ContainerId, IOC: tempIOCsFound}
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.PrintJsonHeader()
 	var isFirstIOC bool = true

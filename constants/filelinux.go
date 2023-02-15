@@ -1,4 +1,4 @@
-package sys
+package constants
 
 const (
 	/* statfs(2) */

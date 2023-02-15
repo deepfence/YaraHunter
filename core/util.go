@@ -10,6 +10,9 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/deepfence/YaraHunter/constants"
+	log "github.com/sirupsen/logrus"
 )
 
 // CreateRecursiveDir Create directory structure recursively, if they do not exist
@@ -19,14 +22,14 @@ import (
 // Error - Errors if any. Otherwise, returns nil
 func CreateRecursiveDir(completePath string) error {
 	if _, err := os.Stat(completePath); os.IsNotExist(err) {
-		GetSession().Log.Debug("Folder does not exist. Creating folder... %s", completePath)
+		log.Debug("Folder does not exist. Creating folder... %s", completePath)
 		err = os.MkdirAll(completePath, os.ModePerm)
 		if err != nil {
-			GetSession().Log.Error("createRecursiveDir %q: %s", completePath, err)
+			log.Error("createRecursiveDir %q: %s", completePath, err)
 		}
 		return err
 	} else if err != nil {
-		GetSession().Log.Error("createRecursiveDir %q: %s. Deleting temp dir", completePath, err)
+		log.Error("createRecursiveDir %q: %s. Deleting temp dir", completePath, err)
 		DeleteTmpDir(completePath)
 		return err
 	}
@@ -54,21 +57,20 @@ func getSanitizedString(imageName string) string {
 // @returns
 // string - Sanitized string which can used as path and filename of json output file
 // Error - Errors if path can't be created. Otherwise, returns nil
-func GetJsonFilepath() (string, error) {
-	jsonFilename := *GetSession().Options.JsonFilename
+func GetJsonFilepath(jsonFilename, outputPath string) (string, error) {
 	if jsonFilename == "" {
 		return "", nil
 	}
-	outputDir := *GetSession().Options.OutputPath
+	outputDir := outputPath
 	if outputDir != "" && !PathExists(outputDir) {
 		err := CreateRecursiveDir(outputDir)
 		if err != nil {
-			GetSession().Log.Error("GetJsonFilepath: Could not create output dir: %s", err)
+			log.Error("GetJsonFilepath: Could not create output dir: %s", err)
 			return "", err
 		}
 	}
 	jsonFilePath := filepath.Join(outputDir, jsonFilename)
-	GetSession().Log.Info("Complete json file path and name: %s", jsonFilePath)
+	log.Info("Complete json file path and name: %s", jsonFilePath)
 	return jsonFilePath, nil
 }
 
@@ -78,22 +80,21 @@ func GetJsonFilepath() (string, error) {
 // @returns
 // String - Complete path of the based directory where image will be extracted, empty string if error
 // Error - Errors if any. Otherwise, returns nil
-func GetTmpDir(imageName string) (string, error) {
+func GetTmpDir(imageName, tempDirectory string) (string, error) {
 
 	var scanId string = "df_" + getSanitizedString(imageName)
 
-	dir := *session.Options.TempDirectory
-	tempPath := filepath.Join(dir, "Deepfence", TempDirSuffix, scanId)
+	tempPath := filepath.Join(tempDirectory, "Deepfence", constants.TempDirSuffix, scanId)
 
 	//if runtime.GOOS == "windows" {
 	//	tempPath = dir + "\temp\Deepfence\IOCScanning\df_" + scanId
 	//}
 
-	completeTempPath := path.Join(tempPath, ExtractedImageFilesDir)
+	completeTempPath := path.Join(tempPath, constants.ExtractedImageFilesDir)
 
 	err := CreateRecursiveDir(completeTempPath)
 	if err != nil {
-		GetSession().Log.Error("getTmpDir: Could not create temp dir%s", err)
+		log.Error("getTmpDir: Could not create temp dir%s", err)
 		return "", err
 	}
 
@@ -106,13 +107,13 @@ func GetTmpDir(imageName string) (string, error) {
 // @returns
 // Error - Errors if any. Otherwise, returns nil
 func DeleteTmpDir(outputDir string) error {
-	GetSession().Log.Info("Deleting temporary dir %s", outputDir)
+	log.Info("Deleting temporary dir %s", outputDir)
 	// Output dir will be empty string in case of error, don't delete
 	if outputDir != "" {
 		// deleteFiles(outputDir+"/", "*")
 		err := os.RemoveAll(outputDir)
 		if err != nil {
-			GetSession().Log.Error("deleteTmpDir: Could not delete temp dir: %s", err)
+			log.Error("deleteTmpDir: Could not delete temp dir: %s", err)
 			return err
 		}
 	}
@@ -168,7 +169,7 @@ func PathExists(path string) bool {
 
 func LogIfError(text string, err error) {
 	if err != nil {
-		GetSession().Log.Error("%s (%s", text, err.Error())
+		log.Error("%s (%s", text, err.Error())
 	}
 }
 

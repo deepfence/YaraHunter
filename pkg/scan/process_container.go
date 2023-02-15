@@ -12,6 +12,7 @@ import (
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	log "github.com/sirupsen/logrus"
 )
 
 type ContainerScan struct {
@@ -62,11 +63,11 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 // @returns
 // []output.IOCFound - List of all IOC found
 // Error - Errors, if any. Otherwise, returns nil
-func (containerScan *ContainerScan) scanPath(containerPath string) ([]output.IOCFound, error) {
+func (containerScan *ContainerScan) scanPath(scanner *Scanner, containerPath string) ([]output.IOCFound, error) {
 	var iocsFound []output.IOCFound
-	err := ScanIOCInDir("", "", "/fenced/mnt/host/"+containerPath, nil, &iocsFound, true)
+	err := scanner.ScanIOCInDir("", "", "/fenced/mnt/host/"+containerPath, nil, &iocsFound, true)
 	if err != nil {
-		core.GetSession().Log.Error("findIOCInContainer: %s", err)
+		log.Error("findIOCInContainer: %s", err)
 		return iocsFound, err
 	}
 	return iocsFound, nil
@@ -78,11 +79,11 @@ func (containerScan *ContainerScan) scanPath(containerPath string) ([]output.IOC
 // @returns
 // []output.IOCFound - List of all IOC found
 // Error - Errors, if any. Otherwise, returns nil
-func (containerScan *ContainerScan) scan() ([]output.IOCFound, error) {
+func (containerScan *ContainerScan) scan(scanner *Scanner) ([]output.IOCFound, error) {
 	var iocsFound []output.IOCFound
-	err := ScanIOCInDir("", "", containerScan.tempDir, nil, &iocsFound, false)
+	err := scanner.ScanIOCInDir("", "", containerScan.tempDir, nil, &iocsFound, false)
 	if err != nil {
-		core.GetSession().Log.Error("findIOCInContainer: %s", err)
+		log.Error("findIOCInContainer: %s", err)
 		return iocsFound, err
 	}
 	return iocsFound, nil
@@ -98,7 +99,7 @@ func GetFileSystemPathsForContainer(containerId string, namespace string) ([]byt
 	return exec.Command("docker", "inspect", strings.TrimSpace(containerId)).Output()
 }
 
-func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOCFound, error) {
+func (s *Scanner) ExtractAndScanContainer(containerId string, namespace string) ([]output.IOCFound, error) {
 	var iocsFound []output.IOCFound
 	tempDir, err := core.GetTmpDir(containerId)
 	if err != nil {
@@ -110,17 +111,15 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 	containerRuntime, _, err := vessel.AutoDetectRuntime()
 	switch containerRuntime {
 	case vesselConstants.DOCKER:
-		fmt.Println("reached here")
 		containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
 		if err != nil {
-			fmt.Println("the error here is", err)
 			return nil, err
 		}
 		if strings.Contains(string(containerPath), "\"MergedDir\":") {
 			if strings.Contains(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"") {
 				containerPathToScan := strings.Split(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"")[0] + "/merged"
 				fmt.Println("Container Scan Path", containerPathToScan)
-				iocsFound, err = containerScan.scanPath(containerPathToScan)
+				iocsFound, err = containerScan.scanPath(s, containerPathToScan)
 			}
 		}
 	case vesselConstants.CONTAINERD:
@@ -130,7 +129,7 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 			return nil, err
 		}
 
-		iocsFound, err = containerScan.scan()
+		iocsFound, err = containerScan.scan(s)
 		if err != nil {
 			return iocsFound, err
 		}

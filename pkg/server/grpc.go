@@ -9,15 +9,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/deepfence/YaraHunter/core"
+	"github.com/deepfence/YaraHunter/constants"
+	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
+	yararules "github.com/deepfence/YaraHunter/pkg/yararules"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
+	yara "github.com/hillu/go-yara/v4"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 type gRPCServer struct {
-	socket_path string
+	options     *config.Options
+	yaraConfig  *config.Config
+	yaraRules   *yara.Rules
 	plugin_name string
 	pb.UnimplementedMalwareScannerServer
 	pb.UnimplementedAgentPluginServer
@@ -28,16 +34,21 @@ func (s *gRPCServer) GetName(context.Context, *pb.Empty) (*pb.Name, error) {
 }
 
 func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
-	return &pb.Uid{Str: fmt.Sprintf("%s-%s", s.plugin_name, s.socket_path)}, nil
+	return &pb.Uid{Str: fmt.Sprintf("%s-%s", s.plugin_name, *s.options.SocketPath)}, nil
 }
 
 func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
+	scanner, err := scan.New(s.options, s.yaraRules)
+	if err != nil {
+		return nil, err
+	}
+	scanner.SetImageName(r.GetImage().Name)
 	if r.GetPath() != "" {
 		var malwares []output.IOCFound
-		//core.GetSession().Log.Error("find malwares", malwares)
-		err := scan.ScanIOCInDir("", "", r.GetPath(), nil, &malwares, false)
+		//log.Error("find malwares", malwares)
+		err := scanner.ScanIOCInDir("", "", r.GetPath(), nil, &malwares, false)
 		if err != nil {
-			core.GetSession().Log.Error("finding new err", err)
+			log.Error("finding new err", err)
 			return nil, err
 		}
 		return &pb.MalwareResult{
@@ -48,7 +59,7 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 			},
 		}, nil
 	} else if r.GetImage() != nil && r.GetImage().Name != "" {
-		res, err := scan.ExtractAndScanImage(r.GetImage().Name)
+		res, err := scanner.ExtractAndScanImage()
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +76,7 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 		}, nil
 	} else if r.GetContainer() != nil && r.GetContainer().Id != "" {
 		var malwares []output.IOCFound
-		malwares, err := scan.ExtractAndScanContainer(r.GetContainer().Id, r.GetContainer().Namespace)
+		malwares, err := scanner.ExtractAndScanContainer(r.GetContainer().Id, r.GetContainer().Namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -84,14 +95,13 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 	return nil, fmt.Errorf("Invalid request")
 }
 
-func RunServer(socket_path string, plugin_name string) error {
-
+func RunServer(opts *config.Options, plugin_name string) error {
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	lis, err := net.Listen("unix", fmt.Sprintf("%s", socket_path))
+	lis, err := net.Listen("unix", fmt.Sprintf("%s", *opts.SocketPath))
 	if err != nil {
 		return err
 	}
@@ -102,15 +112,24 @@ func RunServer(socket_path string, plugin_name string) error {
 		s.GracefulStop()
 		done <- true
 	}()
-	impl := &gRPCServer{socket_path: socket_path, plugin_name: plugin_name}
+
+	impl := &gRPCServer{options: opts, plugin_name: plugin_name}
+	if err != nil {
+		return err
+	}
+	// compile yara rules
+	impl.yaraRules, err = yararules.New(*opts.RulesPath).Compile(constants.Filescan, *opts.FailOnCompileWarning)
+	if err != nil {
+		return err
+	}
 	pb.RegisterAgentPluginServer(s, impl)
 	pb.RegisterMalwareScannerServer(s, impl)
-	core.GetSession().Log.Info("main: server listening at %v", lis.Addr())
+	log.Info("main: server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		return err
 	}
 
 	<-done
-	core.GetSession().Log.Info("main: exiting gracefully")
+	log.Info("main: exiting gracefully")
 	return nil
 }
