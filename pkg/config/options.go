@@ -5,11 +5,6 @@ import (
 	"os"
 )
 
-const (
-	TempDirSuffix          = "YaRadare"
-	ExtractedImageFilesDir = "ExtractedFiles"
-)
-
 type Options struct {
 	Threads              *int
 	DebugLevel           *string
