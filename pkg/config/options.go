@@ -50,3 +50,35 @@ func ParseOptions() (*Options, error) {
 	flag.Parse()
 	return options, nil
 }
+
+// NewDefaultOptions returns the default options for the YaraHunter without flag parsing
+func NewDefaultOptions() *Options {
+	var rulePath = "/home/deepfence/usr"
+	var failOnCompileWarning = false
+	var threads = 0
+	var debugLevel = "ERROR"
+	var maximumFileSize = int64(32 * 1024 * 1024)
+	var tempDirectory = os.TempDir()
+	var emptyValue = ""
+	var maxIOC = uint(1000)
+	return &Options{
+		RulesPath:            &rulePath,
+		FailOnCompileWarning: &failOnCompileWarning,
+		Threads:              &threads,
+		DebugLevel:           &debugLevel,
+		MaximumFileSize:      &maximumFileSize,
+		TempDirectory:        &tempDirectory,
+		Local:                &emptyValue,
+		HostMountPath:        &emptyValue,
+		ConfigPath:           &emptyValue,
+		OutputPath:           &emptyValue,
+		JsonFilename:         &emptyValue,
+		ImageName:            &emptyValue,
+		MaxIOC:               &maxIOC,
+		ContainerId:          &emptyValue,
+		ContainerNS:          &emptyValue,
+		SocketPath:           &emptyValue,
+		HttpPort:             &emptyValue,
+		StandAloneHttpPort:   &emptyValue,
+	}
+}
