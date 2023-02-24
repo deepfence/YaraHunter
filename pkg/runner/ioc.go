@@ -41,7 +41,7 @@ func FindIOCInDir(scanner *scan.Scanner) (*output.JsonDirIOCOutput, error) {
 	var tempIOCsFound []output.IOCFound
 	err := scanner.ScanIOCInDir("", "", dirName, nil, &tempIOCsFound, false)
 	if err != nil {
-		log.Error("findIOCInDir: %s", err)
+		log.Errorf("findIOCInDir: %s", err)
 		return nil, err
 	}
 	hostMountPath := *scanner.HostMountPath

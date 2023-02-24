@@ -67,7 +67,7 @@ func (containerScan *ContainerScan) scanPath(scanner *Scanner, containerPath str
 	var iocsFound []output.IOCFound
 	err := scanner.ScanIOCInDir("", "", "/fenced/mnt/host/"+containerPath, nil, &iocsFound, true)
 	if err != nil {
-		log.Error("findIOCInContainer: %s", err)
+		log.Errorf("findIOCInContainer: %s", err)
 		return iocsFound, err
 	}
 	return iocsFound, nil
@@ -83,7 +83,7 @@ func (containerScan *ContainerScan) scan(scanner *Scanner) ([]output.IOCFound, e
 	var iocsFound []output.IOCFound
 	err := scanner.ScanIOCInDir("", "", containerScan.tempDir, nil, &iocsFound, false)
 	if err != nil {
-		log.Error("findIOCInContainer: %s", err)
+		log.Errorf("findIOCInContainer: %s", err)
 		return iocsFound, err
 	}
 	return iocsFound, nil

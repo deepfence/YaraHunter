@@ -21,6 +21,7 @@ import (
 
 	"github.com/deepfence/YaraHunter/constants"
 	"github.com/deepfence/YaraHunter/core"
+
 	// yaraConf "github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/vessel"
@@ -69,20 +70,20 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 	if saveImage {
 		err := imageScan.saveImageData()
 		if err != nil {
-			log.Error("image does not exist: %s", err)
+			log.Errorf("image does not exist: %s", err)
 			return err
 		}
 	}
 
 	_, err := extractTarFile(imageName, path.Join(tempDir, imageTarFileName), tempDir)
 	if err != nil {
-		log.Error("scanImage: Could not extract image tar file: %s", err)
+		log.Errorf("scanImage: Could not extract image tar file: %s", err)
 		return err
 	}
 
 	imageManifest, err := extractDetailsFromManifest(tempDir)
 	if err != nil {
-		log.Error("ProcessImageLayers: Could not get image's history: %s,"+
+		log.Errorf("ProcessImageLayers: Could not get image's history: %s,"+
 			" please specify repo:tag and check disk space \n", err.Error())
 		return err
 	}
@@ -106,7 +107,7 @@ func (imageScan *ImageScan) scan(scanner *Scanner) ([]output.IOCFound, error) {
 
 	tempIOCsFound, err := imageScan.processImageLayers(scanner, tempDir)
 	if err != nil {
-		log.Error("scanImage: %s", err)
+		log.Errorf("scanImage: %s", err)
 		return tempIOCsFound, err
 	}
 
@@ -149,12 +150,12 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 func ScanFilePath(s *Scanner, fs afero.Fs, path string, iocs *[]output.IOCFound, layer string) (err error) {
 	f, err := fs.Open(path)
 	if err != nil {
-		log.Error("Error: %v", err)
+		log.Errorf("Error: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		log.Error("Could not seek to start of file %s: %v", path, err)
+		log.Errorf("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
 	if e := ScanFile(s, f, iocs, layer); err == nil && e != nil {
@@ -213,7 +214,7 @@ func ScanFile(s *Scanner, f afero.File, iocs *[]output.IOCFound, layer string) e
 		} else {
 			var buf []byte
 			if buf, err = ioutil.ReadAll(f); err != nil {
-				log.Error("yara: %s: Error reading file, error=%s",
+				log.Errorf("yara: %s: Error reading file, error=%s",
 					fileName, err.Error())
 				return filepath.SkipDir
 			}
@@ -316,7 +317,7 @@ func ScanFile(s *Scanner, f afero.File, iocs *[]output.IOCFound, layer string) e
 func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
 	var fs afero.Fs
 	if layer != "" {
-		log.Error("Scan results in selected image with layer ", layer)
+		log.Debugf("Scan results in selected image with layer %s", layer)
 	}
 	if matchedRuleSet == nil {
 		matchedRuleSet = make(map[uint]uint)
@@ -332,7 +333,7 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println("the error path is", err)
-			log.Error("the error path isr ", layer)
+			log.Errorf("the error path isr ", layer)
 			return nil
 		}
 
@@ -401,18 +402,18 @@ func (imageScan *ImageScan) processImageLayers(scanner *Scanner, imageManifestPa
 		// savelayerID = layerIDs[i]
 		completeLayerPath := path.Join(imageManifestPath, layerPaths[i])
 		targetDir := path.Join(extractPath, layerIDs[i])
-		log.Info("Complete layer path: %s", completeLayerPath)
-		log.Info("Extracted to directory: %s", targetDir)
+		log.Debugf("Complete layer path: %s", completeLayerPath)
+		log.Debugf("Extracted to directory: %s", targetDir)
 		err = core.CreateRecursiveDir(targetDir)
 		if err != nil {
-			log.Error("ProcessImageLayers: Unable to create target directory"+
+			log.Errorf("ProcessImageLayers: Unable to create target directory"+
 				" to extract image layers... %s", err)
 			return tempIOCsFound, err
 		}
 
 		_, error := extractTarFile("", completeLayerPath, targetDir)
 		if error != nil {
-			log.Error("ProcessImageLayers: Unable to extract image layer. Reason = %s", error.Error())
+			log.Errorf("ProcessImageLayers: Unable to extract image layer. Reason = %s", error.Error())
 			// Don't stop. Print error and continue with remaining extracted files and other layers
 			// return tempIOCsFound, error
 		}
@@ -420,7 +421,7 @@ func (imageScan *ImageScan) processImageLayers(scanner *Scanner, imageManifestPa
 		err = scanner.ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs, false)
 		tempIOCsFound = append(tempIOCsFound, IOCs...)
 		if err != nil {
-			log.Error("ProcessImageLayers: %s", err)
+			log.Errorf("ProcessImageLayers: %s", err)
 			// return tempIOCsFound, err
 		}
 

@@ -25,11 +25,11 @@ func CreateRecursiveDir(completePath string) error {
 		log.Debug("Folder does not exist. Creating folder... %s", completePath)
 		err = os.MkdirAll(completePath, os.ModePerm)
 		if err != nil {
-			log.Error("createRecursiveDir %q: %s", completePath, err)
+			log.Errorf("createRecursiveDir %q: %s", completePath, err)
 		}
 		return err
 	} else if err != nil {
-		log.Error("createRecursiveDir %q: %s. Deleting temp dir", completePath, err)
+		log.Errorf("createRecursiveDir %q: %s. Deleting temp dir", completePath, err)
 		DeleteTmpDir(completePath)
 		return err
 	}
@@ -65,7 +65,7 @@ func GetJsonFilepath(jsonFilename, outputPath string) (string, error) {
 	if outputDir != "" && !PathExists(outputDir) {
 		err := CreateRecursiveDir(outputDir)
 		if err != nil {
-			log.Error("GetJsonFilepath: Could not create output dir: %s", err)
+			log.Errorf("GetJsonFilepath: Could not create output dir: %s", err)
 			return "", err
 		}
 	}
@@ -94,7 +94,7 @@ func GetTmpDir(imageName, tempDirectory string) (string, error) {
 
 	err := CreateRecursiveDir(completeTempPath)
 	if err != nil {
-		log.Error("getTmpDir: Could not create temp dir%s", err)
+		log.Errorf("getTmpDir: Could not create temp dir%s", err)
 		return "", err
 	}
 
@@ -107,13 +107,13 @@ func GetTmpDir(imageName, tempDirectory string) (string, error) {
 // @returns
 // Error - Errors if any. Otherwise, returns nil
 func DeleteTmpDir(outputDir string) error {
-	log.Info("Deleting temporary dir %s", outputDir)
+	log.Infof("Deleting temporary dir %s", outputDir)
 	// Output dir will be empty string in case of error, don't delete
 	if outputDir != "" {
 		// deleteFiles(outputDir+"/", "*")
 		err := os.RemoveAll(outputDir)
 		if err != nil {
-			log.Error("deleteTmpDir: Could not delete temp dir: %s", err)
+			log.Errorf("deleteTmpDir: Could not delete temp dir: %s", err)
 			return err
 		}
 	}
@@ -169,7 +169,7 @@ func PathExists(path string) bool {
 
 func LogIfError(text string, err error) {
 	if err != nil {
-		log.Error("%s (%s", text, err.Error())
+		log.Errorf("%s (%s", text, err.Error())
 	}
 }
 

@@ -46,7 +46,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 
 	yaraRules, err := yararules.New(*opts.RulesPath).Compile(constants.Filescan, *opts.FailOnCompileWarning)
 	if err != nil {
-		log.Error("error compiling yara rules: %s", err)
+		log.Errorf("error compiling yara rules: %s", err)
 		return
 	}
 
@@ -60,7 +60,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 		log.Info("Scanning image %s for IOC...\n", *opts.ImageName)
 		jsonOutput, err = FindIOCInImage(scanner)
 		if err != nil {
-			log.Error("error scanning the image: %s", err)
+			log.Errorf("error scanning the image: %s", err)
 			return
 		}
 	}
@@ -70,7 +70,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 		log.Info("[*] Scanning local directory: %s\n", color.BlueString(*opts.Local))
 		jsonOutput, err = FindIOCInDir(scanner)
 		if err != nil {
-			log.Error("error scanning the dir: %s", err)
+			log.Errorf("error scanning the dir: %s", err)
 			return
 		}
 	}
@@ -80,7 +80,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 		log.Info("Scanning container %s for IOC...\n", *opts.ContainerId)
 		jsonOutput, err = FindIOCInContainer(scanner)
 		if err != nil {
-			log.Error("error scanning the container: %s", err)
+			log.Errorf("error scanning the container: %s", err)
 			return
 		}
 	}
@@ -92,13 +92,13 @@ func runOnce(opts *config.Options, config *config.Config) {
 
 	jsonFilename, err := core.GetJsonFilepath(*opts.JsonFilename, *opts.OutputPath)
 	if err != nil {
-		log.Error("error while retrieving json output: %s", err)
+		log.Errorf("error while retrieving json output: %s", err)
 		return
 	}
 	if jsonFilename != "" {
 		err = jsonOutput.WriteIOC(jsonFilename)
 		if err != nil {
-			log.Error("error while writing IOC: %s", err)
+			log.Errorf("error while writing IOC: %s", err)
 			return
 		}
 	}
