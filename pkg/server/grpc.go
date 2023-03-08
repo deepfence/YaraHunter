@@ -124,7 +124,7 @@ func RunServer(opts *config.Options, plugin_name string) error {
 	}
 	pb.RegisterAgentPluginServer(s, impl)
 	pb.RegisterMalwareScannerServer(s, impl)
-	log.Info("main: server listening at %v", lis.Addr())
+	log.Info("main: server listening at ", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		return err
 	}
