@@ -21,7 +21,7 @@ func StartYaraHunter(opts *config.Options, config *config.Config, newwg *sync.Wa
 		log.Fatal("main: failed to serve: %v", err)
 	}
 	if *opts.SocketPath != "" {
-		err := server.RunServer(opts, constants.PLUGIN_NAME)
+		err := server.RunGrpcServer(opts, config, constants.PLUGIN_NAME)
 		if err != nil {
 			log.Fatal("main: failed to serve: %v", err)
 		}

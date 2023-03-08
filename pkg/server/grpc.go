@@ -95,7 +95,7 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 	return nil, fmt.Errorf("Invalid request")
 }
 
-func RunServer(opts *config.Options, plugin_name string) error {
+func RunGrpcServer(opts *config.Options, config *config.Config, plugin_name string) error {
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
 
@@ -113,7 +113,7 @@ func RunServer(opts *config.Options, plugin_name string) error {
 		done <- true
 	}()
 
-	impl := &gRPCServer{options: opts, plugin_name: plugin_name}
+	impl := &gRPCServer{options: opts, plugin_name: plugin_name, yaraConfig: config}
 	if err != nil {
 		return err
 	}
