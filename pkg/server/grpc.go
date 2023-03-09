@@ -42,7 +42,7 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	scanner.SetImageName(r.GetImage().Name)
+	//scanner.SetImageName(r.GetImage().Name)
 	if r.GetPath() != "" {
 		var malwares []output.IOCFound
 		//log.Error("find malwares", malwares)
