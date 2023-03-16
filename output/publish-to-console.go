@@ -33,16 +33,16 @@ func IngestMalwareScanResults(malwareScanMsg string, index string) error {
 	retryCount := 0
 	httpClient, err := buildClient()
 	if err != nil {
-		fmt.Println("Error building http client " + err.Error())
 		return err
 	}
 	for {
-		httpReq, err := http.NewRequest("POST", "https://"+MgmtConsoleUrl+"/df-api/ingest?doc_type="+index, postReader)
+		httpReq, err := http.NewRequest("POST", "https://"+MgmtConsoleUrl+"/ingest/topics/"+index, postReader)
 		if err != nil {
 			return err
 		}
 		httpReq.Close = true
 		httpReq.Header.Add("deepfence-key", DeepfenceKey)
+		httpReq.Header.Add("Content-Type", "application/vnd.kafka.json.v2+json")
 		resp, err := httpClient.Do(httpReq)
 		if err != nil {
 			return err

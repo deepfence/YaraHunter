@@ -23,7 +23,7 @@ import (
 const (
 	scanStatusComplete       = "COMPLETE"
 	scanStatusError          = "ERROR"
-	defaultScanConcurrency   = 5
+	defaultScanConcurrency   = 1
 	malwareScanIndexName     = "malware-scan"
 	malwareScanLogsIndexName = "malware-scan-logs"
 )
@@ -144,7 +144,8 @@ func processImage(imageName string, scanId string, form url.Values) {
 	imageSaveCommand := exec.Command("python3", "/home/deepfence/usr/registry_image_save.py", "--image_name_with_tag", imageName, "--registry_type", form.Get("registry_type"),
 		"--mgmt_console_url", output.MgmtConsoleUrl, "--deepfence_key", output.DeepfenceKey, "--credential_id", form.Get("credential_id"),
 		"--output_folder", tempFolder)
-	_, err = runCommand(imageSaveCommand, "Image Save:"+imageName)
+	out, err := runCommand(imageSaveCommand, "Image Save:"+imageName)
+	fmt.Println("Output from python save:" + out.String())
 	if err != nil {
 		fmt.Println("error saving image:" + err.Error())
 		return
@@ -167,7 +168,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 	}
 	malwareScanLogDoc["image_name_with_tag_list"] = nil
 	malwareScanLogDoc["scan_id_list"] = nil
-	byteJson, err := json.Marshal(malwareScanLogDoc)
+	byteJson, err := format(malwareScanLogDoc)
 	if err != nil {
 		fmt.Println("Error in marshalling malware in_progress log object to json:" + err.Error())
 	} else {
@@ -180,7 +181,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 	res, err := scan.ExtractAndScanFromTar(tempDir, imageName)
 	if err != nil {
 		malwareScanLogDoc["scan_status"] = "ERROR"
-		byteJson, err := json.Marshal(malwareScanLogDoc)
+		byteJson, err := format(malwareScanLogDoc)
 		if err != nil {
 			fmt.Println("Error in marshalling malware result object to json:" + err.Error())
 			return
@@ -215,7 +216,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 				malwareScanDoc[typeOfS.Field(index).Name] = values.Field(index).Interface()
 			}
 		}
-		byteJson, err := json.Marshal(malwareScanDoc)
+		byteJson, err := format(malwareScanDoc)
 		if err != nil {
 			fmt.Println("Error in marshalling malware result object to json:" + err.Error())
 			return
@@ -233,7 +234,7 @@ func scanAndPublish(imageName string, scanId string, tempDir string, postForm ur
 	}
 	malwareScanLogDoc["time_stamp"] = timestamp
 	malwareScanLogDoc["@timestamp"] = currTime
-	byteJson, err = json.Marshal(malwareScanLogDoc)
+	byteJson, err = format(malwareScanLogDoc)
 	if err != nil {
 		fmt.Println("Error in marshalling malwareScanLogDoc to json:" + err.Error())
 		return
@@ -284,4 +285,13 @@ func runCommand(cmd *exec.Cmd, operation string) (*bytes.Buffer, error) {
 		return nil, errors.New(operation + fmt.Sprint(errorOnRun) + ": " + stderr.String())
 	}
 	return &out, nil
+}
+
+func format(data map[string]interface{}) ([]byte, error) {
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	value := "{\"value\":" + string(encoded) + "}"
+	return []byte("{\"records\":[" + value + "]}"), nil
 }

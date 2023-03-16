@@ -32,7 +32,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -136,7 +135,7 @@ func NewYaraRuleUpdater() (error, *YaraRuleUpdater) {
 		downloadYaraRulePath: "",
 	}
 	if fileExists(updater.yaraRulePath) {
-		content, err := ioutil.ReadFile(updater.yaraRulePath)
+		content, err := os.ReadFile(updater.yaraRulePath)
 		if err != nil {
 			return err, nil
 		}
@@ -186,7 +185,7 @@ func untar(d *os.File, r io.Reader) error {
 			if strings.Contains(header.Name, ".yar") {
 
 				if _, err := io.Copy(d, tr); err != nil {
-					fmt.Println("copying err", err)
+					session.Log.Error("copying err", err)
 					return err
 				}
 
@@ -203,7 +202,6 @@ func createFile(dest string) (error, *os.File) {
 	// Create blank file
 	file, err := os.Create(filepath.Join(dest, "malware.yar"))
 	if err != nil {
-		fmt.Println("test why error", err)
 		return err, nil
 	}
 	return nil, file
@@ -243,7 +241,7 @@ func downloadFile(dUrl string, dest string) (error, string) {
 	defer resp.Body.Close()
 
 	size, err := io.Copy(file, resp.Body)
-	fmt.Println("copied size", size)
+	session.Log.Debug("copied size %v", size)
 	if err != nil {
 		return err, ""
 	}
@@ -284,7 +282,7 @@ func writeToFile(dUrl string, dest string) error {
 	defer resp.Body.Close()
 
 	size, err := io.Copy(file, resp.Body)
-	fmt.Println("copied size", size)
+	session.Log.Debug("copied size %v", size)
 	if err != nil {
 		return err
 	}
@@ -305,7 +303,7 @@ func runYaraUpdate() error {
 		core.GetSession().Log.Error("main: failed to serve: %v", downloadError)
 		return err
 	}
-	content, err := ioutil.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath, "/listing.json"))
+	content, err := os.ReadFile(filepath.Join(*core.GetSession().Options.ConfigPath, "/listing.json"))
 	if err != nil {
 		core.GetSession().Log.Error("main: failed to serve: %v", err)
 		return err
@@ -320,7 +318,7 @@ func runYaraUpdate() error {
 		if yaraRuleListingJson.Available.V3[0].Checksum != yaraRuleUpdater.currentFileChecksum {
 			yaraRuleUpdater.currentFileChecksum = yaraRuleListingJson.Available.V3[0].Checksum
 			file, _ := json.MarshalIndent(yaraRuleUpdater, "", " ")
-			writeErr := ioutil.WriteFile(path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"), file, 0644)
+			writeErr := os.WriteFile(path.Join(*core.GetSession().Options.RulesPath, "metaListingData.json"), file, 0644)
 
 			if writeErr != nil {
 				core.GetSession().Log.Error("main: failed to serve: %v", writeErr)
@@ -334,7 +332,6 @@ func runYaraUpdate() error {
 				return downloadError
 			}
 			if fileExists(filepath.Join(*core.GetSession().Options.ConfigPath, fileName)) {
-				fmt.Println("the file exists")
 
 				readFile, readErr := os.OpenFile(filepath.Join(*core.GetSession().Options.ConfigPath, fileName), os.O_CREATE|os.O_RDWR, 0755)
 				if readErr != nil {
@@ -474,7 +471,6 @@ func yaraUpdate(newwg *sync.WaitGroup) {
 	defer newwg.Done()
 	if *session.Options.SocketPath != "" && *session.Options.HttpPort != "" {
 		flag.Parse()
-		fmt.Println("Go Tickers Tutorial")
 		// this creates a new ticker which will
 		// `tick` every 1 second.
 		ticker := time.NewTicker(10 * time.Hour)
@@ -482,7 +478,7 @@ func yaraUpdate(newwg *sync.WaitGroup) {
 		// for every `tick` that our `ticker`
 		// emits, we print `tock`
 		for t := range ticker.C {
-			fmt.Println("Invoked at ", t)
+			core.GetSession().Log.Debug("check ticker value", t)
 			err := runYaraUpdate()
 			if err != nil {
 				core.GetSession().Log.Fatal("main: failed to serve: %v", err)
@@ -498,9 +494,8 @@ func yaraResults(newwg *sync.WaitGroup) {
 	if err != nil {
 		core.GetSession().Log.Fatal("main: failed to serve: %v", err)
 	}
-	fmt.Println("server inside23 port", *session.Options)
-	core.GetSession().Log.Info("server inside23 port", *session.Options)
 	if *session.Options.SocketPath != "" {
+		core.GetSession().Log.Debug("reached inside server")
 		//core.GetSession().Log.Info("reached inside server")
 		err := server.RunServer(*session.Options.SocketPath, PLUGIN_NAME)
 		if err != nil {

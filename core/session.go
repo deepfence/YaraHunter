@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"os"
 	"runtime"
@@ -57,7 +56,6 @@ func GetSession() *Session {
 		}
 
 		if session.Options, err = ParseOptions(); err != nil {
-			fmt.Println(err)
 			session.Log.Error(err.Error())
 			os.Exit(1)
 		}
@@ -76,12 +74,14 @@ func GetSession() *Session {
 
 		session.Start()
 
-		rules, err := compile(filescan, session)
-		if err != nil {
-			session.Log.Error("compiling rules issue: %s", err)
-			os.Exit(1)
+		if session.YaraRules == nil {
+			rules, err := compile(filescan, session)
+			if err != nil {
+				session.Log.Error("compiling rules issue: %s", err)
+				os.Exit(1)
+			}
+			session.YaraRules = rules
 		}
-		session.YaraRules = rules
 	})
 
 	return session

@@ -61,7 +61,9 @@ func compile(purpose int, session *Session) (*yr.Rules, error) {
 	//session.Log.Info("including yara rule file ")
 
 	paths, err := getRuleFiles(*session.Options.RulesPath)
-	session.Log.Error("including yara rule file %s", err)
+	if err != nil {
+		session.Log.Error("including yara rule file %s", err)
+	}
 	if len(paths) == 0 {
 		return nil, errors.New("no Yara rule files found")
 	}

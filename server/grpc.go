@@ -34,10 +34,8 @@ func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
 func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
 	if r.GetPath() != "" {
 		var malwares []output.IOCFound
-		//core.GetSession().Log.Error("find malwares", malwares)
 		err := scan.ScanIOCInDir("", "", r.GetPath(), nil, &malwares, false)
 		if err != nil {
-			core.GetSession().Log.Error("finding new err", err)
 			return nil, err
 		}
 		return &pb.MalwareResult{
@@ -95,8 +93,7 @@ func RunServer(socket_path string, plugin_name string) error {
 	if err != nil {
 		return err
 	}
-	s := grpc.NewServer()
-
+	s := grpc.NewServer(grpc.MaxRecvMsgSize(1024*1024*100), grpc.MaxSendMsgSize(1024*1024*100))
 	go func() {
 		<-sigs
 		s.GracefulStop()

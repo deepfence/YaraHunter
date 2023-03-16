@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"github.com/deepfence/YaRadare/core"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
-	// "github.com/fatih/color"
-	"io/ioutil"
+
 	"os"
 	"strings"
 	"time"
@@ -92,7 +91,7 @@ func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
 		core.GetSession().Log.Error("printIOCToJsonFile: Couldn't format json output: %s", err)
 		return err
 	}
-	err = ioutil.WriteFile(outputFilename, file, os.ModePerm)
+	err = os.WriteFile(outputFilename, file, os.ModePerm)
 	if err != nil {
 		core.GetSession().Log.Error("printIOCToJsonFile: Couldn't write json output to file: %s", err)
 		return err
@@ -105,7 +104,7 @@ func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 	res := make([]*pb.MalwareInfo, 0)
 	core.GetSession().Log.Error("reached everywhere here", out)
 	for _, v := range out {
-		core.GetSession().Log.Error("did it reach to this point 1", v)
+		//core.GetSession().Log.Error("did it reach to this point 1", v)
 		if MalwaresToMalwareInfo(v) != nil {
 			res = append(res, MalwaresToMalwareInfo(v))
 		}
@@ -125,7 +124,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	stringsToMatch := make([]string, 0)
 	for i := range out.Meta {
 		if !utf8.ValidString(out.Meta[i]) && bool {
-			core.GetSession().Log.Error("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
+			// core.GetSession().Log.Error("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
 		} else {
 			meta = append(meta, out.Meta[i])
 		}
@@ -134,7 +133,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 
 	for k, v := range out.MetaRules {
 		if !utf8.ValidString(v) && bool {
-			core.GetSession().Log.Error("reached the meta point %s : %t", v, utf8.ValidString(v))
+			// core.GetSession().Log.Error("reached the meta point %s : %t", v, utf8.ValidString(v))
 		} else {
 			metaRules[k] = v
 		}
@@ -143,7 +142,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 
 	for i := range out.StringsToMatch {
 		if !utf8.ValidString(out.StringsToMatch[i]) && bool {
-			core.GetSession().Log.Error("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
+			//core.GetSession().Log.Error("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
 		} else {
 			stringsToMatch = append(stringsToMatch, out.StringsToMatch[i])
 		}
