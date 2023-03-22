@@ -11,6 +11,7 @@ import (
 
 	"github.com/deepfence/YaraHunter/constants"
 	"github.com/deepfence/YaraHunter/pkg/config"
+	"github.com/deepfence/YaraHunter/pkg/jobs"
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	yararules "github.com/deepfence/YaraHunter/pkg/yararules"
@@ -27,6 +28,13 @@ type gRPCServer struct {
 	plugin_name string
 	pb.UnimplementedMalwareScannerServer
 	pb.UnimplementedAgentPluginServer
+	pb.UnimplementedScannersServer
+}
+
+func (s *gRPCServer) ReportJobsStatus(context.Context, *pb.Empty) (*pb.JobReports, error) {
+	return &pb.JobReports{
+		RunningJobs: jobs.GetRunningJobCount(),
+	}, nil
 }
 
 func (s *gRPCServer) GetName(context.Context, *pb.Empty) (*pb.Name, error) {
@@ -37,7 +45,14 @@ func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
 	return &pb.Uid{Str: fmt.Sprintf("%s-%s", s.plugin_name, *s.options.SocketPath)}, nil
 }
 
-func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
+func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
+	var err error
+	res := jobs.StartStatusReporter(c, "")
+	defer func() {
+		res <- err
+		close(res)
+	}()
+
 	scanner, err := scan.New(s.options, s.yaraConfig, s.yaraRules)
 	if err != nil {
 		return nil, err
@@ -92,7 +107,8 @@ func (s *gRPCServer) FindMalwareInfo(_ context.Context, r *pb.MalwareRequest) (*
 			},
 		}, nil
 	}
-	return nil, fmt.Errorf("Invalid request")
+	err = fmt.Errorf("Invalid request")
+	return nil, err
 }
 
 func RunGrpcServer(opts *config.Options, config *config.Config, plugin_name string) error {
