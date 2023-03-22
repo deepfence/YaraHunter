@@ -1,4 +1,4 @@
-FROM golang:1.18.3-bullseye AS builder
+FROM golang:1.19.7-bullseye AS builder
 
 RUN apt-get update  \
     && apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev git protoc-gen-go \
