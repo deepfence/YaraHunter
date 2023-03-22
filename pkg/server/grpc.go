@@ -47,7 +47,7 @@ func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
 
 func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
 	var err error
-	res := jobs.StartStatusReporter(c, "")
+	res := jobs.StartStatusReporter(c, r.ScanId)
 	defer func() {
 		res <- err
 		close(res)
