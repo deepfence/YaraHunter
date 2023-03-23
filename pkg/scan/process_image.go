@@ -454,7 +454,7 @@ func (imageScan *ImageScan) saveImageData() error {
 	if err != nil {
 		return err
 	}
-	log.Info("Image %s saved in %s", imageName, imageScan.tempDir)
+	log.Infof("Image %s saved in %s", imageName, imageScan.tempDir)
 	return nil
 }
 

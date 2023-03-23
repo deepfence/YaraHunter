@@ -53,7 +53,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		close(res)
 	}()
 
-	log.Info("request to scan %+v", r)
+	log.Infof("request to scan %+v", r)
 
 	scanner, err := scan.New(s.options, s.yaraConfig, s.yaraRules)
 	if err != nil {
@@ -76,12 +76,12 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			},
 		}, nil
 	} else if r.GetImage() != nil && r.GetImage().Name != "" {
-		log.Infof("scan for malwares in image %s %s", r.GetImage(), r.GetImage().Name)
+		log.Infof("scan for malwares in image %s", r.GetImage())
 		res, err := scanner.ExtractAndScanImage(r.GetImage().Name)
 		if err != nil {
 			return nil, err
 		}
-		log.Infof("found %d malwares in image %s %s", len(res.IOCs), r.GetImage().Id, r.GetImage().Name)
+		log.Infof("found %d malwares in image %s", len(res.IOCs), r.GetImage())
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			Malwares:  output.MalwaresToMalwareInfos(res.IOCs),
@@ -93,13 +93,13 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			},
 		}, nil
 	} else if r.GetContainer() != nil && r.GetContainer().Id != "" {
-		log.Infof("scan for malwares in container %s", r.GetContainer().Id)
+		log.Infof("scan for malwares in container %s", r.GetContainer())
 		var malwares []output.IOCFound
 		malwares, err := scanner.ExtractAndScanContainer(r.GetContainer().Id, r.GetContainer().Namespace)
 		if err != nil {
 			return nil, err
 		}
-		log.Infof("found %d malwares in container %s", len(malwares), r.GetContainer().Id)
+		log.Infof("found %d malwares in container %s", len(malwares), r.GetContainer())
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			Malwares:  output.MalwaresToMalwareInfos(malwares),
