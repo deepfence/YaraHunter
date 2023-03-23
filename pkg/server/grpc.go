@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -20,6 +21,19 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
+
+var (
+	MalwareScanDir = "/"
+	HostMountDir   = "/fenced/mnt/host/"
+)
+
+func init() {
+	if os.Getenv("DF_SERVERLESS") == "true" {
+		MalwareScanDir = "/"
+	} else {
+		MalwareScanDir = HostMountDir
+	}
+}
 
 type gRPCServer struct {
 	options     *config.Options
@@ -67,6 +81,14 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			log.Error("finding new err", err)
 			return nil, err
 		}
+
+		// truncate host mount path
+		if MalwareScanDir == HostMountDir {
+			for _, malware := range malwares {
+				malware.CompleteFilename = strings.Replace(malware.CompleteFilename, HostMountDir, "", 1)
+			}
+		}
+
 		log.Infof("found %d malwares in path %s", len(malwares), r.GetPath())
 		output.WriteScanData(malwares, r.GetScanId())
 		return &pb.MalwareResult{
