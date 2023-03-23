@@ -14,7 +14,7 @@ import (
 // @returns
 // Error, if any. Otherwise, returns nil
 func FindIOCInImage(scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
-	res, err := scanner.ExtractAndScanImage()
+	res, err := scanner.ExtractAndScanImage(*scanner.ImageName)
 	if err != nil {
 		return nil, err
 	}

@@ -63,6 +63,9 @@ type ImageScan struct {
 // @returns
 // Error - Errors, if any. Otherwise, returns nil
 func (imageScan *ImageScan) extractImage(saveImage bool) error {
+
+	log.Infof("image scan %+v", imageScan)
+
 	imageName := imageScan.imageName
 	tempDir := imageScan.tempDir
 	imageScan.numIOCs = 0
@@ -645,15 +648,14 @@ type ImageExtractionResult struct {
 	ImageId string
 }
 
-func (s *Scanner) ExtractAndScanImage() (*ImageExtractionResult, error) {
+func (s *Scanner) ExtractAndScanImage(image string) (*ImageExtractionResult, error) {
 	tempDir, err := core.GetTmpDir(*s.ImageName, *s.TempDirectory)
 	if err != nil {
 		return nil, err
 	}
 
-	imageScan := ImageScan{imageName: *s.ImageName, imageId: "", tempDir: tempDir}
+	imageScan := ImageScan{imageName: image, imageId: "", tempDir: tempDir}
 	err = imageScan.extractImage(true)
-
 	if err != nil {
 		return nil, err
 	}
@@ -670,7 +672,6 @@ func (s *Scanner) ExtractAndScanFromTar(tarFolder string) (*ImageExtractionResul
 	// defer core.DeleteTmpDir(tarFolder)
 	imageScan := ImageScan{imageName: *s.ImageName, imageId: "", tempDir: tarFolder}
 	err := imageScan.extractImage(false)
-
 	if err != nil {
 		return nil, err
 	}

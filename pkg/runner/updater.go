@@ -77,7 +77,7 @@ func StartYaraHunterUpdater(rulesPath string, configPath string) error {
 			}
 
 			if utils.PathExists(filepath.Join(configPath, fileName)) {
-				fmt.Println("the file exists")
+				log.Infof("rule file exists: %s", filepath.Join(configPath, fileName))
 
 				readFile, readErr := os.OpenFile(filepath.Join(configPath, fileName), os.O_CREATE|os.O_RDWR, 0755)
 				if readErr != nil {

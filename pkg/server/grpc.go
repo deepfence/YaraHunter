@@ -53,19 +53,21 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		close(res)
 	}()
 
+	log.Info("request to scan %+v", r)
+
 	scanner, err := scan.New(s.options, s.yaraConfig, s.yaraRules)
 	if err != nil {
 		return nil, err
 	}
-	//scanner.SetImageName(r.GetImage().Name)
 	if r.GetPath() != "" {
+		log.Infof("scan for malwares in path %s", r.GetPath())
 		var malwares []output.IOCFound
-		//log.Error("find malwares", malwares)
 		err := scanner.ScanIOCInDir("", "", r.GetPath(), nil, &malwares, false)
 		if err != nil {
 			log.Error("finding new err", err)
 			return nil, err
 		}
+		log.Infof("found %d malwares in path %s", len(malwares), r.GetPath())
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			Malwares:  output.MalwaresToMalwareInfos(malwares),
@@ -74,11 +76,12 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			},
 		}, nil
 	} else if r.GetImage() != nil && r.GetImage().Name != "" {
-		res, err := scanner.ExtractAndScanImage()
+		log.Infof("scan for malwares in image %s %s", r.GetImage(), r.GetImage().Name)
+		res, err := scanner.ExtractAndScanImage(r.GetImage().Name)
 		if err != nil {
 			return nil, err
 		}
-
+		log.Infof("found %d malwares in image %s %s", len(res.IOCs), r.GetImage().Id, r.GetImage().Name)
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			Malwares:  output.MalwaresToMalwareInfos(res.IOCs),
@@ -90,12 +93,13 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			},
 		}, nil
 	} else if r.GetContainer() != nil && r.GetContainer().Id != "" {
+		log.Infof("scan for malwares in container %s", r.GetContainer().Id)
 		var malwares []output.IOCFound
 		malwares, err := scanner.ExtractAndScanContainer(r.GetContainer().Id, r.GetContainer().Namespace)
 		if err != nil {
 			return nil, err
 		}
-
+		log.Infof("found %d malwares in container %s", len(malwares), r.GetContainer().Id)
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			Malwares:  output.MalwaresToMalwareInfos(malwares),
@@ -140,6 +144,7 @@ func RunGrpcServer(opts *config.Options, config *config.Config, plugin_name stri
 	}
 	pb.RegisterAgentPluginServer(s, impl)
 	pb.RegisterMalwareScannerServer(s, impl)
+	pb.RegisterScannersServer(s, impl)
 	log.Info("main: server listening at ", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		return err
