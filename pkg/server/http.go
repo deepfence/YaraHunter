@@ -100,9 +100,7 @@ func runMalwareScanStandalone(writer http.ResponseWriter, request *http.Request)
 	}
 
 	fmt.Printf("Malware scan Scan triggered for %s: ", req.ImageNameWithTag)
-
-	fmt.Printf("Malware Scan triggered for %s: ", req.ImageNameWithTag)
-	res, err := scanner.ExtractAndScanImage()
+	res, err := scanner.ExtractAndScanImage(req.ImageNameWithTag)
 	if err != nil {
 		fmt.Fprintf(writer, "Image scan err: %v", err)
 		return
