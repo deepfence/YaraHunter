@@ -3,7 +3,9 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
+	"github.com/deepfence/YaraHunter/utils"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
 	log "github.com/sirupsen/logrus"
 
@@ -17,6 +19,11 @@ import (
 
 const (
 	Indent = "  " // Indentation for Json printing
+)
+
+var (
+	scanFilename       = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan/malware_scan.log"
+	scanStatusFilename = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan-log/malware_scan_log.log"
 )
 
 type IOCFound struct {
@@ -294,4 +301,65 @@ func removeFirstLastChar(input string) string {
 		return input
 	}
 	return input[1 : len(input)-1]
+}
+
+func writeToFile(malwareScanMsg string, filename string) error {
+	os.MkdirAll(filepath.Dir(filename), 0755)
+
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	malwareScanMsg = strings.Replace(malwareScanMsg, "\n", " ", -1)
+	if _, err = f.WriteString(malwareScanMsg + "\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func WriteScanStatus(status, scan_id, scan_message string) {
+	var scanLogDoc = make(map[string]interface{})
+	scanLogDoc["scan_id"] = scan_id
+	scanLogDoc["scan_status"] = status
+	scanLogDoc["scan_message"] = scan_message
+
+	byteJson, err := json.Marshal(scanLogDoc)
+	if err != nil {
+		log.Errorf("Error marshalling json for malware-logs-status: %s", err)
+		return
+	}
+
+	err = writeToFile(string(byteJson), scanStatusFilename)
+	if err != nil {
+		log.Errorf("Error in sending data to malware-logs-status to mark in progress: %s", err)
+		return
+	}
+}
+
+type MalwareScanDoc struct {
+	IOCFound
+	ScanID    string `json:"scan_id,omitempty"`
+	Timestamp string `json:"timestamp,omitempty"`
+}
+
+func WriteScanData(malwares []IOCFound, scan_id string) {
+	for _, malware := range malwares {
+		doc := MalwareScanDoc{
+			IOCFound:  malware,
+			ScanID:    scan_id,
+			Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z",
+		}
+		byteJson, err := json.Marshal(doc)
+		if err != nil {
+			log.Errorf("Error marshalling json: %s", err)
+			continue
+		}
+		err = writeToFile(string(byteJson), scanFilename)
+		if err != nil {
+			log.Errorf("Error in writing data to malware scan file: %s", err)
+		}
+	}
 }
