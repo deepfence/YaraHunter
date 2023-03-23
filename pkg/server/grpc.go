@@ -90,7 +90,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		}
 
 		log.Infof("found %d malwares in path %s", len(malwares), r.GetPath())
-		output.WriteScanData(malwares, r.GetScanId())
+		output.WriteScanData(output.MalwaresToMalwareInfos(malwares), r.GetScanId())
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			// Malwares:  output.MalwaresToMalwareInfos(malwares),
@@ -106,7 +106,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			return nil, err
 		}
 		log.Infof("found %d malwares in image %s", len(res.IOCs), r.GetImage())
-		output.WriteScanData(res.IOCs, r.GetScanId())
+		output.WriteScanData(output.MalwaresToMalwareInfos(res.IOCs), r.GetScanId())
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			// Malwares:  output.MalwaresToMalwareInfos(res.IOCs),
@@ -126,7 +126,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			return nil, err
 		}
 		log.Infof("found %d malwares in container %s", len(malwares), r.GetContainer())
-		output.WriteScanData(malwares, r.GetScanId())
+		output.WriteScanData(output.MalwaresToMalwareInfos(malwares), r.GetScanId())
 		return &pb.MalwareResult{
 			Timestamp: time.Now().String(),
 			// Malwares:  output.MalwaresToMalwareInfos(malwares),

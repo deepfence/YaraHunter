@@ -125,7 +125,8 @@ func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 
 func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	bool := true
-	if !(utf8.ValidString(out.LayerID) && utf8.ValidString(out.RuleName) && utf8.ValidString(out.Summary) && utf8.ValidString(out.Class) &&
+	if !(utf8.ValidString(out.LayerID) && utf8.ValidString(out.RuleName) &&
+		utf8.ValidString(out.Summary) && utf8.ValidString(out.Class) &&
 		utf8.ValidString(out.FileSeverity) && utf8.ValidString(out.CompleteFilename)) {
 		bool = false
 	}
@@ -340,17 +341,17 @@ func WriteScanStatus(status, scan_id, scan_message string) {
 }
 
 type MalwareScanDoc struct {
-	IOCFound
+	pb.MalwareInfo
 	ScanID    string `json:"scan_id,omitempty"`
 	Timestamp string `json:"timestamp,omitempty"`
 }
 
-func WriteScanData(malwares []IOCFound, scan_id string) {
+func WriteScanData(malwares []*pb.MalwareInfo, scan_id string) {
 	for _, malware := range malwares {
 		doc := MalwareScanDoc{
-			IOCFound:  malware,
-			ScanID:    scan_id,
-			Timestamp: time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z",
+			MalwareInfo: *malware,
+			ScanID:      scan_id,
+			Timestamp:   time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z",
 		}
 		byteJson, err := json.Marshal(doc)
 		if err != nil {
