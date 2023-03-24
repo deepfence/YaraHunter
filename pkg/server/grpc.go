@@ -24,7 +24,7 @@ import (
 
 var (
 	MalwareScanDir = "/"
-	HostMountDir   = "/fenced/mnt/host/"
+	HostMountDir   = "/fenced/mnt/host"
 )
 
 func init() {
@@ -83,10 +83,13 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		}
 
 		// truncate host mount path
-		if MalwareScanDir == HostMountDir {
-			for _, malware := range malwares {
-				malware.CompleteFilename = strings.Replace(malware.CompleteFilename, HostMountDir, "", 1)
-			}
+		// if MalwareScanDir == HostMountDir {
+		// 	for _, malware := range malwares {
+		// 		malware.CompleteFilename = strings.Replace(malware.CompleteFilename, HostMountDir, "", 1)
+		// 	}
+		// }
+		for _, malware := range malwares {
+			malware.CompleteFilename = strings.TrimPrefix(malware.CompleteFilename, HostMountDir)
 		}
 
 		log.Infof("found %d malwares in path %s", len(malwares), r.GetPath())
