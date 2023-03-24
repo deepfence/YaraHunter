@@ -241,9 +241,9 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			}
 			matchesMeta := make([]string, len(m.Metas))
 			matchesMetaData := make([]string, len(m.Metas))
-			for _, strMeta := range m.Metas {
-				matchesMeta = append(matchesMeta, strMeta.Identifier)
-				matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
+			for idx, strMeta := range m.Metas {
+				matchesMeta[idx] = strMeta.Identifier
+				matchesMetaData[idx] = fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value)
 			}
 
 			iocsFound = append(iocsFound, output.IOCFound{
