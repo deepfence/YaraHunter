@@ -26,7 +26,12 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
+<<<<<<< HEAD:pkg/scan/process_image.go
 	log "github.com/sirupsen/logrus"
+||||||| parent of 370356a (Fix & Optimize scans):scan/process_image.go
+=======
+	"github.com/opencontainers/selinux/pkg/pwalkdir"
+>>>>>>> 370356a (Fix & Optimize scans):scan/process_image.go
 	"github.com/spf13/afero"
 )
 
@@ -150,8 +155,8 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 	return updatedSeverity, math.Round(updatedScore*100) / 100
 }
 
-func ScanFilePath(s *Scanner, fs afero.Fs, path string, iocs *[]output.IOCFound, layer string) (err error) {
-	f, err := fs.Open(path)
+func ScanFilePath(s *Scanner, path string, iocs *[]output.IOCFound, layer string) (err error) {
+	f, err := os.Open(path)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return err
@@ -167,7 +172,7 @@ func ScanFilePath(s *Scanner, fs afero.Fs, path string, iocs *[]output.IOCFound,
 	return
 }
 
-func ScanFile(s *Scanner, f afero.File, iocs *[]output.IOCFound, layer string) error {
+func ScanFile(s *Scanner, f os.File, iocs *[]output.IOCFound, layer string) error {
 	var (
 		matches yr.MatchRules
 		err     error
@@ -330,52 +335,58 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 		core.UpdateDirsPermissionsRW(fullDir)
 	}
 
-	//fmt.Println("full directory is",fullDir,isContainerRunTime)
+	if s.HostMountPath != "" {
+		baseDir = s.HostMountPath
+	}
 
-	fs = afero.NewOsFs()
-	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
+
+	maxFileSize := *session.Options.MaximumFileSize * 1024
+	pwalkdir.WalkN(fullDir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			fmt.Println("the error path is", err)
 			log.Errorf("the error path isr ", layer)
 			return nil
 		}
 
-		var scanDirPath string
-		if layer != "" {
-			scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
-			if scanDirPath == "" {
-				scanDirPath = "/"
+		if entry.IsDir() {
+			var scanDirPath string
+			if layer != "" {
+				scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
+				if scanDirPath == "" {
+					scanDirPath = "/"
+				}
+			} else {
+				scanDirPath = path
 			}
-		} else {
-			scanDirPath = path
-		}
-
-		if info.IsDir() {
 			if isContainerRunTime {
-				//fmt.Println("full directory is",fullDir,path)
-				if core.IsSkippableContainerRuntimeDir(fs, *&s.Config.ExcludedContainerPaths, path, baseDir, *s.HostMountPath) {
+				if core.IsSkippableDir(fs, *&s.Config.ExcludedContainerPaths, scanDirPath, baseDir) {
 					return filepath.SkipDir
 				}
 			} else {
-				if core.IsSkippableDir(fs, *s.Config, path, baseDir, *s.HostMountPath) {
+				if core.IsSkippableDir(fs, *&s.Config.ExcludedPaths, scanDirPath, baseDir) {
 					return filepath.SkipDir
 				}
 			}
 			return nil
 
 		}
-		const specialMode = os.ModeSymlink | os.ModeDevice | os.ModeNamedPipe | os.ModeSocket | os.ModeCharDevice
-		if info.Mode()&specialMode != 0 {
+		if !entry.Type().IsRegular() {
 			return nil
 		}
-		if core.IsSkippableFileExtension(s.Config.ExcludedExtensions, path) {
+
+		finfo, err := entry.Info()
+		if err != nil {
+			session.Log.Warn("Skipping %v as info could not be retrieved: %v", path, err)
+			return nil
+		}
+		if finfo.Size() > maxFileSize || core.IsSkippableFileExtension(s.Config.ExcludedExtensions, path) {
 			return nil
 		}
 		if err = ScanFilePath(s, fs, path, iocs, layer); err != nil {
-			fmt.Println("afero path", err)
+			session.Log.Error("Scan file failed: %v", err)
 		}
 		return nil
-	})
+	}, *session.Options.WorkersPerScan)
 
 	return nil
 }
