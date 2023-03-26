@@ -23,6 +23,7 @@ import (
 	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
+	"github.com/opencontainers/selinux/pkg/pwalkdir"
 	"github.com/spf13/afero"
 )
 
@@ -325,56 +326,51 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		core.UpdateDirsPermissionsRW(fullDir)
 	}
 
-	// maxFileSize := *session.Options.MaximumFileSize * 1024
-	// var file core.MatchFile
-	// var relPath string
-
-	//fmt.Println("full directory is",fullDir,isContainerRunTime)
-
-	fs = afero.NewOsFs()
-	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
-		//session.Log.Error("find error ", err)
+	maxFileSize := *session.Options.MaximumFileSize * 1024
+	pwalkdir.WalkN(fullDir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			session.Log.Error("the error path isr ", layer)
 			return nil
 		}
 
-		var scanDirPath string
-		if layer != "" {
-			scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
-			if scanDirPath == "" {
-				scanDirPath = "/"
+		if entry.IsDir() {
+			var scanDirPath string
+			if layer != "" {
+				scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
+				if scanDirPath == "" {
+					scanDirPath = "/"
+				}
+			} else {
+				scanDirPath = path
 			}
-		} else {
-			scanDirPath = path
-		}
-
-		if info.IsDir() {
 			if isContainerRunTime {
-				//fmt.Println("full directory is",fullDir,path)
-				if core.IsSkippableContainerRuntimeDir(fs, path, baseDir) {
+				if core.IsSkippableContainerRuntimeDir(scanDirPath, baseDir) {
 					return filepath.SkipDir
 				}
 			} else {
-				if core.IsSkippableDir(fs, path, baseDir) {
+				if core.IsSkippableDir(scanDirPath, baseDir) {
 					return filepath.SkipDir
 				}
 			}
 			return nil
 
 		}
-		const specialMode = os.ModeSymlink | os.ModeDevice | os.ModeNamedPipe | os.ModeSocket | os.ModeCharDevice
-		if info.Mode()&specialMode != 0 {
+		if !entry.Type().IsRegular() {
 			return nil
 		}
-		if core.IsSkippableFileExtension(path) {
+		finfo, err := entry.Info()
+		if err != nil {
+			session.Log.Warn("Skipping %v as info could not be retrieved: %v", path, err)
+			return nil
+		}
+		if finfo.Size() > maxFileSize || core.IsSkippableFileExtension(path) {
 			return nil
 		}
 		if err = ScanFilePath(fs, path, &iocs, layer); err != nil {
-			session.Log.Error("afero path %v", err)
+			session.Log.Error("Scan file failed: %v", err)
 		}
 		return nil
-	})
+	}, *session.Options.WorkersPerScan)
 
 	return nil
 }

@@ -29,7 +29,7 @@ type Options struct {
 	StandAloneHttpPort   *string
 	RulesPath            *string
 	FailOnCompileWarning *bool
-	
+	WorkersPerScan       *int
 }
 
 func ParseOptions() (*Options, error) {
@@ -52,6 +52,7 @@ func ParseOptions() (*Options, error) {
 		SocketPath:           flag.String("socket-path", "", "The gRPC server unix socket path"),
 		HttpPort:             flag.String("http-port", "", "When set the http server will come up at port with df es as output"),
 		StandAloneHttpPort:   flag.String("standalone-http-port", "", "use to run malware scanner as a standalone service"),
+		WorkersPerScan:       flag.Int("workers-per-scan", 1, "Number of concurrent workers per scan"),
 	}
 	flag.Parse()
 	return options, nil
