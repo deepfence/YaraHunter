@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -26,13 +27,13 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
-<<<<<<< HEAD:pkg/scan/process_image.go
-	log "github.com/sirupsen/logrus"
-||||||| parent of 370356a (Fix & Optimize scans):scan/process_image.go
-=======
 	"github.com/opencontainers/selinux/pkg/pwalkdir"
->>>>>>> 370356a (Fix & Optimize scans):scan/process_image.go
-	"github.com/spf13/afero"
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+)
+
+var (
+	maxSecretsExceeded = errors.New("number of secrets exceeded max-secrets")
 )
 
 // Data type to store details about the container image after parsing manifest
@@ -172,7 +173,7 @@ func ScanFilePath(s *Scanner, path string, iocs *[]output.IOCFound, layer string
 	return
 }
 
-func ScanFile(s *Scanner, f os.File, iocs *[]output.IOCFound, layer string) error {
+func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
 	var (
 		matches yr.MatchRules
 		err     error
@@ -212,14 +213,9 @@ func ScanFile(s *Scanner, f os.File, iocs *[]output.IOCFound, layer string) erro
 			log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), *s.MaximumFileSize)
 			return nil
 		}
-		if f, ok := f.(*os.File); ok {
-			fd := f.Fd()
-			err = s.Rules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
-			if err != nil {
-				fmt.Println("Scan File Descriptor error", err)
-				return filepath.SkipDir
-			}
-		} else {
+		err = s.Rules.ScanFileDescriptor(f.Fd(), 0, 1*time.Minute, &matches)
+		if err != nil {
+			fmt.Println("Scan File Descriptor error, trying alternative", err)
 			var buf []byte
 			if buf, err = ioutil.ReadAll(f); err != nil {
 				log.Errorf("yara: %s: Error reading file, error=%s",
@@ -323,7 +319,6 @@ func ScanFile(s *Scanner, f os.File, iocs *[]output.IOCFound, layer string) erro
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
 func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
-	var fs afero.Fs
 	if layer != "" {
 		log.Debugf("Scan results in selected image with layer %s", layer)
 	}
@@ -335,12 +330,13 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 		core.UpdateDirsPermissionsRW(fullDir)
 	}
 
-	if s.HostMountPath != "" {
-		baseDir = s.HostMountPath
+	if *s.Options.HostMountPath != "" {
+		baseDir = *s.Options.HostMountPath
 	}
 
-
-	maxFileSize := *session.Options.MaximumFileSize * 1024
+	ioc_count := 0
+	maxFileSize := *s.Options.MaximumFileSize * 1024
+	mutex := sync.Mutex{}
 	pwalkdir.WalkN(fullDir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			fmt.Println("the error path is", err)
@@ -359,11 +355,11 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 				scanDirPath = path
 			}
 			if isContainerRunTime {
-				if core.IsSkippableDir(fs, *&s.Config.ExcludedContainerPaths, scanDirPath, baseDir) {
+				if core.IsSkippableDir(s.Config.ExcludedContainerPaths, scanDirPath, baseDir) {
 					return filepath.SkipDir
 				}
 			} else {
-				if core.IsSkippableDir(fs, *&s.Config.ExcludedPaths, scanDirPath, baseDir) {
+				if core.IsSkippableDir(s.Config.ExcludedPaths, scanDirPath, baseDir) {
 					return filepath.SkipDir
 				}
 			}
@@ -376,17 +372,30 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 
 		finfo, err := entry.Info()
 		if err != nil {
-			session.Log.Warn("Skipping %v as info could not be retrieved: %v", path, err)
+			logrus.Warn("Skipping %v as info could not be retrieved: %v", path, err)
 			return nil
 		}
 		if finfo.Size() > maxFileSize || core.IsSkippableFileExtension(s.Config.ExcludedExtensions, path) {
 			return nil
 		}
-		if err = ScanFilePath(s, fs, path, iocs, layer); err != nil {
-			session.Log.Error("Scan file failed: %v", err)
+		tmp_iocs := []output.IOCFound{}
+		if err = ScanFilePath(s, path, &tmp_iocs, layer); err != nil {
+			logrus.Error("Scan file failed: %v", err)
+		}
+
+		mutex.Lock()
+		for i := range tmp_iocs {
+			*iocs = append(*iocs, tmp_iocs[i])
+		}
+		ioc_count = len(*iocs)
+		mutex.Unlock()
+
+		// Don't report secrets if number of secrets exceeds MAX value
+		if uint(ioc_count) >= *s.Options.MaxIOC {
+			return maxSecretsExceeded
 		}
 		return nil
-	}, *session.Options.WorkersPerScan)
+	}, *s.Options.WorkersPerScan)
 
 	return nil
 }

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type MatchFile struct {
@@ -16,7 +18,7 @@ type MatchFile struct {
 // IsSkippableDir Checks if the path is excluded
 func IsSkippableDir(excludedPaths []string, path, baseDir string) bool {
 
-	for _, skippablePathIndicator := range excludedContainerPaths {
+	for _, skippablePathIndicator := range excludedPaths {
 		if strings.HasPrefix(path, skippablePathIndicator) || strings.HasPrefix(path, filepath.Join(baseDir, skippablePathIndicator)) {
 			return true
 		}
@@ -24,9 +26,6 @@ func IsSkippableDir(excludedPaths []string, path, baseDir string) bool {
 			return true
 		}
 	}
-
-	return false
-}
 
 	return false
 }
