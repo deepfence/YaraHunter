@@ -14,7 +14,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -27,7 +26,6 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
-	"github.com/opencontainers/selinux/pkg/pwalkdir"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
@@ -336,8 +334,7 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 
 	ioc_count := 0
 	maxFileSize := *s.Options.MaximumFileSize * 1024
-	mutex := sync.Mutex{}
-	pwalkdir.WalkN(fullDir, func(path string, entry os.DirEntry, err error) error {
+	filepath.WalkDir(fullDir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
 			fmt.Println("the error path is", err)
 			log.Errorf("the error path isr ", layer)
@@ -383,19 +380,17 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 			logrus.Error("Scan file failed: %v", err)
 		}
 
-		mutex.Lock()
 		for i := range tmp_iocs {
 			*iocs = append(*iocs, tmp_iocs[i])
 		}
 		ioc_count = len(*iocs)
-		mutex.Unlock()
 
 		// Don't report secrets if number of secrets exceeds MAX value
 		if uint(ioc_count) >= *s.Options.MaxIOC {
 			return maxSecretsExceeded
 		}
 		return nil
-	}, *s.Options.WorkersPerScan)
+	})
 
 	return nil
 }
