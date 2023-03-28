@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	maxSecretsExceeded = errors.New("number of secrets exceeded max-secrets")
+	maxMalwaresExceeded = errors.New("number of secrets exceeded max-secrets")
 )
 
 // Data type to store details about the container image after parsing manifest
@@ -119,6 +119,11 @@ func (imageScan *ImageScan) scan(scanner *Scanner) ([]output.IOCFound, error) {
 	}
 
 	return tempIOCsFound, nil
+}
+
+func (imageScan *ImageScan) scanStream(scanner *Scanner) (chan output.IOCFound, error) {
+	tempDir := imageScan.tempDir
+	return imageScan.processImageLayersStream(scanner, tempDir)
 }
 
 func calculateSeverity(inputString []string, severity string, severityScore float64) (string, float64) {
@@ -387,12 +392,100 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 
 		// Don't report secrets if number of secrets exceeds MAX value
 		if uint(ioc_count) >= *s.Options.MaxIOC {
-			return maxSecretsExceeded
+			return maxMalwaresExceeded
 		}
 		return nil
 	})
 
 	return nil
+}
+
+const (
+	output_channel_size = 100
+)
+
+func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, isContainerRunTime bool) (chan output.IOCFound, error) {
+	if layer != "" {
+		log.Debugf("Scan results in selected image with layer %s", layer)
+	}
+	if matchedRuleSet == nil {
+		matchedRuleSet = make(map[uint]uint)
+	}
+
+	if layer != "" {
+		core.UpdateDirsPermissionsRW(fullDir)
+	}
+
+	if *s.Options.HostMountPath != "" {
+		baseDir = *s.Options.HostMountPath
+	}
+
+	res := make(chan output.IOCFound, output_channel_size)
+
+	go func() {
+		defer close(res)
+		ioc_count := 0
+		maxFileSize := *s.Options.MaximumFileSize * 1024
+		filepath.WalkDir(fullDir, func(path string, entry os.DirEntry, err error) error {
+			if err != nil {
+				fmt.Println("the error path is", err)
+				log.Errorf("the error path isr ", layer)
+				return nil
+			}
+
+			if entry.IsDir() {
+				var scanDirPath string
+				if layer != "" {
+					scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
+					if scanDirPath == "" {
+						scanDirPath = "/"
+					}
+				} else {
+					scanDirPath = path
+				}
+				if isContainerRunTime {
+					if core.IsSkippableDir(s.Config.ExcludedContainerPaths, scanDirPath, baseDir) {
+						return filepath.SkipDir
+					}
+				} else {
+					if core.IsSkippableDir(s.Config.ExcludedPaths, scanDirPath, baseDir) {
+						return filepath.SkipDir
+					}
+				}
+				return nil
+
+			}
+			if !entry.Type().IsRegular() {
+				return nil
+			}
+
+			finfo, err := entry.Info()
+			if err != nil {
+				logrus.Warn("Skipping %v as info could not be retrieved: %v", path, err)
+				return nil
+			}
+			if finfo.Size() > maxFileSize || core.IsSkippableFileExtension(s.Config.ExcludedExtensions, path) {
+				return nil
+			}
+			tmp_iocs := []output.IOCFound{}
+			if err = ScanFilePath(s, path, &tmp_iocs, layer); err != nil {
+				logrus.Error("Scan file failed: %v", err)
+			}
+
+			for i := range tmp_iocs {
+				res <- tmp_iocs[i]
+			}
+			ioc_count += len(tmp_iocs)
+
+			// Don't report secrets if number of secrets exceeds MAX value
+			if uint(ioc_count) >= *s.Options.MaxIOC {
+				return maxMalwaresExceeded
+			}
+			return nil
+		})
+	}()
+
+	return res, nil
 }
 
 // Extract all the layers of the container image and then find IOCs in each layer one by one
@@ -450,6 +543,56 @@ func (imageScan *ImageScan) processImageLayers(scanner *Scanner, imageManifestPa
 	}
 
 	return tempIOCsFound, nil
+}
+
+func (imageScan *ImageScan) processImageLayersStream(scanner *Scanner, imageManifestPath string) (chan output.IOCFound, error) {
+	res := make(chan output.IOCFound, output_channel_size)
+	go func() {
+		defer close(res)
+		var err error
+
+		// extractPath - Base directory where all the layers should be extracted to
+		extractPath := path.Join(imageManifestPath, constants.ExtractedImageFilesDir)
+		layerIDs := imageScan.imageManifest.LayerIds
+		layerPaths := imageScan.imageManifest.Layers
+		matchedRuleSet := make(map[uint]uint)
+
+		loopCntr := len(layerPaths)
+		for i := 0; i < loopCntr; i++ {
+			log.Debug("Analyzing layer path: %s", layerPaths[i])
+			log.Debug("Analyzing layer: %s", layerIDs[i])
+			// savelayerID = layerIDs[i]
+			completeLayerPath := path.Join(imageManifestPath, layerPaths[i])
+			targetDir := path.Join(extractPath, layerIDs[i])
+			log.Debugf("Complete layer path: %s", completeLayerPath)
+			log.Debugf("Extracted to directory: %s", targetDir)
+			err = core.CreateRecursiveDir(targetDir)
+			if err != nil {
+				log.Errorf("ProcessImageLayers: Unable to create target directory"+
+					" to extract image layers... %s", err)
+				continue
+			}
+
+			_, error := extractTarFile("", completeLayerPath, targetDir)
+			if error != nil {
+				log.Errorf("ProcessImageLayers: Unable to extract image layer. Reason = %s", error.Error())
+				// Don't stop. Print error and continue with remaining extracted files and other layers
+				// return tempIOCsFound, error
+			}
+			log.Debug("Analyzing dir: %s", targetDir)
+			iocs, err := scanner.ScanIOCInDirStream(layerIDs[i], extractPath, targetDir, matchedRuleSet, false)
+			if err != nil {
+				log.Errorf("ProcessImageLayers: %s", err)
+				// return tempIOCsFound, err
+				continue
+			}
+			for i := range iocs {
+				res <- i
+			}
+		}
+	}()
+
+	return res, nil
 }
 
 // Save container image as tar file in specified directory
@@ -681,6 +824,37 @@ func (s *Scanner) ExtractAndScanImage(image string) (*ImageExtractionResult, err
 		return nil, err
 	}
 	return &ImageExtractionResult{ImageId: imageScan.imageId, IOCs: IOCs}, nil
+}
+
+func (s *Scanner) ExtractAndScanImageStream(image string) (chan output.IOCFound, error) {
+	tempDir, err := core.GetTmpDir(*s.ImageName, *s.TempDirectory)
+	if err != nil {
+		core.DeleteTmpDir(tempDir)
+		return nil, err
+	}
+
+	imageScan := ImageScan{imageName: image, imageId: "", tempDir: tempDir}
+	err = imageScan.extractImage(true)
+	if err != nil {
+		core.DeleteTmpDir(tempDir)
+		return nil, err
+	}
+
+	IOCs, err := imageScan.scanStream(s)
+	if err != nil {
+		return nil, err
+	}
+	res := make(chan output.IOCFound, output_channel_size)
+	go func() {
+		defer core.DeleteTmpDir(tempDir)
+		for i := range IOCs {
+			res <- i
+		}
+		close(res)
+	}()
+
+	return res, nil
+
 }
 
 func (s *Scanner) ExtractAndScanFromTar(tarFolder string) (*ImageExtractionResult, error) {
