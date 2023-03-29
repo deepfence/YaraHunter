@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/deepfence/YaraHunter/constants"
 	"github.com/deepfence/YaraHunter/pkg/config"
@@ -60,90 +59,55 @@ func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
 }
 
 func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
-	var err error
-	res := jobs.StartStatusReporter(c, r.ScanId)
-	defer func() {
-		res <- err
-		close(res)
+	go func() {
+		var err error
+		res := jobs.StartStatusReporter(context.Background(), r.ScanId)
+		defer func() {
+			res <- err
+			close(res)
+		}()
+
+		log.Infof("request to scan %+v", r)
+
+		scanner, err := scan.New(s.options, s.yaraConfig, s.yaraRules)
+		if err != nil {
+			return
+		}
+		var malwares chan output.IOCFound
+		trim := false
+		if r.GetPath() != "" {
+			log.Infof("scan for malwares in path %s", r.GetPath())
+			malwares, err = scanner.ScanIOCInDirStream("", "", r.GetPath(), nil, false)
+			if err != nil {
+				log.Error("finding new err", err)
+				return
+			}
+			trim = true
+		} else if r.GetImage() != nil && r.GetImage().Name != "" {
+			log.Infof("scan for malwares in image %s", r.GetImage())
+			malwares, err = scanner.ExtractAndScanImageStream(r.GetImage().Name)
+			if err != nil {
+				return
+			}
+		} else if r.GetContainer() != nil && r.GetContainer().Id != "" {
+			log.Infof("scan for malwares in container %s", r.GetContainer())
+			malwares, err = scanner.ExtractAndScanContainerStream(r.GetContainer().Id, r.GetContainer().Namespace)
+			if err != nil {
+				return
+			}
+		} else {
+			err = fmt.Errorf("Invalid request")
+			return
+		}
+
+		for malware := range malwares {
+			if trim {
+				malware.CompleteFilename = strings.TrimPrefix(malware.CompleteFilename, HostMountDir)
+			}
+			output.WriteScanData([]*pb.MalwareInfo{output.MalwaresToMalwareInfo(malware)}, r.GetScanId())
+		}
 	}()
-
-	log.Infof("request to scan %+v", r)
-
-	scanner, err := scan.New(s.options, s.yaraConfig, s.yaraRules)
-	if err != nil {
-		return nil, err
-	}
-	if r.GetPath() != "" {
-		log.Infof("scan for malwares in path %s", r.GetPath())
-		var malwares []output.IOCFound
-		err := scanner.ScanIOCInDir("", "", r.GetPath(), nil, &malwares, false)
-		if err != nil {
-			log.Error("finding new err", err)
-			return nil, err
-		}
-
-		// truncate host mount path
-		// if MalwareScanDir == HostMountDir {
-		// 	for _, malware := range malwares {
-		// 		malware.CompleteFilename = strings.Replace(malware.CompleteFilename, HostMountDir, "", 1)
-		// 	}
-		// }
-		for _, malware := range malwares {
-			malware.CompleteFilename = strings.TrimPrefix(malware.CompleteFilename, HostMountDir)
-		}
-
-		log.Infof("found %d malwares in path %s", len(malwares), r.GetPath())
-		output.WriteScanData(output.MalwaresToMalwareInfos(malwares), r.GetScanId())
-		return &pb.MalwareResult{
-			Timestamp: time.Now().String(),
-			// Malwares:  output.MalwaresToMalwareInfos(malwares),
-			Malwares: nil,
-			Input: &pb.MalwareResult_Path{
-				Path: r.GetPath(),
-			},
-		}, nil
-	} else if r.GetImage() != nil && r.GetImage().Name != "" {
-		log.Infof("scan for malwares in image %s", r.GetImage())
-		res, err := scanner.ExtractAndScanImage(r.GetImage().Name)
-		if err != nil {
-			return nil, err
-		}
-		log.Infof("found %d malwares in image %s", len(res.IOCs), r.GetImage())
-		output.WriteScanData(output.MalwaresToMalwareInfos(res.IOCs), r.GetScanId())
-		return &pb.MalwareResult{
-			Timestamp: time.Now().String(),
-			// Malwares:  output.MalwaresToMalwareInfos(res.IOCs),
-			Malwares: nil,
-			Input: &pb.MalwareResult_Image{
-				Image: &pb.MalwareDockerImage{
-					Name: r.GetImage().Name,
-					Id:   res.ImageId,
-				},
-			},
-		}, nil
-	} else if r.GetContainer() != nil && r.GetContainer().Id != "" {
-		log.Infof("scan for malwares in container %s", r.GetContainer())
-		var malwares []output.IOCFound
-		malwares, err := scanner.ExtractAndScanContainer(r.GetContainer().Id, r.GetContainer().Namespace)
-		if err != nil {
-			return nil, err
-		}
-		log.Infof("found %d malwares in container %s", len(malwares), r.GetContainer())
-		output.WriteScanData(output.MalwaresToMalwareInfos(malwares), r.GetScanId())
-		return &pb.MalwareResult{
-			Timestamp: time.Now().String(),
-			// Malwares:  output.MalwaresToMalwareInfos(malwares),
-			Malwares: nil,
-			Input: &pb.MalwareResult_Container{
-				Container: &pb.MalwareContainer{
-					Namespace: r.GetContainer().Namespace,
-					Id:        r.GetContainer().Id,
-				},
-			},
-		}, nil
-	}
-	err = fmt.Errorf("Invalid request")
-	return nil, err
+	return &pb.MalwareResult{}, nil
 }
 
 func RunGrpcServer(opts *config.Options, config *config.Config, plugin_name string) error {

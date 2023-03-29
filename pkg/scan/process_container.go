@@ -73,6 +73,10 @@ func (containerScan *ContainerScan) scanPath(scanner *Scanner, containerPath str
 	return iocsFound, nil
 }
 
+func (containerScan *ContainerScan) scanPathStream(scanner *Scanner, containerPath string) (chan output.IOCFound, error) {
+	return scanner.ScanIOCInDirStream("", "", "/fenced/mnt/host/"+containerPath, nil, true)
+}
+
 // Function to scan extracted layers of container file system for IOC file by file
 // @parameters
 // containerScan - Structure with details of the container  to scan
@@ -87,6 +91,9 @@ func (containerScan *ContainerScan) scan(scanner *Scanner) ([]output.IOCFound, e
 		return iocsFound, err
 	}
 	return iocsFound, nil
+}
+func (containerScan *ContainerScan) scanStream(scanner *Scanner) (chan output.IOCFound, error) {
+	return scanner.ScanIOCInDirStream("", "", containerScan.tempDir, nil, false)
 }
 
 type ContainerExtractionResult struct {
@@ -135,4 +142,54 @@ func (s *Scanner) ExtractAndScanContainer(containerId string, namespace string) 
 		}
 	}
 	return iocsFound, nil
+}
+
+func (s *Scanner) ExtractAndScanContainerStream(containerId string, namespace string) (chan output.IOCFound, error) {
+	tempDir, err := core.GetTmpDir(containerId, *s.TempDirectory)
+
+	if err != nil {
+		return nil, err
+	}
+	res := make(chan output.IOCFound, output_channel_size)
+
+	go func() {
+		defer core.DeleteTmpDir(tempDir)
+		defer close(res)
+
+		var middle chan output.IOCFound
+		containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
+		containerRuntime, _, err := vessel.AutoDetectRuntime()
+		switch containerRuntime {
+		case vesselConstants.DOCKER:
+			containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
+			if err != nil {
+				return
+			}
+			if strings.Contains(string(containerPath), "\"MergedDir\":") {
+				if strings.Contains(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"") {
+					containerPathToScan := strings.Split(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"")[0] + "/merged"
+					fmt.Println("Container Scan Path", containerPathToScan)
+					middle, err = containerScan.scanPathStream(s, containerPathToScan)
+					if err != nil {
+						return
+					}
+				}
+			}
+		case vesselConstants.CONTAINERD:
+			containerScan.extractFileSystem()
+			err = containerScan.extractFileSystem()
+			if err != nil {
+				return
+			}
+
+			middle, err = containerScan.scanStream(s)
+			if err != nil {
+				return
+			}
+		}
+		for i := range middle {
+			res <- i
+		}
+	}()
+	return res, nil
 }
