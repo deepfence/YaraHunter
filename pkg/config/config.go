@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -48,6 +49,19 @@ func ParseConfig(configPath string) (*Config, error) {
 	if err != nil {
 		return config, err
 	}
+
+	pathSeparator := string(os.PathSeparator)
+	var excludedPaths []string
+	for _, path := range config.ExcludedPaths {
+		excludedPaths = append(excludedPaths, strings.Replace(path, "{sep}", pathSeparator, -1))
+	}
+	config.ExcludedPaths = excludedPaths
+
+	var excludedContainerPaths []string
+	for _, path := range config.ExcludedContainerPaths {
+		excludedContainerPaths = append(excludedContainerPaths, strings.Replace(path, "{sep}", pathSeparator, -1))
+	}
+	config.ExcludedContainerPaths = excludedContainerPaths
 
 	return config, nil
 }
