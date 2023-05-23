@@ -2,17 +2,17 @@ package scan
 
 import (
 	"github.com/deepfence/YaraHunter/pkg/config"
-	yara "github.com/hillu/go-yara/v4"
+	"github.com/hillu/go-yara/v4"
 )
 
-func New(opts *config.Options, yaraconfig *config.Config, yr *yara.Rules) (*Scanner, error) {
-	return &Scanner{opts, yaraconfig, yr}, nil
+func New(opts *config.Options, yaraconfig *config.Config, yaraScannerIn *yara.Scanner) *Scanner {
+	return &Scanner{opts, yaraconfig, yaraScannerIn}
 }
 
 type Scanner struct {
 	*config.Options
 	*config.Config
-	Rules *yara.Rules
+	YaraScanner *yara.Scanner
 }
 
 func (s *Scanner) SetImageName(imageName string) {

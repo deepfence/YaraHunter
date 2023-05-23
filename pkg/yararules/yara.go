@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
-	// "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/deepfence/YaraHunter/constants"
 	yara "github.com/hillu/go-yara/v4"
 	log "github.com/sirupsen/logrus"
@@ -27,9 +27,11 @@ var extvars = map[int]map[string]interface{}{
 	},
 }
 
+// NOTE:::Do not expose the rules
+// Instead add a wrapper here protected with mutex
 type YaraRules struct {
 	RulesPath string
-	YaraRules *yara.Rules
+	rules     *yara.Rules
 	ruleMutex sync.Mutex
 }
 
@@ -37,46 +39,31 @@ func New(rulePath string) *YaraRules {
 	return &YaraRules{RulesPath: rulePath}
 }
 
-func (yr *YaraRules) SetYaraRule(rules *yara.Rules) {
-	yr.ruleMutex.Lock()
-	defer yr.ruleMutex.Unlock()
-	yr.YaraRules = rules
-}
-
-func (yr *YaraRules) GetYaraRule() *yara.Rules {
-	yr.ruleMutex.Lock()
-	defer yr.ruleMutex.Unlock()
-	return yr.YaraRules
-}
-
-func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) (*yara.Rules, error) {
+// Not thread safe function.Must only be called during the init.
+func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) error {
 	var c *yara.Compiler
-	//log.Info("including yara rule file ")
 
 	var err error
 	if c, err = yara.NewCompiler(); err != nil {
-		return nil, err
+		return err
 	}
-
-	//log.Info("including yara rule file ")
 
 	for k, v := range extvars[purpose] {
 		if err = c.DefineVariable(k, v); err != nil {
-			return nil, err
+			return err
 		}
 	}
-
-	//log.Info("including yara rule file ")
-	//log.Info("including yara rule file ")
 
 	paths, err := getRuleFiles(yr.RulesPath)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return err
 	}
+
 	if len(paths) == 0 {
-		return nil, errors.New("no Yara rule files found")
+		return errors.New("no Yara rule files found")
 	}
+
 	for _, path := range paths {
 		// We use the include callback function to actually read files
 		// because yr_compiler_add_string() does not accept a file
@@ -84,33 +71,75 @@ func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) (*yara.Rule
 		log.Infof("including yara rule file %s", path)
 		if err = c.AddString(fmt.Sprintf(`include "%s"`, path), ""); err != nil {
 			log.Errorf("error obtained %s", err)
-			return nil, err
+			return err
 		}
 	}
+
 	purposeStr := [...]string{"file", "process"}[purpose]
-	yr.YaraRules, err = c.GetRules()
+	yr.rules, err = c.GetRules()
 	if err != nil {
 		for _, e := range c.Errors {
 			log.Errorf("YARA compiler error in %s ruleset: %s:%d %s",
 				purposeStr, e.Filename, e.Line, e.Text)
 		}
-		return nil, fmt.Errorf("%d YARA compiler errors(s) found, rejecting %s ruleset",
+		return fmt.Errorf("%d YARA compiler errors(s) found, rejecting %s ruleset",
 			len(c.Errors), purposeStr)
 	}
+
 	if len(c.Warnings) > 0 {
 		for _, w := range c.Warnings {
 			log.Warn("YARA compiler warning in %s ruleset: %s:%d %s",
 				purposeStr, w.Filename, w.Line, w.Text)
 		}
 		if failOnCompileWarning {
-			return nil, fmt.Errorf("%d YARA compiler warning(s) found, rejecting %s ruleset",
+			return fmt.Errorf("%d YARA compiler warning(s) found, rejecting %s ruleset",
 				len(c.Warnings), purposeStr)
 		}
 	}
-	if len(yr.YaraRules.GetRules()) == 0 {
-		return nil, errors.New("No YARA rules defined")
+
+	if len(yr.rules.GetRules()) == 0 {
+		return errors.New("No YARA rules defined")
 	}
-	return yr.YaraRules, nil
+	return nil
+}
+
+func (yr *YaraRules) NewScanner() (*yara.Scanner, error) {
+
+	yr.ruleMutex.Lock()
+	defer yr.ruleMutex.Unlock()
+
+	scanner, err := yara.NewScanner(yr.rules)
+	if err != nil {
+		return nil, err
+	}
+	scanner.SetTimeout(1 * time.Minute)
+	scanner.SetFlags(0)
+	return scanner, nil
+}
+
+func (yr *YaraRules) DefineVariable(name string, value any) error {
+	yr.ruleMutex.Lock()
+	defer yr.ruleMutex.Unlock()
+
+	return yr.rules.DefineVariable(name, value)
+}
+
+func (yr *YaraRules) ScanFileDescriptor(fd uintptr, flags yara.ScanFlags,
+	timeout time.Duration, cb yara.ScanCallback) error {
+
+	yr.ruleMutex.Lock()
+	defer yr.ruleMutex.Unlock()
+
+	return yr.rules.ScanFileDescriptor(fd, flags, timeout, cb)
+}
+
+func (yr *YaraRules) ScanMem(buf []byte, flags yara.ScanFlags,
+	timeout time.Duration, cb yara.ScanCallback) error {
+
+	yr.ruleMutex.Lock()
+	defer yr.ruleMutex.Unlock()
+
+	return yr.rules.ScanMem(buf, flags, timeout, cb)
 }
 
 func getRuleFiles(rulesPath string) ([]string, error) {

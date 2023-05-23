@@ -16,7 +16,6 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	yararules "github.com/deepfence/YaraHunter/pkg/yararules"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
-	yara "github.com/hillu/go-yara/v4"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -37,7 +36,7 @@ func init() {
 type gRPCServer struct {
 	options     *config.Options
 	yaraConfig  *config.Config
-	yaraRules   *yara.Rules
+	yaraRules   *yararules.YaraRules
 	plugin_name string
 	pb.UnimplementedMalwareScannerServer
 	pb.UnimplementedAgentPluginServer
@@ -69,10 +68,14 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 
 		log.Infof("request to scan %+v", r)
 
-		scanner, err := scan.New(s.options, s.yaraConfig, s.yaraRules)
+		yaraScanner, err := s.yaraRules.NewScanner()
 		if err != nil {
+			log.Error("Failed to create Yara Scanner, error:", err)
 			return
 		}
+
+		scanner := scan.New(s.options, s.yaraConfig, yaraScanner)
+
 		var malwares chan output.IOCFound
 		trim := false
 		if r.GetPath() != "" {
@@ -132,12 +135,14 @@ func RunGrpcServer(opts *config.Options, config *config.Config, plugin_name stri
 	if err != nil {
 		return err
 	}
+
 	// compile yara rules
-	impl.yaraRules, err = yararules.New(*opts.RulesPath).
-		Compile(constants.Filescan, *opts.FailOnCompileWarning)
+	impl.yaraRules = yararules.New(*opts.RulesPath)
+	err = impl.yaraRules.Compile(constants.Filescan, *opts.FailOnCompileWarning)
 	if err != nil {
 		return err
 	}
+
 	pb.RegisterAgentPluginServer(s, impl)
 	pb.RegisterMalwareScannerServer(s, impl)
 	pb.RegisterScannersServer(s, impl)
