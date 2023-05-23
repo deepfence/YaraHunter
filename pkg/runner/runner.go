@@ -44,17 +44,21 @@ func StartYaraHunter(opts *config.Options, config *config.Config, newwg *sync.Wa
 func runOnce(opts *config.Options, config *config.Config) {
 	var jsonOutput IOCWriter
 
-	yaraRules, err := yararules.New(*opts.RulesPath).Compile(constants.Filescan, *opts.FailOnCompileWarning)
+	yaraRules := yararules.New(*opts.RulesPath)
+	err := yaraRules.Compile(constants.Filescan, *opts.FailOnCompileWarning)
 	if err != nil {
-		log.Errorf("error compiling yara rules: %s", err)
+		log.Errorf("error in runOnce compiling yara rules: %s", err)
 		return
 	}
 
-	scanner, err := scan.New(opts, config, yaraRules)
+	yaraScanner, err := yaraRules.NewScanner()
 	if err != nil {
-		log.Fatalf("error creating scanner: %s", err)
+		log.Error("error in runOnce creating yara scanner:", err)
 		return
 	}
+
+	scanner := scan.New(opts, config, yaraScanner)
+
 	// Scan container image for IOC
 	if len(*opts.ImageName) > 0 {
 		log.Info("Scanning image %s for IOC...\n", *opts.ImageName)

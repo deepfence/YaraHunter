@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
-	"time"
 
 	"fmt"
 
@@ -193,9 +192,12 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 			{"filepath", filepath.ToSlash(f.Name())},
 			{"extension", filepath.Ext(f.Name())},
 		}
+
+		yrScanner := s.YaraScanner
+		yrScanner.SetCallback(&matches)
 		for _, v := range variables {
 			if v.value != nil {
-				if err = s.Rules.DefineVariable(v.name, v.value); err != nil {
+				if err = yrScanner.DefineVariable(v.name, v.value); err != nil {
 					return filepath.SkipDir
 				}
 			}
@@ -216,7 +218,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 			log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), *s.MaximumFileSize)
 			return nil
 		}
-		err = s.Rules.ScanFileDescriptor(f.Fd(), 0, 1*time.Minute, &matches)
+		err = yrScanner.ScanFileDescriptor(f.Fd())
 		if err != nil {
 			fmt.Println("Scan File Descriptor error, trying alternative", err)
 			var buf []byte
@@ -225,7 +227,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 					fileName, err.Error())
 				return filepath.SkipDir
 			}
-			err = s.Rules.ScanMem(buf, 0, 1*time.Minute, &matches)
+			err = yrScanner.ScanMem(buf)
 			if err != nil {
 				fmt.Println("Scan File Mmory Error", err)
 				return filepath.SkipDir
