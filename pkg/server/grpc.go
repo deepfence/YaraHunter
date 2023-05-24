@@ -98,6 +98,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			if err != nil {
 				return
 			}
+			trim = true
 		} else {
 			err = fmt.Errorf("Invalid request")
 			return
