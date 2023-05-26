@@ -348,6 +348,11 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 			return nil
 		}
 
+		err = CheckScanStatus(s)
+		if err != nil {
+			return err
+		}
+
 		if entry.IsDir() {
 			var scanDirPath string
 			if layer != "" {
@@ -433,6 +438,11 @@ func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir strin
 				fmt.Println("the error path is", err)
 				log.Errorf("the error path isr ", layer)
 				return nil
+			}
+
+			err = CheckScanStatus(s)
+			if err != nil {
+				return err
 			}
 
 			if entry.IsDir() {
@@ -872,4 +882,17 @@ func (s *Scanner) ExtractAndScanFromTar(tarFolder string) (*ImageExtractionResul
 		return nil, err
 	}
 	return &ImageExtractionResult{ImageId: imageScan.imageId, IOCs: IOCs}, nil
+}
+
+func CheckScanStatus(s *Scanner) error {
+	if s != nil && s.ReportStatus == true {
+		if s.Aborted == true {
+			close(s.ScanStatusChan)
+			log.Error("Scan aborted due to inactivity, scanid:", s.ScanID)
+			return fmt.Errorf("Scan aborted due to inactivity")
+		} else {
+			s.ScanStatusChan <- true
+		}
+	}
+	return nil
 }
