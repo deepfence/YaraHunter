@@ -59,13 +59,6 @@ func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
 
 func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
 	go func() {
-		var err error
-		res := jobs.StartStatusReporter(context.Background(), r.ScanId)
-		defer func() {
-			res <- err
-			close(res)
-		}()
-
 		log.Infof("request to scan %+v", r)
 
 		yaraScanner, err := s.yaraRules.NewScanner()
@@ -74,7 +67,13 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			return
 		}
 
-		scanner := scan.New(s.options, s.yaraConfig, yaraScanner)
+		scanner := scan.New(s.options, s.yaraConfig, yaraScanner, r.ScanId)
+
+		res := jobs.StartStatusReporter(context.Background(), r.ScanId, scanner)
+		defer func() {
+			res <- err
+			close(res)
+		}()
 
 		var malwares chan output.IOCFound
 		trim := false

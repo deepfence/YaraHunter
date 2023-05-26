@@ -25,6 +25,7 @@ type Options struct {
 	RulesPath            *string
 	FailOnCompileWarning *bool
 	WorkersPerScan       *int
+	InactiveThreshold    *int
 }
 
 func ParseOptions() (*Options, error) {
@@ -48,6 +49,7 @@ func ParseOptions() (*Options, error) {
 		HttpPort:             flag.String("http-port", "", "When set the http server will come up at port with df es as output"),
 		StandAloneHttpPort:   flag.String("standalone-http-port", "", "use to run malware scanner as a standalone service"),
 		WorkersPerScan:       flag.Int("workers-per-scan", 1, "Number of concurrent workers per scan"),
+		InactiveThreshold:    flag.Int("inactive-threshold", 600, "Threshold for Inactive scan in seconds"),
 	}
 	flag.Parse()
 	return options, nil
@@ -63,6 +65,7 @@ func NewDefaultOptions() *Options {
 	var tempDirectory = os.TempDir()
 	var emptyValue = ""
 	var maxIOC = uint(1000)
+	var inactiveThreshold = 600
 	return &Options{
 		RulesPath:            &rulePath,
 		FailOnCompileWarning: &failOnCompileWarning,
@@ -70,6 +73,7 @@ func NewDefaultOptions() *Options {
 		DebugLevel:           &debugLevel,
 		MaximumFileSize:      &maximumFileSize,
 		TempDirectory:        &tempDirectory,
+		InactiveThreshold:    &inactiveThreshold,
 		Local:                &emptyValue,
 		HostMountPath:        &emptyValue,
 		ConfigPath:           &emptyValue,
