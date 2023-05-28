@@ -20,9 +20,7 @@ func StartStatusReporter(ctx context.Context, scan_id string, scanner *scan.Scan
 	threshold := *scanner.InactiveThreshold
 
 	go func() {
-		defer func() {
-			stopScanJob()
-		}()
+		defer stopScanJob()
 
 		var err, abort error
 		ts := time.Now()
