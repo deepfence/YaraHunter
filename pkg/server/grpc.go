@@ -62,18 +62,19 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		log.Infof("request to scan %+v", r)
 
 		yaraScanner, err := s.yaraRules.NewScanner()
-		if err != nil {
-			log.Error("Failed to create Yara Scanner, error:", err)
-			return
-		}
-
 		scanner := scan.New(s.options, s.yaraConfig, yaraScanner, r.ScanId)
-
 		res := jobs.StartStatusReporter(context.Background(), r.ScanId, scanner)
 		defer func() {
 			res <- err
 			close(res)
 		}()
+
+		//Check for error only after the StartStatusReporter as we have to report
+		//the error if we failed to create the yara scanner
+		if err != nil {
+			log.Error("Failed to create Yara Scanner, error:", err)
+			return
+		}
 
 		var malwares chan output.IOCFound
 		trim := false
