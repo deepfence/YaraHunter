@@ -58,7 +58,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 	}
 
 	scanner := scan.New(opts, config, yaraScanner, "")
-	scanner.ReportStatus = false
+	scanner.ReportStatus.Store(false)
 
 	// Scan container image for IOC
 	if len(*opts.ImageName) > 0 {

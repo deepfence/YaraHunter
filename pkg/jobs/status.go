@@ -39,7 +39,7 @@ func StartStatusReporter(ctx context.Context, scan_id string, scanner *scan.Scan
 				if elapsed > threshold {
 					err = fmt.Errorf("Scan job aborted due to inactivity")
 					log.Error("Scanner job aborted as no update within threshold, Scan id:" + scan_id)
-					scanner.Aborted = true
+					scanner.Aborted.Store(true)
 					break loop
 				} else {
 					output.WriteScanStatus("IN_PROGRESS", scan_id, "")

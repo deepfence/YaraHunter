@@ -885,8 +885,8 @@ func (s *Scanner) ExtractAndScanFromTar(tarFolder string) (*ImageExtractionResul
 }
 
 func CheckScanStatus(s *Scanner) error {
-	if s != nil && s.ReportStatus == true {
-		if s.Aborted == true {
+	if s != nil && s.ReportStatus.Load() == true {
+		if s.Aborted.Load() == true {
 			close(s.ScanStatusChan)
 			log.Error("Scan aborted due to inactivity, scanid:", s.ScanID)
 			return fmt.Errorf("Scan aborted due to inactivity")
