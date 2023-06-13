@@ -11,6 +11,7 @@ import (
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
+	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
 	log "github.com/sirupsen/logrus"
 )
@@ -39,6 +40,8 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 		containerRuntimeInterface = dockerRuntime.New()
 	case vesselConstants.CONTAINERD:
 		containerRuntimeInterface = containerdRuntime.New(endpoint)
+	case vesselConstants.CRIO:
+		containerRuntimeInterface = crioRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
 		return errors.New("could not detect container runtime")
@@ -129,13 +132,11 @@ func (s *Scanner) ExtractAndScanContainer(containerId string, namespace string) 
 				iocsFound, err = containerScan.scanPath(s, containerPathToScan)
 			}
 		}
-	case vesselConstants.CONTAINERD:
-		containerScan.extractFileSystem()
+	case vesselConstants.CONTAINERD, vesselConstants.CRIO:
 		err = containerScan.extractFileSystem()
 		if err != nil {
 			return nil, err
 		}
-
 		iocsFound, err = containerScan.scan(s)
 		if err != nil {
 			return iocsFound, err
@@ -175,8 +176,7 @@ func (s *Scanner) ExtractAndScanContainerStream(containerId string, namespace st
 					}
 				}
 			}
-		case vesselConstants.CONTAINERD:
-			containerScan.extractFileSystem()
+		case vesselConstants.CONTAINERD, vesselConstants.CRIO:
 			err = containerScan.extractFileSystem()
 			if err != nil {
 				return
