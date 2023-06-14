@@ -30,8 +30,8 @@ LABEL MAINTAINER="Deepfence"
 LABEL deepfence.role=system
 
 ENV LD_LIBRARY_PATH=/usr/local/yara/lib \
-    DOCKERVERSION=23.0.3
-RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl1.1 libmagic1 libstdc++6 jq bash skopeo curl \
+    DOCKERVERSION=24.0.2
+RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl1.1 libmagic1 libstdc++6 jq bash skopeo curl ca-certificates \
     && nerdctl_version=1.4.0 \
     && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v${nerdctl_version}/nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
     && tar Cxzvvf /usr/local/bin nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
