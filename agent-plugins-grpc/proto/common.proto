@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-package common;
-option go_package = "github.com/deepfence/agent-plugin-grpc/proto";
-
-message Empty {}
