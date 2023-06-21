@@ -1,15 +1,12 @@
 FROM golang:1.18.3-bullseye AS builder
-MAINTAINER DeepFence
-
-
 
 RUN apt-get update  \
     && apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev git protoc-gen-go \
     libjansson-dev libmagic-dev \
     && cd /root  \
-    && wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.2.1.tar.gz \
-    && tar -zxf v4.2.1.tar.gz \
-    && cd yara-4.2.1 \
+    && wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.3.2.tar.gz \
+    && tar -zxf v4.3.2.tar.gz \
+    && cd yara-4.3.2 \
     && ./bootstrap.sh \
     && ./configure --prefix=/usr/local/yara --disable-dotnet --enable-magic --enable-cuckoo \
     && make \
@@ -20,7 +17,6 @@ RUN apt-get update  \
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 
-
 WORKDIR /home/deepfence/src/YaRadare
 COPY . .
 RUN make clean \
@@ -28,8 +24,9 @@ RUN make clean \
     && cd /home/deepfence \
     && git clone https://github.com/deepfence/yara-rules
 
+
 FROM debian:bullseye
-MAINTAINER DeepFence
+LABEL MAINTAINER="Deepfence"
 LABEL deepfence.role=system
 
 ENV MGMT_CONSOLE_URL=deepfence-internal-router \
