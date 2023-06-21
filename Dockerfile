@@ -17,7 +17,7 @@ RUN apt-get update  \
     && cd /usr/local/ \
     && tar -czf yara.tar.gz yara
 
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
 
 
@@ -37,9 +37,9 @@ ENV MGMT_CONSOLE_URL=deepfence-internal-router \
     LD_LIBRARY_PATH=/usr/local/yara/lib \
     DOCKERVERSION=20.10.17
 RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl1.1 libmagic1 libstdc++6 jq bash skopeo curl python3-pip \
-    && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.18.0/nerdctl-0.18.0-linux-amd64.tar.gz \
-    && tar Cxzvvf /usr/local/bin nerdctl-0.18.0-linux-amd64.tar.gz \
-    && rm nerdctl-0.18.0-linux-amd64.tar.gz \
+    && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v1.1.0/nerdctl-1.1.0-linux-amd64.tar.gz \
+    && tar Cxzvvf /usr/local/bin nerdctl-1.1.0-linux-amd64.tar.gz \
+    && rm nerdctl-1.1.0-linux-amd64.tar.gz \
     && curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
     && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
     && rm docker-${DOCKERVERSION}.tgz

@@ -8,9 +8,10 @@ import (
 	"github.com/deepfence/YaRadare/core"
 	"github.com/deepfence/YaRadare/output"
 	"github.com/deepfence/vessel"
-	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
+	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	vesselConstants "github.com/deepfence/vessel/utils"
 )
 
 type ContainerScan struct {
@@ -37,11 +38,13 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 		containerRuntimeInterface = dockerRuntime.New()
 	case vesselConstants.CONTAINERD:
 		containerRuntimeInterface = containerdRuntime.New(endpoint)
+	case vesselConstants.CRIO:
+		containerRuntimeInterface = crioRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
 		return errors.New("could not detect container runtime")
 	}
-	err = containerRuntimeInterface.ExtractFileSystemContainer(containerScan.containerId, containerScan.namespace, containerScan.tempDir+".tar", endpoint)
+	err = containerRuntimeInterface.ExtractFileSystemContainer(containerScan.containerId, containerScan.namespace, containerScan.tempDir+".tar")
 
 	if err != nil {
 		return err
@@ -120,8 +123,7 @@ func ExtractAndScanContainer(containerId string, namespace string) ([]output.IOC
 				iocsFound, err = containerScan.scanPath(containerPathToScan)
 			}
 		}
-	case vesselConstants.CONTAINERD:
-		containerScan.extractFileSystem()
+	case vesselConstants.CONTAINERD, vesselConstants.CRIO:
 		err = containerScan.extractFileSystem()
 		if err != nil {
 			return nil, err

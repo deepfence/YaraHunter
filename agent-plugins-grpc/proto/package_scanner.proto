@@ -17,6 +17,8 @@ message SBOMRequest {
   string node_type = 7;
   string host_name = 8;
   string registry_id = 9;
+  string container_id = 10;
+  string image_name = 11;
 }
 
 message SBOMResult {
