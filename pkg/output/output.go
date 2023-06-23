@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/deepfence/YaraHunter/utils"
-	pb "github.com/deepfence/agent-plugins-grpc/proto"
+	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
 	log "github.com/sirupsen/logrus"
 
 	// "github.com/fatih/color"

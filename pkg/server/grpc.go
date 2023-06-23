@@ -15,7 +15,7 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	yararules "github.com/deepfence/YaraHunter/pkg/yararules"
-	pb "github.com/deepfence/agent-plugins-grpc/proto"
+	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )

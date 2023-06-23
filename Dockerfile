@@ -1,10 +1,9 @@
 FROM golang:1.20-bullseye AS builder
 
-RUN apt-get update  \
-    && apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev git protoc-gen-go \
-    libjansson-dev libmagic-dev \
-    && cd /root  \
-    && wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.3.2.tar.gz \
+RUN apt-get update
+RUN apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev git libjansson-dev libmagic-dev \
+    && cd /root
+RUN wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.3.2.tar.gz \
     && tar -zxf v4.3.2.tar.gz \
     && cd yara-4.3.2 \
     && ./bootstrap.sh \
@@ -13,9 +12,6 @@ RUN apt-get update  \
     && make install \
     && cd /usr/local/ \
     && tar -czf yara.tar.gz yara
-
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0 \
-    && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 
 WORKDIR /home/deepfence/src/YaraHunter
 COPY . .
