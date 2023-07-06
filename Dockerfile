@@ -1,13 +1,40 @@
-FROM golang:1.20-bullseye AS builder
+FROM golang:1.20-alpine3.18 AS builder
 
-RUN apt-get update
-RUN apt-get -qq -y --no-install-recommends install build-essential automake libtool make gcc pkg-config libssl-dev git libjansson-dev libmagic-dev \
-    && cd /root
-RUN wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.3.2.tar.gz \
+RUN apk add --no-cache \
+    git \
+    make  \
+    build-base \
+    pkgconfig \
+    libpcap-dev \
+    libcap-dev \
+    openssl-dev \
+    file \
+    jansson-dev \
+    jansson-static \
+    bison \
+    tini \
+    su-exec
+
+RUN apk add --no-cache -t .build-deps py-setuptools \
+    openssl-libs-static \
+    jansson-dev \
+    build-base \
+    libc-dev \
+    file-dev \
+    automake \
+    autoconf \
+    libtool \
+    libcrypto3 \
+    flex \
+    git \
+    libmagic-static \
+    linux-headers
+
+RUN cd /root && wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.3.2.tar.gz \
     && tar -zxf v4.3.2.tar.gz \
     && cd yara-4.3.2 \
     && ./bootstrap.sh \
-    && ./configure --prefix=/usr/local/yara --disable-dotnet --enable-magic --enable-cuckoo \
+    && ./configure --prefix=/usr/local/yara --disable-dotnet --enable-magic --enable-cuckoo --disable-shared --enable-static\
     && make \
     && make install \
     && cd /usr/local/ \

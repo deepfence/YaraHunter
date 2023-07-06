@@ -6,9 +6,11 @@ bootstrap:
 clean:
 	-rm ./YaraHunter
 
-yarahunter: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
+vendor: go.mod
 	go mod tidy -v
 	go mod vendor
-	env PKG_CONFIG_PATH=/usr/local/yara/lib/pkgconfig:$(PKG_CONFIG_PATH) go build -buildvcs=false -v .
+
+yarahunter: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
+	CGO_LDFLAGS="-ljansson -lcrypto -lmagic" PKG_CONFIG_PATH=/usr/local/yara/lib/pkgconfig:$(PKG_CONFIG_PATH) go build -buildmode=pie -ldflags="-s -w -extldflags=-static" -buildvcs=false -v .
 
 .PHONY: clean bootstrap
