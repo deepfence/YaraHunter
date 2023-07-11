@@ -100,8 +100,16 @@ func runOnce(opts *config.Options, config *config.Config) {
 		log.Errorf("error while retrieving json output: %s", err)
 		return
 	}
-	if jsonFilename != "" {
-		err = jsonOutput.WriteIOC(jsonFilename)
+	if *opts.OutFormat == "json" {
+		if jsonFilename != "" {
+			err = jsonOutput.WriteIOC(jsonFilename)
+			if err != nil {
+				log.Errorf("error while writing IOC: %s", err)
+				return
+			}
+		}
+	} else {
+		err = jsonOutput.WriteTable()
 		if err != nil {
 			log.Errorf("error while writing IOC: %s", err)
 			return

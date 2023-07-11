@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	tw "github.com/olekukonko/tablewriter"
 )
 
 const (
@@ -78,8 +80,11 @@ func (imageOutput *JsonImageIOCOutput) SetIOC(IOC []IOCFound) {
 }
 
 func (imageOutput JsonImageIOCOutput) WriteIOC(outputFilename string) error {
-	err := printIOCToJsonFile(imageOutput, outputFilename)
-	return err
+	return printIOCToJsonFile(imageOutput, outputFilename)
+}
+
+func (imageOutput JsonImageIOCOutput) WriteTable() error {
+	return WriteTableOutput(&imageOutput.IOC)
 }
 
 func (dirOutput *JsonDirIOCOutput) SetTime() {
@@ -91,8 +96,11 @@ func (dirOutput *JsonDirIOCOutput) SetIOC(IOC []IOCFound) {
 }
 
 func (dirOutput JsonDirIOCOutput) WriteIOC(outputFilename string) error {
-	err := printIOCToJsonFile(dirOutput, outputFilename)
-	return err
+	return printIOCToJsonFile(dirOutput, outputFilename)
+}
+
+func (dirOutput JsonDirIOCOutput) WriteTable() error {
+	return WriteTableOutput(&dirOutput.IOC)
 }
 
 func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
@@ -363,4 +371,23 @@ func WriteScanData(malwares []*pb.MalwareInfo, scan_id string) {
 			log.Errorf("Error in writing data to malware scan file: %s", err)
 		}
 	}
+}
+
+func WriteTableOutput(report *[]IOCFound) error {
+	table := tw.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Rule Name", "Class", "File Name", "Matched Part"})
+	table.SetHeaderLine(true)
+	table.SetBorder(true)
+	table.SetAutoWrapText(true)
+	table.SetAutoFormatHeaders(true)
+	table.SetColMinWidth(0, 20)
+	table.SetColMinWidth(1, 10)
+	table.SetColMinWidth(2, 30)
+	table.SetColMinWidth(3, 20)
+
+	for _, r := range *report {
+		table.Append([]string{r.RuleName, r.Class, r.CompleteFilename, strings.Join(r.StringsToMatch, ",")})
+	}
+	table.Render()
+	return nil
 }
