@@ -7,6 +7,7 @@ import (
 
 type IOCWriter interface {
 	WriteIOC(jsonFilename string) error
+	WriteTable() error
 }
 
 type YaraRuleUpdater struct {

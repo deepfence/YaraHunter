@@ -5,6 +5,11 @@ import (
 	"os"
 )
 
+const (
+	JsonOutput  = "json"
+	TableOutput = "table"
+)
+
 type Options struct {
 	Threads              *int
 	DebugLevel           *string
@@ -26,6 +31,7 @@ type Options struct {
 	FailOnCompileWarning *bool
 	WorkersPerScan       *int
 	InactiveThreshold    *int
+	OutFormat            *string
 }
 
 func ParseOptions() (*Options, error) {
@@ -50,6 +56,7 @@ func ParseOptions() (*Options, error) {
 		StandAloneHttpPort:   flag.String("standalone-http-port", "", "use to run malware scanner as a standalone service"),
 		WorkersPerScan:       flag.Int("workers-per-scan", 1, "Number of concurrent workers per scan"),
 		InactiveThreshold:    flag.Int("inactive-threshold", 600, "Threshold for Inactive scan in seconds"),
+		OutFormat:            flag.String("output", TableOutput, "Output format: json or table"),
 	}
 	flag.Parse()
 	return options, nil
