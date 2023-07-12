@@ -542,6 +542,9 @@ func (imageScan *ImageScan) processImageLayers(scanner *Scanner, imageManifestPa
 		}
 		log.Debug("Analyzing dir: %s", targetDir)
 		err = scanner.ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs, false)
+		for i, _ := range IOCs {
+			IOCs[i].CompleteFilename = strings.TrimPrefix(IOCs[i].CompleteFilename, targetDir)
+		}
 		tempIOCsFound = append(tempIOCsFound, IOCs...)
 		if err != nil {
 			log.Errorf("ProcessImageLayers: %s", err)
@@ -552,6 +555,7 @@ func (imageScan *ImageScan) processImageLayers(scanner *Scanner, imageManifestPa
 		if imageScan.numIOCs >= *scanner.MaxIOC {
 			return tempIOCsFound, nil
 		}
+
 	}
 
 	return tempIOCsFound, nil
