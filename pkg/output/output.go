@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	// "github.com/fatih/color"
-	"io/ioutil"
+
 	"os"
 	"strings"
 	"time"
@@ -45,10 +45,6 @@ type IOCFound struct {
 	Class     string            `json:"Class,omitempty"`
 }
 
-type IOCOutput interface {
-	WriteIOC(string) error
-}
-
 type JsonDirIOCOutput struct {
 	Timestamp time.Time
 	DirName   string `json:"Directory Name"`
@@ -79,8 +75,8 @@ func (imageOutput *JsonImageIOCOutput) SetIOC(IOC []IOCFound) {
 	imageOutput.IOC = IOC
 }
 
-func (imageOutput JsonImageIOCOutput) WriteIOC(outputFilename string) error {
-	return printIOCToJsonFile(imageOutput, outputFilename)
+func (imageOutput JsonImageIOCOutput) WriteJson() error {
+	return printIOCToJson(imageOutput)
 }
 
 func (imageOutput JsonImageIOCOutput) WriteTable() error {
@@ -95,25 +91,23 @@ func (dirOutput *JsonDirIOCOutput) SetIOC(IOC []IOCFound) {
 	dirOutput.IOC = IOC
 }
 
-func (dirOutput JsonDirIOCOutput) WriteIOC(outputFilename string) error {
-	return printIOCToJsonFile(dirOutput, outputFilename)
+func (dirOutput JsonDirIOCOutput) WriteJson() error {
+	return printIOCToJson(dirOutput)
 }
 
 func (dirOutput JsonDirIOCOutput) WriteTable() error {
 	return WriteTableOutput(&dirOutput.IOC)
 }
 
-func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
+func printIOCToJson(IOCJson interface{}) error {
 	file, err := json.MarshalIndent(IOCJson, "", Indent)
 	if err != nil {
 		log.Errorf("printIOCToJsonFile: Couldn't format json output: %s", err)
 		return err
 	}
-	err = ioutil.WriteFile(outputFilename, file, os.ModePerm)
-	if err != nil {
-		log.Errorf("printIOCToJsonFile: Couldn't write json output to file: %s", err)
-		return err
-	}
+
+	fmt.Println()
+	fmt.Println(string(file))
 
 	return nil
 }
@@ -145,7 +139,9 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 		if !utf8.ValidString(out.Meta[i]) && bool {
 			log.Debugf("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
 		} else {
-			meta = append(meta, out.Meta[i])
+			if len(out.Meta[i]) > 0 {
+				meta = append(meta, out.Meta[i])
+			}
 		}
 	}
 	out.Meta = meta
@@ -185,34 +181,6 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	} else {
 		return nil
 	}
-}
-
-func (imageOutput JsonImageIOCOutput) PrintJsonHeader() {
-	fmt.Fprintf(os.Stdout, "{\n")
-	fmt.Fprintf(os.Stdout, Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
-	fmt.Fprintf(os.Stdout, Indent+"\"Image Name\": \"%s\",\n", imageOutput.ImageName)
-	fmt.Fprintf(os.Stdout, Indent+"\"Image ID\": \"%s\",\n", imageOutput.ImageId)
-	fmt.Fprintf(os.Stdout, Indent+"\"Malware match detected are\": [\n")
-}
-
-func (imageOutput JsonImageIOCOutput) PrintJsonFooter() {
-	printJsonFooter()
-}
-
-func (dirOutput JsonDirIOCOutput) PrintJsonHeader() {
-	fmt.Fprintf(os.Stdout, "{\n")
-	fmt.Fprintf(os.Stdout, Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
-	fmt.Fprintf(os.Stdout, Indent+"\"Directory Name\": \"%s\",\n", dirOutput.DirName)
-	fmt.Fprintf(os.Stdout, Indent+"\"Malware match detected are\": [\n")
-}
-
-func (dirOutput JsonDirIOCOutput) PrintJsonFooter() {
-	printJsonFooter()
-}
-
-func printJsonFooter() {
-	fmt.Fprintf(os.Stdout, "\n"+Indent+"]\n")
-	fmt.Fprintf(os.Stdout, "}\n")
 }
 
 func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool) {
@@ -375,18 +343,18 @@ func WriteScanData(malwares []*pb.MalwareInfo, scan_id string) {
 
 func WriteTableOutput(report *[]IOCFound) error {
 	table := tw.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Rule Name", "Class", "File Name", "Matched Part"})
+	table.SetHeader([]string{"Rule Name", "Class", "Matched Part", "File Name"})
 	table.SetHeaderLine(true)
 	table.SetBorder(true)
 	table.SetAutoWrapText(true)
 	table.SetAutoFormatHeaders(true)
-	table.SetColMinWidth(0, 20)
+	table.SetColMinWidth(0, 10)
 	table.SetColMinWidth(1, 10)
 	table.SetColMinWidth(2, 30)
 	table.SetColMinWidth(3, 20)
 
 	for _, r := range *report {
-		table.Append([]string{r.RuleName, r.Class, r.CompleteFilename, strings.Join(r.StringsToMatch, ",")})
+		table.Append([]string{r.RuleName, r.Class, strings.Join(r.StringsToMatch, ","), r.CompleteFilename})
 	}
 	table.Render()
 	return nil

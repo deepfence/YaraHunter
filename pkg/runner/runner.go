@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/deepfence/YaraHunter/constants"
-	"github.com/deepfence/YaraHunter/core"
 	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	"github.com/deepfence/YaraHunter/pkg/server"
@@ -95,19 +94,13 @@ func runOnce(opts *config.Options, config *config.Config) {
 		return
 	}
 
-	jsonFilename, err := core.GetJsonFilepath(*opts.JsonFilename, *opts.OutputPath)
-	if err != nil {
-		log.Errorf("error while retrieving json output: %s", err)
-		return
-	}
 	if *opts.OutFormat == "json" {
-		if jsonFilename != "" {
-			err = jsonOutput.WriteIOC(jsonFilename)
-			if err != nil {
-				log.Errorf("error while writing IOC: %s", err)
-				return
-			}
+		err = jsonOutput.WriteJson()
+		if err != nil {
+			log.Errorf("error while writing IOC: %s", err)
+			return
 		}
+
 	} else {
 		err = jsonOutput.WriteTable()
 		if err != nil {
