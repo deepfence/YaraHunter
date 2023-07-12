@@ -75,6 +75,10 @@ func (imageOutput *JsonImageIOCOutput) SetIOC(IOC []IOCFound) {
 	imageOutput.IOC = IOC
 }
 
+func (imageOutput *JsonImageIOCOutput) GetIOC() []IOCFound {
+	return imageOutput.IOC
+}
+
 func (imageOutput JsonImageIOCOutput) WriteJson() error {
 	return printIOCToJson(imageOutput)
 }
@@ -89,6 +93,10 @@ func (dirOutput *JsonDirIOCOutput) SetTime() {
 
 func (dirOutput *JsonDirIOCOutput) SetIOC(IOC []IOCFound) {
 	dirOutput.IOC = IOC
+}
+
+func (dirOutput *JsonDirIOCOutput) GetIOC() []IOCFound {
+	return dirOutput.IOC
 }
 
 func (dirOutput JsonDirIOCOutput) WriteJson() error {
@@ -350,8 +358,8 @@ func WriteTableOutput(report *[]IOCFound) error {
 	table.SetAutoFormatHeaders(true)
 	table.SetColMinWidth(0, 10)
 	table.SetColMinWidth(1, 10)
-	table.SetColMinWidth(2, 30)
-	table.SetColMinWidth(3, 20)
+	table.SetColMinWidth(2, 20)
+	table.SetColMinWidth(3, 30)
 
 	for _, r := range *report {
 		table.Append([]string{r.RuleName, r.Class, strings.Join(r.StringsToMatch, ","), r.CompleteFilename})

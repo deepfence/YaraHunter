@@ -30,6 +30,9 @@ type Options struct {
 	WorkersPerScan       *int
 	InactiveThreshold    *int
 	OutFormat            *string
+	ConsoleUrl           *string
+	ConsolePort          *int
+	DeepfenceKey         *string
 }
 
 func ParseOptions() (*Options, error) {
@@ -53,6 +56,9 @@ func ParseOptions() (*Options, error) {
 		WorkersPerScan:       flag.Int("workers-per-scan", 1, "Number of concurrent workers per scan"),
 		InactiveThreshold:    flag.Int("inactive-threshold", 600, "Threshold for Inactive scan in seconds"),
 		OutFormat:            flag.String("output", TableOutput, "Output format: json or table"),
+		ConsoleUrl:           flag.String("console-url", "", "Deepfence Management Console URL"),
+		ConsolePort:          flag.Int("console-port", 443, "Deepfence Management Console Port"),
+		DeepfenceKey:         flag.String("deepfence-key", "", "Deepfence key for auth"),
 	}
 	flag.Parse()
 	return options, nil

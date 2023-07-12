@@ -3,11 +3,14 @@ package runner
 import (
 	"sync"
 	"time"
+
+	"github.com/deepfence/YaraHunter/pkg/output"
 )
 
 type IOCWriter interface {
 	WriteJson() error
 	WriteTable() error
+	GetIOC() []output.IOCFound
 }
 
 type YaraRuleUpdater struct {

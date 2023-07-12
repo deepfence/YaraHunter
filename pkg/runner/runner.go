@@ -1,10 +1,14 @@
 package runner
 
 import (
+	"fmt"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/deepfence/YaraHunter/constants"
 	"github.com/deepfence/YaraHunter/pkg/config"
+	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	"github.com/deepfence/YaraHunter/pkg/server"
 	"github.com/deepfence/YaraHunter/pkg/yararules"
@@ -59,8 +63,13 @@ func runOnce(opts *config.Options, config *config.Config) {
 	scanner := scan.New(opts, config, yaraScanner, "")
 	scanner.ReportStatus.Store(false)
 
+	node_type := ""
+	node_id := ""
+
 	// Scan container image for IOC
 	if len(*opts.ImageName) > 0 {
+		node_type = "image"
+		node_id = *opts.ImageName
 		log.Info("Scanning image %s for IOC...\n", *opts.ImageName)
 		jsonOutput, err = FindIOCInImage(scanner)
 		if err != nil {
@@ -71,6 +80,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 
 	// Scan local directory for IOC
 	if len(*opts.Local) > 0 {
+		node_id = output.GetHostname()
 		log.Info("[*] Scanning local directory: %s\n", color.BlueString(*opts.Local))
 		jsonOutput, err = FindIOCInDir(scanner)
 		if err != nil {
@@ -81,6 +91,8 @@ func runOnce(opts *config.Options, config *config.Config) {
 
 	// Scan existing container for IOC
 	if len(*opts.ContainerId) > 0 {
+		node_type = "container_image"
+		node_id = *opts.ContainerId
 		log.Info("Scanning container %s for IOC...\n", *opts.ContainerId)
 		jsonOutput, err = FindIOCInContainer(scanner)
 		if err != nil {
@@ -92,6 +104,21 @@ func runOnce(opts *config.Options, config *config.Config) {
 	if jsonOutput == nil {
 		log.Error("set either -local or -image-name flag")
 		return
+	}
+
+	if len(*opts.ConsoleUrl) != 0 && len(*opts.DeepfenceKey) != 0 {
+		pub, err := output.NewPublisher(*opts.ConsoleUrl, strconv.Itoa(*opts.ConsolePort), *opts.DeepfenceKey)
+		if err != nil {
+			log.Error(err.Error())
+		}
+
+		pub.SendReport(output.GetHostname(), *opts.ImageName, *opts.ContainerId, node_type)
+		scanId := pub.StartScan(node_id, node_type)
+		if len(scanId) == 0 {
+			scanId = fmt.Sprintf("%s-%d", node_id, time.Now().UnixMilli())
+		}
+		pub.IngestSecretScanResults(scanId, jsonOutput.GetIOC())
+		log.Infof("scan id %s", scanId)
 	}
 
 	if *opts.OutFormat == "json" {
