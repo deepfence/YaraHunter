@@ -109,8 +109,6 @@ func runMalwareScanStandalone(writer http.ResponseWriter, request *http.Request)
 	JsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: req.ImageNameWithTag}
 	JsonImageIOCOutput.SetTime()
 	JsonImageIOCOutput.SetImageId(res.ImageId)
-	JsonImageIOCOutput.PrintJsonHeader()
-	JsonImageIOCOutput.PrintJsonFooter()
 	JsonImageIOCOutput.SetIOC(res.IOCs)
 
 	outByte, err := json.Marshal(JsonImageIOCOutput)

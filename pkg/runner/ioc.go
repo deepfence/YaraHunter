@@ -22,11 +22,6 @@ func FindIOCInImage(scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.SetImageId(res.ImageId)
 	jsonImageIOCOutput.SetIOC(res.IOCs)
-	jsonImageIOCOutput.PrintJsonHeader()
-	var isFirstIOC bool = true
-	output.PrintColoredIOC(res.IOCs, &isFirstIOC)
-
-	jsonImageIOCOutput.PrintJsonFooter()
 
 	return &jsonImageIOCOutput, nil
 }
@@ -50,11 +45,6 @@ func FindIOCInDir(scanner *scan.Scanner) (*output.JsonDirIOCOutput, error) {
 	}
 	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: dirName, IOC: tempIOCsFound}
 	jsonDirIOCOutput.SetTime()
-	jsonDirIOCOutput.PrintJsonHeader()
-	var isFirstIOC bool = true
-	output.PrintColoredIOC(jsonDirIOCOutput.IOC, &isFirstIOC)
-
-	jsonDirIOCOutput.PrintJsonFooter()
 
 	return &jsonDirIOCOutput, nil
 }
@@ -72,11 +62,6 @@ func FindIOCInContainer(scanner *scan.Scanner) (*output.JsonImageIOCOutput, erro
 	}
 	jsonImageIOCOutput := output.JsonImageIOCOutput{ContainerId: *scanner.ContainerId, IOC: tempIOCsFound}
 	jsonImageIOCOutput.SetTime()
-	jsonImageIOCOutput.PrintJsonHeader()
-	var isFirstIOC bool = true
-	output.PrintColoredIOC(jsonImageIOCOutput.IOC, &isFirstIOC)
-
-	jsonImageIOCOutput.PrintJsonFooter()
 
 	return &jsonImageIOCOutput, nil
 }

@@ -6,7 +6,7 @@ import (
 )
 
 type IOCWriter interface {
-	WriteIOC(jsonFilename string) error
+	WriteJson() error
 	WriteTable() error
 }
 
