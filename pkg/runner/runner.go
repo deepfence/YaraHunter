@@ -45,7 +45,7 @@ func StartYaraHunter(opts *config.Options, config *config.Config, newwg *sync.Wa
 }
 
 func runOnce(opts *config.Options, config *config.Config) {
-	var jsonOutput IOCWriter
+	var results IOCWriter
 
 	yaraRules := yararules.New(*opts.RulesPath)
 	err := yaraRules.Compile(constants.Filescan, *opts.FailOnCompileWarning)
@@ -71,7 +71,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 		node_type = "image"
 		node_id = *opts.ImageName
 		log.Info("Scanning image %s for IOC...\n", *opts.ImageName)
-		jsonOutput, err = FindIOCInImage(scanner)
+		results, err = FindIOCInImage(scanner)
 		if err != nil {
 			log.Errorf("error scanning the image: %s", err)
 			return
@@ -82,7 +82,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 	if len(*opts.Local) > 0 {
 		node_id = output.GetHostname()
 		log.Info("[*] Scanning local directory: %s\n", color.BlueString(*opts.Local))
-		jsonOutput, err = FindIOCInDir(scanner)
+		results, err = FindIOCInDir(scanner)
 		if err != nil {
 			log.Errorf("error scanning the dir: %s", err)
 			return
@@ -94,14 +94,14 @@ func runOnce(opts *config.Options, config *config.Config) {
 		node_type = "container_image"
 		node_id = *opts.ContainerId
 		log.Info("Scanning container %s for IOC...\n", *opts.ContainerId)
-		jsonOutput, err = FindIOCInContainer(scanner)
+		results, err = FindIOCInContainer(scanner)
 		if err != nil {
 			log.Errorf("error scanning the container: %s", err)
 			return
 		}
 	}
 
-	if jsonOutput == nil {
+	if results == nil {
 		log.Error("set either -local or -image-name flag")
 		return
 	}
@@ -117,22 +117,32 @@ func runOnce(opts *config.Options, config *config.Config) {
 		if len(scanId) == 0 {
 			scanId = fmt.Sprintf("%s-%d", node_id, time.Now().UnixMilli())
 		}
-		pub.IngestSecretScanResults(scanId, jsonOutput.GetIOC())
+		pub.IngestSecretScanResults(scanId, results.GetIOC())
 		log.Infof("scan id %s", scanId)
 	}
 
+	counts := output.CountBySeverity(results.GetIOC())
+	log.Infof("result severity counts: %+v", counts)
+
+	fmt.Println("summary:")
+	fmt.Printf("  total=%d high=%d medium=%d low=%d\n",
+		counts.Total, counts.High, counts.Medium, counts.Low)
+
 	if *opts.OutFormat == "json" {
-		err = jsonOutput.WriteJson()
+		err = results.WriteJson()
 		if err != nil {
 			log.Errorf("error while writing IOC: %s", err)
 			return
 		}
 
 	} else {
-		err = jsonOutput.WriteTable()
+		err = results.WriteTable()
 		if err != nil {
 			log.Errorf("error while writing IOC: %s", err)
 			return
 		}
 	}
+
+	output.FailOn(counts,
+		*opts.FailOnHighCount, *opts.FailOnMediumCount, *opts.FailOnLowCount, *opts.FailOnCount)
 }

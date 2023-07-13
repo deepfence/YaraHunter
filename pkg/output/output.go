@@ -23,6 +23,13 @@ const (
 	Indent = "  " // Indentation for Json printing
 )
 
+// severity
+const (
+	HIGH   = "high"
+	MEDIUM = "medium"
+	LOW    = "low"
+)
+
 var (
 	scanFilename       = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan/malware_scan.log"
 	scanStatusFilename = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan-log/malware_scan_log.log"
@@ -351,19 +358,70 @@ func WriteScanData(malwares []*pb.MalwareInfo, scan_id string) {
 
 func WriteTableOutput(report *[]IOCFound) error {
 	table := tw.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Rule Name", "Class", "Matched Part", "File Name"})
+	table.SetHeader([]string{"Rule Name", "Class", "Severity", "Matched Part", "File Name"})
 	table.SetHeaderLine(true)
 	table.SetBorder(true)
 	table.SetAutoWrapText(true)
 	table.SetAutoFormatHeaders(true)
 	table.SetColMinWidth(0, 10)
 	table.SetColMinWidth(1, 10)
-	table.SetColMinWidth(2, 20)
-	table.SetColMinWidth(3, 30)
+	table.SetColMinWidth(2, 10)
+	table.SetColMinWidth(3, 20)
+	table.SetColMinWidth(4, 20)
 
 	for _, r := range *report {
-		table.Append([]string{r.RuleName, r.Class, strings.Join(r.StringsToMatch, ","), r.CompleteFilename})
+		table.Append([]string{r.RuleName, r.Class, r.FileSeverity, strings.Join(r.StringsToMatch, ","), r.CompleteFilename})
 	}
 	table.Render()
 	return nil
+}
+
+type SevCount struct {
+	Total  int
+	High   int
+	Medium int
+	Low    int
+}
+
+func CountBySeverity(report []IOCFound) SevCount {
+	detail := SevCount{}
+
+	for _, r := range report {
+		detail.Total += 1
+		switch r.FileSeverity {
+		case HIGH:
+			detail.High += 1
+		case MEDIUM:
+			detail.Medium += 1
+		case LOW:
+			detail.Low += 1
+		}
+	}
+
+	return detail
+}
+
+func ExitOnSeverity(severity string, count int, failOnCount int) {
+	log.Debugf("ExitOnSeverity severity=%s count=%d failOnCount=%d",
+		severity, count, failOnCount)
+	if count >= failOnCount {
+		if len(severity) > 0 {
+			msg := "Exit malware scan. Number of %s malwares (%d) reached/exceeded the limit (%d).\n"
+			log.Fatalf(msg, severity, count, failOnCount)
+		}
+		msg := "Exit malware scan. Number of malwares (%d) reached/exceeded the limit (%d).\n"
+		log.Fatalf(msg, count, failOnCount)
+	}
+}
+
+func FailOn(details SevCount, failOnHighCount int, failOnMediumCount int, failOnLowCount int, failOnCount int) {
+	if failOnHighCount > 0 {
+		ExitOnSeverity(HIGH, details.High, failOnHighCount)
+	} else if failOnMediumCount > 0 {
+		ExitOnSeverity(MEDIUM, details.Medium, failOnMediumCount)
+	} else if failOnLowCount > 0 {
+		ExitOnSeverity(LOW, details.Low, failOnLowCount)
+	} else if failOnCount > 0 {
+		ExitOnSeverity("", details.Total, failOnCount)
+	}
 }
