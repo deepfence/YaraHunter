@@ -33,6 +33,10 @@ type Options struct {
 	ConsoleUrl           *string
 	ConsolePort          *int
 	DeepfenceKey         *string
+	FailOnCount          *int
+	FailOnHighCount      *int
+	FailOnMediumCount    *int
+	FailOnLowCount       *int
 }
 
 func ParseOptions() (*Options, error) {
@@ -59,6 +63,10 @@ func ParseOptions() (*Options, error) {
 		ConsoleUrl:           flag.String("console-url", "", "Deepfence Management Console URL"),
 		ConsolePort:          flag.Int("console-port", 443, "Deepfence Management Console Port"),
 		DeepfenceKey:         flag.String("deepfence-key", "", "Deepfence key for auth"),
+		FailOnCount:          flag.Int("fail-on-count", -1, "Exit with status 1 if number of malwares found is >= this value (Default: -1)"),
+		FailOnHighCount:      flag.Int("fail-on-high-count", -1, "Exit with status 1 if number of high malwares found is >= this value (Default: -1)"),
+		FailOnMediumCount:    flag.Int("fail-on-medium-count", -1, "Exit with status 1 if number of medium malwares found is >= this value (Default: -1)"),
+		FailOnLowCount:       flag.Int("fail-on-low-count", -1, "Exit with status 1 if number of low malwares found is >= this value (Default: -1)"),
 	}
 	flag.Parse()
 	return options, nil
