@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/deepfence/YaraHunter/constants"
@@ -41,12 +42,41 @@ type gRPCServer struct {
 	pb.UnimplementedMalwareScannerServer
 	pb.UnimplementedAgentPluginServer
 	pb.UnimplementedScannersServer
+
+	scanMap sync.Map
 }
 
 func (s *gRPCServer) ReportJobsStatus(context.Context, *pb.Empty) (*pb.JobReports, error) {
 	return &pb.JobReports{
 		RunningJobs: jobs.GetRunningJobCount(),
 	}, nil
+}
+
+func (s *gRPCServer) StopScan(c context.Context, req *pb.StopScanRequest) (*pb.StopScanResult, error) {
+	scanID := req.ScanId
+	result := &pb.StopScanResult{
+		Success:     true,
+		Description: "",
+	}
+
+	obj, found := s.scanMap.Load(scanID)
+	if !found {
+		msg := "Failed to Stop scan"
+		log.Info("%s, may have already completed, scan_id: %s", msg, scanID)
+		result.Success = false
+		result.Description = "Failed to Stop scan"
+		return result, nil
+	} else {
+		msg := "Stop request submitted"
+		log.Infof("%s, scan_id: %s", msg, scanID)
+		result.Success = true
+		result.Description = msg
+	}
+
+	scanner := obj.(*scan.Scanner)
+	scanner.Stopped.Store(true)
+
+	return result, nil
 }
 
 func (s *gRPCServer) GetName(context.Context, *pb.Empty) (*pb.Name, error) {
@@ -63,8 +93,10 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 
 		yaraScanner, err := s.yaraRules.NewScanner()
 		scanner := scan.New(s.options, s.yaraConfig, yaraScanner, r.ScanId)
+		s.scanMap.Store(scanner.ScanID, scanner)
 		res := jobs.StartStatusReporter(context.Background(), r.ScanId, scanner)
 		defer func() {
+			s.scanMap.Delete(scanner.ScanID)
 			res <- err
 			close(res)
 		}()
@@ -136,6 +168,8 @@ func RunGrpcServer(opts *config.Options, config *config.Config, plugin_name stri
 	if err != nil {
 		return err
 	}
+
+	impl.scanMap = sync.Map{}
 
 	// compile yara rules
 	impl.yaraRules = yararules.New(*opts.RulesPath)
