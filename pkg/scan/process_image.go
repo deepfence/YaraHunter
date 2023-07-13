@@ -890,6 +890,10 @@ func CheckScanStatus(s *Scanner) error {
 			close(s.ScanStatusChan)
 			log.Error("Scan aborted due to inactivity, scanid:", s.ScanID)
 			return fmt.Errorf("Scan aborted due to inactivity")
+		} else if s.Stopped.Load() == true {
+			close(s.ScanStatusChan)
+			log.Error("Scan stopped by user request, scanid:", s.ScanID)
+			return fmt.Errorf("Scan stopped by user request")
 		} else {
 			s.ScanStatusChan <- true
 		}

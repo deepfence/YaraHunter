@@ -12,8 +12,9 @@ func New(opts *config.Options, yaraconfig *config.Config,
 
 	statusChan := make(chan bool)
 	obj := Scanner{opts, yaraconfig, yaraScannerIn, scanID, statusChan,
-		atomic.Bool{}, atomic.Bool{}}
+		atomic.Bool{}, atomic.Bool{}, atomic.Bool{}}
 	obj.Aborted.Store(false)
+	obj.Stopped.Store(false)
 	obj.ReportStatus.Store(true)
 	return &obj
 }
@@ -26,6 +27,7 @@ type Scanner struct {
 	ScanID         string
 	ScanStatusChan chan bool
 	Aborted        atomic.Bool
+	Stopped        atomic.Bool
 	ReportStatus   atomic.Bool
 }
 
