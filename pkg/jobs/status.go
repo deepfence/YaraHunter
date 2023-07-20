@@ -21,7 +21,7 @@ func StartStatusReporter(ctx context.Context, scan_id string, scanner *scan.Scan
 
 	go func() {
 		defer stopScanJob()
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(30 * time.Second)
 		var err error
 		ts := time.Now()
 		log.Infof("StatusReporter started, scan_id: %s", scan_id)
