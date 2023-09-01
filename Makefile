@@ -1,17 +1,20 @@
-all: YaRadare
+all: yarahunter
 
-$(PWD)/agent-plugins-grpc/proto/*.proto:
+bootstrap:
 	$(PWD)/bootstrap.sh
 
-
-$(PWD)/agent-plugins-grpc/proto/*.go: $(PWD)/agent-plugins-grpc/proto/*.proto
-	(cd agent-plugins-grpc && make go)
-
 clean:
-	-(cd agent-plugins-grpc && make clean)
-	-rm ./YaRadare
+	-rm ./YaraHunter
 
-YaRadare: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go
-	env PKG_CONFIG_PATH=/usr/local/yara/lib/pkgconfig:$(PKG_CONFIG_PATH) go build -buildvcs=false -v .
+vendor: go.mod
+	go mod tidy -v
+	go mod vendor
 
-.PHONY: clean
+yarahunter: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
+	CGO_LDFLAGS="-ljansson -lcrypto -lmagic" PKG_CONFIG_PATH=/usr/local/yara/lib/pkgconfig:$(PKG_CONFIG_PATH) go build -buildmode=pie -ldflags="-s -w -extldflags=-static" -buildvcs=false -v .
+
+.PHONY: clean bootstrap
+
+.PHONY: docker
+docker:
+	docker build -t deepfenceio/yara-hunter:latest .

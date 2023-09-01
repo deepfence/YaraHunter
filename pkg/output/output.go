@@ -3,17 +3,36 @@ package output
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/deepfence/YaRadare/core"
-	pb "github.com/deepfence/agent-plugins-grpc/proto"
+	"path/filepath"
+
+	"github.com/deepfence/YaraHunter/utils"
+	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
+	log "github.com/sirupsen/logrus"
+
+	// "github.com/fatih/color"
 
 	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	tw "github.com/olekukonko/tablewriter"
 )
 
 const (
 	Indent = "  " // Indentation for Json printing
+)
+
+// severity
+const (
+	HIGH   = "high"
+	MEDIUM = "medium"
+	LOW    = "low"
+)
+
+var (
+	scanFilename       = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan/malware_scan.log"
+	scanStatusFilename = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan-log/malware_scan_log.log"
 )
 
 type IOCFound struct {
@@ -31,10 +50,6 @@ type IOCFound struct {
 	MetaRules map[string]string `json:"rule metadata"`
 	Summary   string            `json:"Summary,omitempty"`
 	Class     string            `json:"Class,omitempty"`
-}
-
-type IOCOutput interface {
-	WriteIOC(string) error
 }
 
 type JsonDirIOCOutput struct {
@@ -67,9 +82,16 @@ func (imageOutput *JsonImageIOCOutput) SetIOC(IOC []IOCFound) {
 	imageOutput.IOC = IOC
 }
 
-func (imageOutput JsonImageIOCOutput) WriteIOC(outputFilename string) error {
-	err := printIOCToJsonFile(imageOutput, outputFilename)
-	return err
+func (imageOutput *JsonImageIOCOutput) GetIOC() []IOCFound {
+	return imageOutput.IOC
+}
+
+func (imageOutput JsonImageIOCOutput) WriteJson() error {
+	return printIOCToJson(imageOutput)
+}
+
+func (imageOutput JsonImageIOCOutput) WriteTable() error {
+	return WriteTableOutput(&imageOutput.IOC)
 }
 
 func (dirOutput *JsonDirIOCOutput) SetTime() {
@@ -80,42 +102,48 @@ func (dirOutput *JsonDirIOCOutput) SetIOC(IOC []IOCFound) {
 	dirOutput.IOC = IOC
 }
 
-func (dirOutput JsonDirIOCOutput) WriteIOC(outputFilename string) error {
-	err := printIOCToJsonFile(dirOutput, outputFilename)
-	return err
+func (dirOutput *JsonDirIOCOutput) GetIOC() []IOCFound {
+	return dirOutput.IOC
 }
 
-func printIOCToJsonFile(IOCJson interface{}, outputFilename string) error {
+func (dirOutput JsonDirIOCOutput) WriteJson() error {
+	return printIOCToJson(dirOutput)
+}
+
+func (dirOutput JsonDirIOCOutput) WriteTable() error {
+	return WriteTableOutput(&dirOutput.IOC)
+}
+
+func printIOCToJson(IOCJson interface{}) error {
 	file, err := json.MarshalIndent(IOCJson, "", Indent)
 	if err != nil {
-		core.GetSession().Log.Error("printIOCToJsonFile: Couldn't format json output: %s", err)
+		log.Errorf("printIOCToJsonFile: Couldn't format json output: %s", err)
 		return err
 	}
-	err = os.WriteFile(outputFilename, file, os.ModePerm)
-	if err != nil {
-		core.GetSession().Log.Error("printIOCToJsonFile: Couldn't write json output to file: %s", err)
-		return err
-	}
+
+	fmt.Println()
+	fmt.Println(string(file))
 
 	return nil
 }
 
 func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 	res := make([]*pb.MalwareInfo, 0)
-	core.GetSession().Log.Error("reached everywhere here", out)
+	// log.Error("reached everywhere here", out)
 	for _, v := range out {
-		//core.GetSession().Log.Error("did it reach to this point 1", v)
+		// log.Error("did it reach to this point 1", v)
 		if MalwaresToMalwareInfo(v) != nil {
 			res = append(res, MalwaresToMalwareInfo(v))
 		}
-		//core.GetSession().Log.Error("did it reach to this point", v)
+		//log.Error("did it reach to this point", v)
 	}
 	return res
 }
 
 func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	bool := true
-	if !(utf8.ValidString(out.LayerID) && utf8.ValidString(out.RuleName) && utf8.ValidString(out.Summary) && utf8.ValidString(out.Class) &&
+	if !(utf8.ValidString(out.LayerID) && utf8.ValidString(out.RuleName) &&
+		utf8.ValidString(out.Summary) && utf8.ValidString(out.Class) &&
 		utf8.ValidString(out.FileSeverity) && utf8.ValidString(out.CompleteFilename)) {
 		bool = false
 	}
@@ -124,16 +152,18 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	stringsToMatch := make([]string, 0)
 	for i := range out.Meta {
 		if !utf8.ValidString(out.Meta[i]) && bool {
-			// core.GetSession().Log.Error("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
+			log.Debugf("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
 		} else {
-			meta = append(meta, out.Meta[i])
+			if len(out.Meta[i]) > 0 {
+				meta = append(meta, out.Meta[i])
+			}
 		}
 	}
 	out.Meta = meta
 
 	for k, v := range out.MetaRules {
 		if !utf8.ValidString(v) && bool {
-			// core.GetSession().Log.Error("reached the meta point %s : %t", v, utf8.ValidString(v))
+			log.Debugf("reached the meta point %s : %t", v, utf8.ValidString(v))
 		} else {
 			metaRules[k] = v
 		}
@@ -142,7 +172,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 
 	for i := range out.StringsToMatch {
 		if !utf8.ValidString(out.StringsToMatch[i]) && bool {
-			//core.GetSession().Log.Error("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
+			log.Debugf("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
 		} else {
 			stringsToMatch = append(stringsToMatch, out.StringsToMatch[i])
 		}
@@ -166,34 +196,6 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	} else {
 		return nil
 	}
-}
-
-func (imageOutput JsonImageIOCOutput) PrintJsonHeader() {
-	fmt.Fprintf(os.Stdout, "{\n")
-	fmt.Fprintf(os.Stdout, Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
-	fmt.Fprintf(os.Stdout, Indent+"\"Image Name\": \"%s\",\n", imageOutput.ImageName)
-	fmt.Fprintf(os.Stdout, Indent+"\"Image ID\": \"%s\",\n", imageOutput.ImageId)
-	fmt.Fprintf(os.Stdout, Indent+"\"Malware match detected are\": [\n")
-}
-
-func (imageOutput JsonImageIOCOutput) PrintJsonFooter() {
-	printJsonFooter()
-}
-
-func (dirOutput JsonDirIOCOutput) PrintJsonHeader() {
-	fmt.Fprintf(os.Stdout, "{\n")
-	fmt.Fprintf(os.Stdout, Indent+"\"Timestamp\": \"%s\",\n", time.Now().Format("2006-01-02 15:04:05.000000000 -07:00"))
-	fmt.Fprintf(os.Stdout, Indent+"\"Directory Name\": \"%s\",\n", dirOutput.DirName)
-	fmt.Fprintf(os.Stdout, Indent+"\"Malware match detected are\": [\n")
-}
-
-func (dirOutput JsonDirIOCOutput) PrintJsonFooter() {
-	printJsonFooter()
-}
-
-func printJsonFooter() {
-	fmt.Fprintf(os.Stdout, "\n"+Indent+"]\n")
-	fmt.Fprintf(os.Stdout, "}\n")
 }
 
 func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool) {
@@ -291,4 +293,138 @@ func removeFirstLastChar(input string) string {
 		return input
 	}
 	return input[1 : len(input)-1]
+}
+
+func writeToFile(malwareScanMsg string, filename string) error {
+	os.MkdirAll(filepath.Dir(filename), 0755)
+
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	malwareScanMsg = strings.Replace(malwareScanMsg, "\n", " ", -1)
+	if _, err = f.WriteString(malwareScanMsg + "\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func WriteScanStatus(status, scan_id, scan_message string) {
+	var scanLogDoc = make(map[string]interface{})
+	scanLogDoc["scan_id"] = scan_id
+	scanLogDoc["scan_status"] = status
+	scanLogDoc["scan_message"] = scan_message
+
+	byteJson, err := json.Marshal(scanLogDoc)
+	if err != nil {
+		log.Errorf("Error marshalling json for malware-logs-status: %s", err)
+		return
+	}
+
+	err = writeToFile(string(byteJson), scanStatusFilename)
+	if err != nil {
+		log.Errorf("Error in sending data to malware-logs-status to mark in progress: %s", err)
+		return
+	}
+}
+
+type MalwareScanDoc struct {
+	pb.MalwareInfo
+	ScanID    string `json:"scan_id,omitempty"`
+	Timestamp string `json:"timestamp,omitempty"`
+}
+
+func WriteScanData(malwares []*pb.MalwareInfo, scan_id string) {
+	for _, malware := range malwares {
+		doc := MalwareScanDoc{
+			MalwareInfo: *malware,
+			ScanID:      scan_id,
+			Timestamp:   time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z",
+		}
+		byteJson, err := json.Marshal(doc)
+		if err != nil {
+			log.Errorf("Error marshalling json: %s", err)
+			continue
+		}
+		err = writeToFile(string(byteJson), scanFilename)
+		if err != nil {
+			log.Errorf("Error in writing data to malware scan file: %s", err)
+		}
+	}
+}
+
+func WriteTableOutput(report *[]IOCFound) error {
+	table := tw.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Rule Name", "Class", "Severity", "Matched Part", "File Name"})
+	table.SetHeaderLine(true)
+	table.SetBorder(true)
+	table.SetAutoWrapText(true)
+	table.SetAutoFormatHeaders(true)
+	table.SetColMinWidth(0, 10)
+	table.SetColMinWidth(1, 10)
+	table.SetColMinWidth(2, 10)
+	table.SetColMinWidth(3, 20)
+	table.SetColMinWidth(4, 20)
+
+	for _, r := range *report {
+		table.Append([]string{r.RuleName, r.Class, r.FileSeverity, strings.Join(r.StringsToMatch, ","), r.CompleteFilename})
+	}
+	table.Render()
+	return nil
+}
+
+type SevCount struct {
+	Total  int
+	High   int
+	Medium int
+	Low    int
+}
+
+func CountBySeverity(report []IOCFound) SevCount {
+	detail := SevCount{}
+
+	for _, r := range report {
+		detail.Total += 1
+		switch r.FileSeverity {
+		case HIGH:
+			detail.High += 1
+		case MEDIUM:
+			detail.Medium += 1
+		case LOW:
+			detail.Low += 1
+		}
+	}
+
+	return detail
+}
+
+func ExitOnSeverity(severity string, count int, failOnCount int) {
+	log.Debugf("ExitOnSeverity severity=%s count=%d failOnCount=%d",
+		severity, count, failOnCount)
+	if count >= failOnCount {
+		if len(severity) > 0 {
+			msg := "Exit malware scan. Number of %s malwares (%d) reached/exceeded the limit (%d).\n"
+			log.Fatalf(msg, severity, count, failOnCount)
+		}
+		msg := "Exit malware scan. Number of malwares (%d) reached/exceeded the limit (%d).\n"
+		log.Fatalf(msg, count, failOnCount)
+	}
+}
+
+func FailOn(details SevCount, failOnHighCount int, failOnMediumCount int, failOnLowCount int, failOnCount int) {
+	if failOnHighCount > 0 {
+		ExitOnSeverity(HIGH, details.High, failOnHighCount)
+	}
+	if failOnMediumCount > 0 {
+		ExitOnSeverity(MEDIUM, details.Medium, failOnMediumCount)
+	}
+	if failOnLowCount > 0 {
+		ExitOnSeverity(LOW, details.Low, failOnLowCount)
+	}
+	if failOnCount > 0 {
+		ExitOnSeverity("", details.Total, failOnCount)
+	}
 }

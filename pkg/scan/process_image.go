@@ -15,15 +15,22 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
-	"time"
 
 	"fmt"
 
-	"github.com/deepfence/YaRadare/core"
-	"github.com/deepfence/YaRadare/output"
+	"github.com/deepfence/YaraHunter/constants"
+	"github.com/deepfence/YaraHunter/core"
+
+	// yaraConf "github.com/deepfence/YaraHunter/pkg/config"
+	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/vessel"
 	yr "github.com/hillu/go-yara/v4"
-	"github.com/spf13/afero"
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+)
+
+var (
+	maxMalwaresExceeded = errors.New("number of secrets exceeded max-secrets")
 )
 
 // Data type to store details about the container image after parsing manifest
@@ -43,8 +50,6 @@ type fileMatches struct {
 
 var (
 	imageTarFileName = "save-output.tar"
-	session          = *core.GetSession()
-	maxFileSize      = *session.Options.MaximumFileSize
 )
 
 type ImageScan struct {
@@ -61,30 +66,30 @@ type ImageScan struct {
 // @returns
 // Error - Errors, if any. Otherwise, returns nil
 func (imageScan *ImageScan) extractImage(saveImage bool) error {
+
+	log.Infof("image scan %+v", imageScan)
+
 	imageName := imageScan.imageName
 	tempDir := imageScan.tempDir
 	imageScan.numIOCs = 0
-	core.GetSession().Log.Error("imageScan %v", imageScan)
-	core.GetSession().Log.Error("imageName %s", imageName)
+
 	if saveImage {
 		err := imageScan.saveImageData()
 		if err != nil {
-			core.GetSession().Log.Error("image does not exist: %s", err)
+			log.Errorf("image does not exist: %s", err)
 			return err
 		}
 	}
 
-	core.GetSession().Log.Error("imageName %s", imageName)
-
 	_, err := extractTarFile(imageName, path.Join(tempDir, imageTarFileName), tempDir)
 	if err != nil {
-		core.GetSession().Log.Error("scanImage: Could not extract image tar file: %s", err)
+		log.Errorf("scanImage: Could not extract image tar file: %s", err)
 		return err
 	}
 
 	imageManifest, err := extractDetailsFromManifest(tempDir)
 	if err != nil {
-		core.GetSession().Log.Error("ProcessImageLayers: Could not get image's history: %s,"+
+		log.Errorf("ProcessImageLayers: Could not get image's history: %s,"+
 			" please specify repo:tag and check disk space \n", err.Error())
 		return err
 	}
@@ -102,17 +107,22 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors, if any. Otherwise, returns nil
-func (imageScan *ImageScan) scan() ([]output.IOCFound, error) {
+func (imageScan *ImageScan) scan(scanner *Scanner) ([]output.IOCFound, error) {
 	tempDir := imageScan.tempDir
 	defer core.DeleteTmpDir(tempDir)
 
-	tempIOCsFound, err := imageScan.processImageLayers(tempDir)
+	tempIOCsFound, err := imageScan.processImageLayers(scanner, tempDir)
 	if err != nil {
-		core.GetSession().Log.Error("scanImage: %s", err)
+		log.Errorf("scanImage: %s", err)
 		return tempIOCsFound, err
 	}
 
 	return tempIOCsFound, nil
+}
+
+func (imageScan *ImageScan) scanStream(scanner *Scanner) (chan output.IOCFound, error) {
+	tempDir := imageScan.tempDir
+	return imageScan.processImageLayersStream(scanner, tempDir)
 }
 
 func calculateSeverity(inputString []string, severity string, severityScore float64) (string, float64) {
@@ -148,31 +158,28 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 	return updatedSeverity, math.Round(updatedScore*100) / 100
 }
 
-func ScanFilePath(fs afero.Fs, path string, iocs **[]output.IOCFound, layer string) (err error) {
-	f, err := fs.Open(path)
+func ScanFilePath(s *Scanner, path string, iocs *[]output.IOCFound, layer string) (err error) {
+	f, err := os.Open(path)
 	if err != nil {
-		session.Log.Error("Error: %v", err)
+		log.Errorf("Error: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		session.Log.Error("Could not seek to start of file %s: %v", path, err)
+		log.Errorf("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
-	if e := ScanFile(f, &iocs, layer); err == nil && e != nil {
+	if e := ScanFile(s, f, iocs, layer); err == nil && e != nil {
 		err = e
 	}
 	return
 }
 
-func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
+func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
 	var (
 		matches yr.MatchRules
 		err     error
 	)
-	if err != nil {
-		return err
-	}
 
 	type ruleVariable struct {
 		name  string
@@ -180,15 +187,17 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 	}
 
 	if filepath.Ext(f.Name()) != "" {
-
 		variables := []ruleVariable{
 			{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
 			{"filepath", filepath.ToSlash(f.Name())},
 			{"extension", filepath.Ext(f.Name())},
 		}
+
+		yrScanner := s.YaraScanner
+		yrScanner.SetCallback(&matches)
 		for _, v := range variables {
 			if v.value != nil {
-				if err = session.YaraRules.DefineVariable(v.name, v.value); err != nil {
+				if err = yrScanner.DefineVariable(v.name, v.value); err != nil {
 					return filepath.SkipDir
 				}
 			}
@@ -201,35 +210,31 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			return err
 		}
 		fileName := f.Name()
-		hostMountPath := *session.Options.HostMountPath
+		hostMountPath := *s.HostMountPath
 		if hostMountPath != "" {
 			fileName = strings.TrimPrefix(fileName, hostMountPath)
 		}
-		if maxFileSize > 0 && fi.Size() > maxFileSize {
-			session.Log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), maxFileSize)
+		if *s.MaximumFileSize > 0 && fi.Size() > *s.MaximumFileSize {
+			log.Debug("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), *s.MaximumFileSize)
 			return nil
 		}
-		if f, ok := f.(*os.File); ok {
-			fd := f.Fd()
-			//session.Log.Error("test file", fileName, fd, fi, variables)
-			err = session.YaraRules.ScanFileDescriptor(fd, 0, 1*time.Minute, &matches)
-			if err != nil {
-				return filepath.SkipDir
-			}
-		} else {
+		err = yrScanner.ScanFileDescriptor(f.Fd())
+		if err != nil {
+			fmt.Println("Scan File Descriptor error, trying alternative", err)
 			var buf []byte
 			if buf, err = ioutil.ReadAll(f); err != nil {
-				session.Log.Error("yara: %s: Error reading file, error=%s",
+				log.Errorf("yara: %s: Error reading file, error=%s",
 					fileName, err.Error())
 				return filepath.SkipDir
 			}
-			err = session.YaraRules.ScanMem(buf, 0, 1*time.Minute, &matches)
+			err = yrScanner.ScanMem(buf)
 			if err != nil {
+				fmt.Println("Scan File Mmory Error", err)
 				return filepath.SkipDir
 			}
 
 		}
-		iocsFound := make([]output.IOCFound, 0)
+		var iocsFound []output.IOCFound
 		totalMatchesStringData := make([]string, 0)
 		for _, m := range matches {
 			matchesStringData := make([]string, len(m.Strings))
@@ -241,9 +246,9 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 			}
 			matchesMeta := make([]string, len(m.Metas))
 			matchesMetaData := make([]string, len(m.Metas))
-			for idx, strMeta := range m.Metas {
-				matchesMeta[idx] = strMeta.Identifier
-				matchesMetaData[idx] = fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value)
+			for _, strMeta := range m.Metas {
+				matchesMeta = append(matchesMeta, strMeta.Identifier)
+				matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
 			}
 
 			iocsFound = append(iocsFound, output.IOCFound{
@@ -254,9 +259,14 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 				CompleteFilename: fileName,
 			})
 		}
+		var fileMat fileMatches
+		fileMat.fileName = fileName
+		fileMat.iocs = iocsFound
 		updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
-
-		if len(iocsFound) > 0 {
+		fileMat.updatedSeverity = updatedSeverity
+		fileMat.updatedScore = updatedScore
+		//var isFirstIOC bool = true
+		if len(matches) > 0 {
 			//output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
 			for _, m := range iocsFound {
 				m.FileSeverity = updatedSeverity
@@ -295,7 +305,8 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 				}
 				m.Summary = summary
 				m.Class = class
-				*(*(*iocs)) = append(*(*(*iocs)), m)
+				// *(*(*iocs)) = append(*(*(*iocs)), m)
+				*iocs = append(*iocs, m)
 			}
 		}
 
@@ -312,10 +323,9 @@ func ScanFile(f afero.File, iocs ***[]output.IOCFound, layer string) error {
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
-	var fs afero.Fs
+func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
 	if layer != "" {
-		session.Log.Info("Scan results in selected image with layer ", layer)
+		log.Debugf("Scan results in selected image with layer %s", layer)
 	}
 	if matchedRuleSet == nil {
 		matchedRuleSet = make(map[uint]uint)
@@ -325,58 +335,169 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 		core.UpdateDirsPermissionsRW(fullDir)
 	}
 
-	// maxFileSize := *session.Options.MaximumFileSize * 1024
-	// var file core.MatchFile
-	// var relPath string
+	if *s.Options.HostMountPath != "" {
+		baseDir = *s.Options.HostMountPath
+	}
 
-	//fmt.Println("full directory is",fullDir,isContainerRunTime)
-
-	fs = afero.NewOsFs()
-	afero.Walk(fs, fullDir, func(path string, info os.FileInfo, err error) error {
-		//session.Log.Error("find error ", err)
+	ioc_count := 0
+	maxFileSize := *s.Options.MaximumFileSize * 1024
+	filepath.WalkDir(fullDir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
-			session.Log.Error("the error path isr ", layer)
+			fmt.Println("the error path is", err)
+			log.Errorf("the error path isr ", layer)
 			return nil
 		}
 
-		var scanDirPath string
-		if layer != "" {
-			scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
-			if scanDirPath == "" {
-				scanDirPath = "/"
-			}
-		} else {
-			scanDirPath = path
+		err = CheckScanStatus(s)
+		if err != nil {
+			return err
 		}
 
-		if info.IsDir() {
+		if entry.IsDir() {
+			var scanDirPath string
+			if layer != "" {
+				scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
+				if scanDirPath == "" {
+					scanDirPath = "/"
+				}
+			} else {
+				scanDirPath = path
+			}
 			if isContainerRunTime {
-				//fmt.Println("full directory is",fullDir,path)
-				if core.IsSkippableContainerRuntimeDir(fs, path, baseDir) {
+				if core.IsSkippableDir(s.Config.ExcludedContainerPaths, scanDirPath, baseDir) {
 					return filepath.SkipDir
 				}
 			} else {
-				if core.IsSkippableDir(fs, path, baseDir) {
+				if core.IsSkippableDir(s.Config.ExcludedPaths, scanDirPath, baseDir) {
 					return filepath.SkipDir
 				}
 			}
 			return nil
 
 		}
-		const specialMode = os.ModeSymlink | os.ModeDevice | os.ModeNamedPipe | os.ModeSocket | os.ModeCharDevice
-		if info.Mode()&specialMode != 0 {
+		if !entry.Type().IsRegular() {
 			return nil
 		}
-		if core.IsSkippableFileExtension(path) {
+
+		finfo, err := entry.Info()
+		if err != nil {
+			logrus.Warn("Skipping %v as info could not be retrieved: %v", path, err)
 			return nil
 		}
-		if err = ScanFilePath(fs, path, &iocs, layer); err != nil {
-			session.Log.Error("afero path %v", err)
+		if finfo.Size() > maxFileSize || core.IsSkippableFileExtension(s.Config.ExcludedExtensions, path) {
+			return nil
+		}
+		tmp_iocs := []output.IOCFound{}
+		if err = ScanFilePath(s, path, &tmp_iocs, layer); err != nil {
+			logrus.Error("Scan file failed: %v", err)
+		}
+
+		for i := range tmp_iocs {
+			*iocs = append(*iocs, tmp_iocs[i])
+		}
+		ioc_count = len(*iocs)
+
+		// Don't report secrets if number of secrets exceeds MAX value
+		if uint(ioc_count) >= *s.Options.MaxIOC {
+			return maxMalwaresExceeded
 		}
 		return nil
 	})
 
 	return nil
+}
+
+const (
+	output_channel_size = 100
+)
+
+func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, isContainerRunTime bool) (chan output.IOCFound, error) {
+	if layer != "" {
+		log.Debugf("Scan results in selected image with layer %s", layer)
+	}
+	if matchedRuleSet == nil {
+		matchedRuleSet = make(map[uint]uint)
+	}
+
+	if layer != "" {
+		core.UpdateDirsPermissionsRW(fullDir)
+	}
+
+	if *s.Options.HostMountPath != "" {
+		baseDir = *s.Options.HostMountPath
+	}
+
+	res := make(chan output.IOCFound, output_channel_size)
+
+	go func() {
+		defer close(res)
+		ioc_count := 0
+		maxFileSize := *s.Options.MaximumFileSize * 1024
+		filepath.WalkDir(fullDir, func(path string, entry os.DirEntry, err error) error {
+			if err != nil {
+				fmt.Println("the error path is", err)
+				log.Errorf("the error path isr ", layer)
+				return nil
+			}
+
+			err = CheckScanStatus(s)
+			if err != nil {
+				return err
+			}
+
+			if entry.IsDir() {
+				var scanDirPath string
+				if layer != "" {
+					scanDirPath = strings.TrimPrefix(path, baseDir+"/"+layer)
+					if scanDirPath == "" {
+						scanDirPath = "/"
+					}
+				} else {
+					scanDirPath = path
+				}
+				if isContainerRunTime {
+					if core.IsSkippableDir(s.Config.ExcludedContainerPaths, scanDirPath, baseDir) {
+						return filepath.SkipDir
+					}
+				} else {
+					if core.IsSkippableDir(s.Config.ExcludedPaths, scanDirPath, baseDir) {
+						return filepath.SkipDir
+					}
+				}
+				return nil
+
+			}
+			if !entry.Type().IsRegular() {
+				return nil
+			}
+
+			finfo, err := entry.Info()
+			if err != nil {
+				logrus.Warn("Skipping %v as info could not be retrieved: %v", path, err)
+				return nil
+			}
+			if finfo.Size() > maxFileSize || core.IsSkippableFileExtension(s.Config.ExcludedExtensions, path) {
+				return nil
+			}
+			tmp_iocs := []output.IOCFound{}
+			if err = ScanFilePath(s, path, &tmp_iocs, layer); err != nil {
+				logrus.Error("Scan file failed: %v", err)
+			}
+
+			for i := range tmp_iocs {
+				res <- tmp_iocs[i]
+			}
+			ioc_count += len(tmp_iocs)
+
+			// Don't report secrets if number of secrets exceeds MAX value
+			if uint(ioc_count) >= *s.Options.MaxIOC {
+				return maxMalwaresExceeded
+			}
+			return nil
+		})
+	}()
+
+	return res, nil
 }
 
 // Extract all the layers of the container image and then find IOCs in each layer one by one
@@ -386,11 +507,12 @@ func ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet m
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]output.IOCFound, error) {
+func (imageScan *ImageScan) processImageLayers(scanner *Scanner, imageManifestPath string) ([]output.IOCFound, error) {
+	var tempIOCsFound []output.IOCFound
 	var err error
 
 	// extractPath - Base directory where all the layers should be extracted to
-	extractPath := path.Join(imageManifestPath, core.ExtractedImageFilesDir)
+	extractPath := path.Join(imageManifestPath, constants.ExtractedImageFilesDir)
 	layerIDs := imageScan.imageManifest.LayerIds
 	layerPaths := imageScan.imageManifest.Layers
 	matchedRuleSet := make(map[uint]uint)
@@ -398,40 +520,95 @@ func (imageScan *ImageScan) processImageLayers(imageManifestPath string) ([]outp
 	loopCntr := len(layerPaths)
 	var IOCs []output.IOCFound
 	for i := 0; i < loopCntr; i++ {
-		core.GetSession().Log.Debug("Analyzing layer path: %s", layerPaths[i])
-		core.GetSession().Log.Debug("Analyzing layer: %s", layerIDs[i])
+		log.Debug("Analyzing layer path: %s", layerPaths[i])
+		log.Debug("Analyzing layer: %s", layerIDs[i])
 		// savelayerID = layerIDs[i]
 		completeLayerPath := path.Join(imageManifestPath, layerPaths[i])
 		targetDir := path.Join(extractPath, layerIDs[i])
-		core.GetSession().Log.Info("Complete layer path: %s", completeLayerPath)
-		core.GetSession().Log.Info("Extracted to directory: %s", targetDir)
+		log.Debugf("Complete layer path: %s", completeLayerPath)
+		log.Debugf("Extracted to directory: %s", targetDir)
 		err = core.CreateRecursiveDir(targetDir)
 		if err != nil {
-			core.GetSession().Log.Error("ProcessImageLayers: Unable to create target directory"+
+			log.Errorf("ProcessImageLayers: Unable to create target directory"+
 				" to extract image layers... %s", err)
-			return nil, err
+			return tempIOCsFound, err
 		}
 
 		_, error := extractTarFile("", completeLayerPath, targetDir)
 		if error != nil {
-			core.GetSession().Log.Error("ProcessImageLayers: Unable to extract image layer. Reason = %s", error.Error())
+			log.Errorf("ProcessImageLayers: Unable to extract image layer. Reason = %s", error.Error())
 			// Don't stop. Print error and continue with remaining extracted files and other layers
 			// return tempIOCsFound, error
 		}
-		core.GetSession().Log.Debug("Analyzing dir: %s", targetDir)
-		err = ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs, false)
+		log.Debug("Analyzing dir: %s", targetDir)
+		err = scanner.ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs, false)
+		for i, _ := range IOCs {
+			IOCs[i].CompleteFilename = strings.TrimPrefix(IOCs[i].CompleteFilename, targetDir)
+		}
+		tempIOCsFound = append(tempIOCsFound, IOCs...)
 		if err != nil {
-			core.GetSession().Log.Error("ProcessImageLayers: %s", err)
+			log.Errorf("ProcessImageLayers: %s", err)
 			// return tempIOCsFound, err
 		}
 
 		// Don't report IOCs if number of IOCs exceeds MAX value
-		if imageScan.numIOCs >= *core.GetSession().Options.MaxIOC {
-			return IOCs, nil
+		if imageScan.numIOCs >= *scanner.MaxIOC {
+			return tempIOCsFound, nil
 		}
+
 	}
 
-	return IOCs, nil
+	return tempIOCsFound, nil
+}
+
+func (imageScan *ImageScan) processImageLayersStream(scanner *Scanner, imageManifestPath string) (chan output.IOCFound, error) {
+	res := make(chan output.IOCFound, output_channel_size)
+	go func() {
+		defer close(res)
+		var err error
+
+		// extractPath - Base directory where all the layers should be extracted to
+		extractPath := path.Join(imageManifestPath, constants.ExtractedImageFilesDir)
+		layerIDs := imageScan.imageManifest.LayerIds
+		layerPaths := imageScan.imageManifest.Layers
+		matchedRuleSet := make(map[uint]uint)
+
+		loopCntr := len(layerPaths)
+		for i := 0; i < loopCntr; i++ {
+			log.Debug("Analyzing layer path: %s", layerPaths[i])
+			log.Debug("Analyzing layer: %s", layerIDs[i])
+			// savelayerID = layerIDs[i]
+			completeLayerPath := path.Join(imageManifestPath, layerPaths[i])
+			targetDir := path.Join(extractPath, layerIDs[i])
+			log.Debugf("Complete layer path: %s", completeLayerPath)
+			log.Debugf("Extracted to directory: %s", targetDir)
+			err = core.CreateRecursiveDir(targetDir)
+			if err != nil {
+				log.Errorf("ProcessImageLayers: Unable to create target directory"+
+					" to extract image layers... %s", err)
+				continue
+			}
+
+			_, error := extractTarFile("", completeLayerPath, targetDir)
+			if error != nil {
+				log.Errorf("ProcessImageLayers: Unable to extract image layer. Reason = %s", error.Error())
+				// Don't stop. Print error and continue with remaining extracted files and other layers
+				// return tempIOCsFound, error
+			}
+			log.Debug("Analyzing dir: %s", targetDir)
+			iocs, err := scanner.ScanIOCInDirStream(layerIDs[i], extractPath, targetDir, matchedRuleSet, false)
+			if err != nil {
+				log.Errorf("ProcessImageLayers: %s", err)
+				// return tempIOCsFound, err
+				continue
+			}
+			for i := range iocs {
+				res <- i
+			}
+		}
+	}()
+
+	return res, nil
 }
 
 // Save container image as tar file in specified directory
@@ -451,7 +628,7 @@ func (imageScan *ImageScan) saveImageData() error {
 	if err != nil {
 		return err
 	}
-	core.GetSession().Log.Info("Image %s saved in %s", imageName, imageScan.tempDir)
+	log.Infof("Image %s saved in %s", imageName, imageScan.tempDir)
 	return nil
 }
 
@@ -464,7 +641,7 @@ func (imageScan *ImageScan) saveImageData() error {
 // string - directory where contents of image are extracted
 // Error - Errors, if any. Otherwise, returns nil
 func extractTarFile(imageName, imageTarPath string, extractPath string) (string, error) {
-	core.GetSession().Log.Debug("Started extracting tar file %s", imageTarPath)
+	log.Debug("Started extracting tar file %s", imageTarPath)
 
 	path := extractPath
 
@@ -473,7 +650,7 @@ func extractTarFile(imageName, imageTarPath string, extractPath string) (string,
 		return "", err
 	}
 
-	core.GetSession().Log.Debug("Finished extracting tar file %s", imageTarPath)
+	log.Debug("Finished extracting tar file %s", imageTarPath)
 	return path, nil
 }
 
@@ -536,7 +713,7 @@ func untar(tarName string, xpath string) (err error) {
 				absDirPath = filepath.Join(absPath, strings.Join(dirs, "/"))
 			}
 			if err := os.MkdirAll(absDirPath, 0755); err != nil {
-				session.Log.Warn(err.Error())
+				log.Warn(err.Error())
 			}
 		}
 
@@ -626,7 +803,7 @@ func runCommand(name string, args ...string) (stdout string, stderr string, exit
 			// in this situation, exit code could not be get, and stderr will be
 			// empty string very likely, so we use the default fail code, and format err
 			// to string and set to stderr
-			core.GetSession().Log.Debug("Could not get exit code for failed program: %v, %v", name, args)
+			log.Debug("Could not get exit code for failed program: %v, %v", name, args)
 			exitCode = defaultFailedCode
 			if stderr == "" {
 				stderr = err.Error()
@@ -645,21 +822,19 @@ type ImageExtractionResult struct {
 	ImageId string
 }
 
-func ExtractAndScanImage(image string) (*ImageExtractionResult, error) {
-	tempDir, err := core.GetTmpDir(image)
+func (s *Scanner) ExtractAndScanImage(image string) (*ImageExtractionResult, error) {
+	tempDir, err := core.GetTmpDir(*s.ImageName, *s.TempDirectory)
 	if err != nil {
 		return nil, err
 	}
-	// defer core.DeleteTmpDir(tempDir)
 
 	imageScan := ImageScan{imageName: image, imageId: "", tempDir: tempDir}
 	err = imageScan.extractImage(true)
-
 	if err != nil {
 		return nil, err
 	}
 
-	IOCs, err := imageScan.scan()
+	IOCs, err := imageScan.scan(s)
 
 	if err != nil {
 		return nil, err
@@ -667,18 +842,65 @@ func ExtractAndScanImage(image string) (*ImageExtractionResult, error) {
 	return &ImageExtractionResult{ImageId: imageScan.imageId, IOCs: IOCs}, nil
 }
 
-func ExtractAndScanFromTar(tarFolder string, imageName string) (*ImageExtractionResult, error) {
-	// defer core.DeleteTmpDir(tarFolder)
-	imageScan := ImageScan{imageName: imageName, imageId: "", tempDir: tarFolder}
-	err := imageScan.extractImage(false)
+func (s *Scanner) ExtractAndScanImageStream(image string) (chan output.IOCFound, error) {
+	tempDir, err := core.GetTmpDir(*s.ImageName, *s.TempDirectory)
+	if err != nil {
+		core.DeleteTmpDir(tempDir)
+		return nil, err
+	}
 
+	imageScan := ImageScan{imageName: image, imageId: "", tempDir: tempDir}
+	err = imageScan.extractImage(true)
+	if err != nil {
+		core.DeleteTmpDir(tempDir)
+		return nil, err
+	}
+
+	IOCs, err := imageScan.scanStream(s)
 	if err != nil {
 		return nil, err
 	}
-	IOCs, err := imageScan.scan()
+	res := make(chan output.IOCFound, output_channel_size)
+	go func() {
+		defer core.DeleteTmpDir(tempDir)
+		for i := range IOCs {
+			res <- i
+		}
+		close(res)
+	}()
+
+	return res, nil
+
+}
+
+func (s *Scanner) ExtractAndScanFromTar(tarFolder string) (*ImageExtractionResult, error) {
+	// defer core.DeleteTmpDir(tarFolder)
+	imageScan := ImageScan{imageName: *s.ImageName, imageId: "", tempDir: tarFolder}
+	err := imageScan.extractImage(false)
+	if err != nil {
+		return nil, err
+	}
+	IOCs, err := imageScan.scan(s)
 
 	if err != nil {
 		return nil, err
 	}
 	return &ImageExtractionResult{ImageId: imageScan.imageId, IOCs: IOCs}, nil
+}
+
+func CheckScanStatus(s *Scanner) error {
+	if s != nil && s.ReportStatus.Load() == true {
+		if s.Aborted.Load() == true {
+			close(s.ScanStatusChan)
+			log.Error("Scan aborted due to inactivity, scanid:", s.ScanID)
+			return fmt.Errorf("Scan aborted due to inactivity")
+		} else if s.Stopped.Load() == true {
+			close(s.ScanStatusChan)
+			log.Error("Scan stopped by user request, scanid:", s.ScanID)
+			return fmt.Errorf("Scan stopped by user request")
+		} else {
+			s.ScanStatusChan <- true
+		}
+	}
+	return nil
 }
