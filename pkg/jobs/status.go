@@ -54,7 +54,7 @@ func StartStatusReporter(ctx context.Context, scan_id string, scanner *scan.Scan
 		}
 
 		if scanner.Stopped.Load() == true {
-			output.WriteScanStatus("ERROR", scan_id, "Scan stopped by user")
+			output.WriteScanStatus("CANCELLED", scan_id, "Scan stopped by user")
 		} else if err != nil {
 			output.WriteScanStatus("ERROR", scan_id, err.Error())
 		} else {
