@@ -19,10 +19,6 @@ import (
 func StartYaraHunter(opts *config.Options, config *config.Config, newwg *sync.WaitGroup) {
 	defer newwg.Done()
 
-	err := StartYaraHunterUpdater(*opts.ConfigPath, *opts.RulesPath)
-	if err != nil {
-		log.Fatal("main: failed to serve: %v", err)
-	}
 	if *opts.SocketPath != "" {
 		err := server.RunGrpcServer(opts, config, constants.PLUGIN_NAME)
 		if err != nil {
