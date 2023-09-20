@@ -64,10 +64,11 @@ func main() {
 		log.Fatal("main: failed to parse options: %v", err)
 	}
 
-	wg.Add(2)
-	// go yaraUpdate(&wg)
-	go runner.ScheduleYaraHunterUpdater(opts, &wg)
-	// go yaraResults(&wg)
+	if *opts.EnableUpdater {
+		wg.Add(1)
+		go runner.ScheduleYaraHunterUpdater(opts, &wg)
+	}
+	wg.Add(1)
 	go runner.StartYaraHunter(opts, config, &wg)
 	wg.Wait()
 }

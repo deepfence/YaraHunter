@@ -27,7 +27,7 @@ func ScheduleYaraHunterUpdater(opts *config.Options, newwg *sync.WaitGroup) {
 		// emits, we print `tock`
 		for t := range ticker.C {
 			fmt.Println("Invoked at ", t)
-			err := StartYaraHunterUpdater(*opts.RulesPath, *opts.ConfigPath)
+			err := StartYaraHunterUpdater(*opts.RulesPath, *opts.ConfigPath, *opts.RulesListingUrl)
 			if err != nil {
 				log.Fatal("main: failed to serve: %v", err)
 			}
@@ -35,13 +35,13 @@ func ScheduleYaraHunterUpdater(opts *config.Options, newwg *sync.WaitGroup) {
 	}
 }
 
-func StartYaraHunterUpdater(rulesPath string, configPath string) error {
+func StartYaraHunterUpdater(rulesPath, configPath, rulesListingUrl string) error {
 	err, yaraRuleUpdater := NewYaraRuleUpdater(rulesPath)
 	if err != nil {
 		log.Errorf("main: failed to serve: %v", err)
 		return err
 	}
-	_, err = utils.DownloadFile("https://threat-intel.deepfence.io/yara-rules/listing.json", configPath)
+	_, err = utils.DownloadFile(rulesListingUrl, configPath)
 	if err != nil {
 		log.Errorf("main: failed to serve: %v", err)
 		return err
