@@ -37,6 +37,8 @@ type Options struct {
 	FailOnHighCount      *int
 	FailOnMediumCount    *int
 	FailOnLowCount       *int
+	RulesListingUrl      *string
+	EnableUpdater        *bool
 }
 
 func ParseOptions() (*Options, error) {
@@ -67,6 +69,8 @@ func ParseOptions() (*Options, error) {
 		FailOnHighCount:      flag.Int("fail-on-high-count", -1, "Exit with status 1 if number of high malwares found is >= this value (Default: -1)"),
 		FailOnMediumCount:    flag.Int("fail-on-medium-count", -1, "Exit with status 1 if number of medium malwares found is >= this value (Default: -1)"),
 		FailOnLowCount:       flag.Int("fail-on-low-count", -1, "Exit with status 1 if number of low malwares found is >= this value (Default: -1)"),
+		RulesListingUrl:      flag.String("rules-listing-url", "https://threat-intel.deepfence.io/yara-rules/listing.json", "Deepfence threat intel yara rules listing (Default: threat-intel.deepfence.io/yara-rules/listing.json)"),
+		EnableUpdater:        flag.Bool("enable-updater", true, "Enable rules updater (Default: true)"),
 	}
 	flag.Parse()
 	return options, nil
