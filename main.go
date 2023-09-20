@@ -66,6 +66,10 @@ func main() {
 
 	if *opts.EnableUpdater {
 		wg.Add(1)
+		err := runner.StartYaraHunterUpdater(*opts.ConfigPath, *opts.RulesPath, *opts.RulesListingUrl)
+		if err != nil {
+			log.Fatal("main: failed to serve: %v", err)
+		}
 		go runner.ScheduleYaraHunterUpdater(opts, &wg)
 	}
 	wg.Add(1)
