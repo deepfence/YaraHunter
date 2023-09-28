@@ -8,7 +8,7 @@ require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
 	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230630084500-8fb0280d6010
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230630084500-8fb0280d6010
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230922050328-b19457df35dc
 	github.com/deepfence/vessel v0.11.1
 	github.com/fatih/color v1.15.0
 	github.com/hillu/go-yara/v4 v4.3.2
@@ -30,8 +30,8 @@ require (
 	github.com/containerd/fifo v1.1.0 // indirect
 	github.com/containerd/ttrpc v1.2.2 // indirect
 	github.com/containerd/typeurl/v2 v2.1.1 // indirect
-	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
