@@ -1,8 +1,6 @@
 package scan
 
 import (
-	"sync/atomic"
-
 	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/hillu/go-yara/v4"
 )
@@ -10,12 +8,7 @@ import (
 func New(opts *config.Options, yaraconfig *config.Config,
 	yaraScannerIn *yara.Scanner, scanID string) *Scanner {
 
-	statusChan := make(chan bool)
-	obj := Scanner{opts, yaraconfig, yaraScannerIn, scanID, statusChan,
-		atomic.Bool{}, atomic.Bool{}, atomic.Bool{}}
-	obj.Aborted.Store(false)
-	obj.Stopped.Store(false)
-	obj.ReportStatus.Store(true)
+	obj := Scanner{opts, yaraconfig, yaraScannerIn, scanID}
 	return &obj
 }
 
@@ -23,12 +16,8 @@ type Scanner struct {
 	*config.Options
 	*config.Config
 
-	YaraScanner    *yara.Scanner
-	ScanID         string
-	ScanStatusChan chan bool
-	Aborted        atomic.Bool
-	Stopped        atomic.Bool
-	ReportStatus   atomic.Bool
+	YaraScanner *yara.Scanner
+	ScanID      string
 }
 
 func (s *Scanner) SetImageName(imageName string) {

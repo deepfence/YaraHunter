@@ -12,6 +12,7 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	"github.com/deepfence/YaraHunter/pkg/server"
 	"github.com/deepfence/YaraHunter/pkg/yararules"
+	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,16 +24,6 @@ func StartYaraHunter(opts *config.Options, config *config.Config, newwg *sync.Wa
 		err := server.RunGrpcServer(opts, config, constants.PLUGIN_NAME)
 		if err != nil {
 			log.Fatal("main: failed to serve: %v", err)
-		}
-	} else if *opts.HttpPort != "" {
-		err := server.RunHttpServer(*opts.HttpPort)
-		if err != nil {
-			log.Fatal("main: failed to serve through http: %v", err)
-		}
-	} else if *opts.StandAloneHttpPort != "" {
-		err := server.RunStandaloneHttpServer(*opts.StandAloneHttpPort)
-		if err != nil {
-			log.Fatal("main: failed to serve through http: %v", err)
 		}
 	} else {
 		runOnce(opts, config)
@@ -57,7 +48,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 	}
 
 	scanner := scan.New(opts, config, yaraScanner, "")
-	scanner.ReportStatus.Store(false)
+	var ctx *tasks.ScanContext
 
 	node_type := ""
 	node_id := ""
@@ -67,7 +58,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 		node_type = "image"
 		node_id = *opts.ImageName
 		log.Info("Scanning image %s for IOC...\n", *opts.ImageName)
-		results, err = FindIOCInImage(scanner)
+		results, err = FindIOCInImage(ctx, scanner)
 		if err != nil {
 			log.Errorf("error scanning the image: %s", err)
 			return
@@ -78,7 +69,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 	if len(*opts.Local) > 0 {
 		node_id = output.GetHostname()
 		log.Info("[*] Scanning local directory: %s\n", color.BlueString(*opts.Local))
-		results, err = FindIOCInDir(scanner)
+		results, err = FindIOCInDir(ctx, scanner)
 		if err != nil {
 			log.Errorf("error scanning the dir: %s", err)
 			return
@@ -90,7 +81,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 		node_type = "container_image"
 		node_id = *opts.ContainerId
 		log.Info("Scanning container %s for IOC...\n", *opts.ContainerId)
-		results, err = FindIOCInContainer(scanner)
+		results, err = FindIOCInContainer(ctx, scanner)
 		if err != nil {
 			log.Errorf("error scanning the container: %s", err)
 			return
