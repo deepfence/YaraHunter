@@ -17,7 +17,7 @@ import (
 
 func ScheduleYaraHunterUpdater(opts *config.Options, newwg *sync.WaitGroup) {
 	defer newwg.Done()
-	if *opts.SocketPath != "" && *opts.HttpPort != "" {
+	if *opts.SocketPath != "" {
 		// fmt.Println("Go Tickers Tutorial")
 		// this creates a new ticker which will
 		// `tick` every 1 second.

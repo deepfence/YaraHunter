@@ -20,6 +20,7 @@ import (
 
 	"github.com/deepfence/YaraHunter/constants"
 	"github.com/deepfence/YaraHunter/core"
+	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 
 	// yaraConf "github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
@@ -107,11 +108,11 @@ func (imageScan *ImageScan) extractImage(saveImage bool) error {
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors, if any. Otherwise, returns nil
-func (imageScan *ImageScan) scan(scanner *Scanner) ([]output.IOCFound, error) {
+func (imageScan *ImageScan) scan(ctx *tasks.ScanContext, scanner *Scanner) ([]output.IOCFound, error) {
 	tempDir := imageScan.tempDir
 	defer core.DeleteTmpDir(tempDir)
 
-	tempIOCsFound, err := imageScan.processImageLayers(scanner, tempDir)
+	tempIOCsFound, err := imageScan.processImageLayers(ctx, scanner, tempDir)
 	if err != nil {
 		log.Errorf("scanImage: %s", err)
 		return tempIOCsFound, err
@@ -120,9 +121,9 @@ func (imageScan *ImageScan) scan(scanner *Scanner) ([]output.IOCFound, error) {
 	return tempIOCsFound, nil
 }
 
-func (imageScan *ImageScan) scanStream(scanner *Scanner) (chan output.IOCFound, error) {
+func (imageScan *ImageScan) scanStream(ctx *tasks.ScanContext, scanner *Scanner) (chan output.IOCFound, error) {
 	tempDir := imageScan.tempDir
-	return imageScan.processImageLayersStream(scanner, tempDir)
+	return imageScan.processImageLayersStream(ctx, scanner, tempDir)
 }
 
 func calculateSeverity(inputString []string, severity string, severityScore float64) (string, float64) {
@@ -323,7 +324,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool) error {
+func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, iocs *[]output.IOCFound, isContainerRunTime bool, scanCtx *tasks.ScanContext) error {
 	if layer != "" {
 		log.Debugf("Scan results in selected image with layer %s", layer)
 	}
@@ -348,7 +349,7 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 			return nil
 		}
 
-		err = CheckScanStatus(s)
+		err = scanCtx.Checkpoint("Walking directories")
 		if err != nil {
 			return err
 		}
@@ -411,7 +412,7 @@ const (
 	output_channel_size = 100
 )
 
-func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, isContainerRunTime bool) (chan output.IOCFound, error) {
+func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, isContainerRunTime bool, scanCtx *tasks.ScanContext) (chan output.IOCFound, error) {
 	if layer != "" {
 		log.Debugf("Scan results in selected image with layer %s", layer)
 	}
@@ -440,7 +441,7 @@ func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir strin
 				return nil
 			}
 
-			err = CheckScanStatus(s)
+			err = scanCtx.Checkpoint("Walking directories")
 			if err != nil {
 				return err
 			}
@@ -507,7 +508,7 @@ func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir strin
 // @returns
 // []output.IOCFound - List of all IOCs found
 // Error - Errors if any. Otherwise, returns nil
-func (imageScan *ImageScan) processImageLayers(scanner *Scanner, imageManifestPath string) ([]output.IOCFound, error) {
+func (imageScan *ImageScan) processImageLayers(ctx *tasks.ScanContext, scanner *Scanner, imageManifestPath string) ([]output.IOCFound, error) {
 	var tempIOCsFound []output.IOCFound
 	var err error
 
@@ -541,7 +542,7 @@ func (imageScan *ImageScan) processImageLayers(scanner *Scanner, imageManifestPa
 			// return tempIOCsFound, error
 		}
 		log.Debug("Analyzing dir: %s", targetDir)
-		err = scanner.ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs, false)
+		err = scanner.ScanIOCInDir(layerIDs[i], extractPath, targetDir, matchedRuleSet, &IOCs, false, ctx)
 		for i, _ := range IOCs {
 			IOCs[i].CompleteFilename = strings.TrimPrefix(IOCs[i].CompleteFilename, targetDir)
 		}
@@ -561,7 +562,7 @@ func (imageScan *ImageScan) processImageLayers(scanner *Scanner, imageManifestPa
 	return tempIOCsFound, nil
 }
 
-func (imageScan *ImageScan) processImageLayersStream(scanner *Scanner, imageManifestPath string) (chan output.IOCFound, error) {
+func (imageScan *ImageScan) processImageLayersStream(ctx *tasks.ScanContext, scanner *Scanner, imageManifestPath string) (chan output.IOCFound, error) {
 	res := make(chan output.IOCFound, output_channel_size)
 	go func() {
 		defer close(res)
@@ -596,7 +597,7 @@ func (imageScan *ImageScan) processImageLayersStream(scanner *Scanner, imageMani
 				// return tempIOCsFound, error
 			}
 			log.Debug("Analyzing dir: %s", targetDir)
-			iocs, err := scanner.ScanIOCInDirStream(layerIDs[i], extractPath, targetDir, matchedRuleSet, false)
+			iocs, err := scanner.ScanIOCInDirStream(layerIDs[i], extractPath, targetDir, matchedRuleSet, false, ctx)
 			if err != nil {
 				log.Errorf("ProcessImageLayers: %s", err)
 				// return tempIOCsFound, err
@@ -822,7 +823,7 @@ type ImageExtractionResult struct {
 	ImageId string
 }
 
-func (s *Scanner) ExtractAndScanImage(image string) (*ImageExtractionResult, error) {
+func (s *Scanner) ExtractAndScanImage(ctx *tasks.ScanContext, image string) (*ImageExtractionResult, error) {
 	tempDir, err := core.GetTmpDir(*s.ImageName, *s.TempDirectory)
 	if err != nil {
 		return nil, err
@@ -834,7 +835,7 @@ func (s *Scanner) ExtractAndScanImage(image string) (*ImageExtractionResult, err
 		return nil, err
 	}
 
-	IOCs, err := imageScan.scan(s)
+	IOCs, err := imageScan.scan(ctx, s)
 
 	if err != nil {
 		return nil, err
@@ -842,7 +843,7 @@ func (s *Scanner) ExtractAndScanImage(image string) (*ImageExtractionResult, err
 	return &ImageExtractionResult{ImageId: imageScan.imageId, IOCs: IOCs}, nil
 }
 
-func (s *Scanner) ExtractAndScanImageStream(image string) (chan output.IOCFound, error) {
+func (s *Scanner) ExtractAndScanImageStream(ctx *tasks.ScanContext, image string) (chan output.IOCFound, error) {
 	tempDir, err := core.GetTmpDir(*s.ImageName, *s.TempDirectory)
 	if err != nil {
 		core.DeleteTmpDir(tempDir)
@@ -856,7 +857,7 @@ func (s *Scanner) ExtractAndScanImageStream(image string) (chan output.IOCFound,
 		return nil, err
 	}
 
-	IOCs, err := imageScan.scanStream(s)
+	IOCs, err := imageScan.scanStream(ctx, s)
 	if err != nil {
 		return nil, err
 	}
@@ -873,34 +874,17 @@ func (s *Scanner) ExtractAndScanImageStream(image string) (chan output.IOCFound,
 
 }
 
-func (s *Scanner) ExtractAndScanFromTar(tarFolder string) (*ImageExtractionResult, error) {
+func (s *Scanner) ExtractAndScanFromTar(ctx *tasks.ScanContext, tarFolder string) (*ImageExtractionResult, error) {
 	// defer core.DeleteTmpDir(tarFolder)
 	imageScan := ImageScan{imageName: *s.ImageName, imageId: "", tempDir: tarFolder}
 	err := imageScan.extractImage(false)
 	if err != nil {
 		return nil, err
 	}
-	IOCs, err := imageScan.scan(s)
+	IOCs, err := imageScan.scan(ctx, s)
 
 	if err != nil {
 		return nil, err
 	}
 	return &ImageExtractionResult{ImageId: imageScan.imageId, IOCs: IOCs}, nil
-}
-
-func CheckScanStatus(s *Scanner) error {
-	if s != nil && s.ReportStatus.Load() == true {
-		if s.Aborted.Load() == true {
-			close(s.ScanStatusChan)
-			log.Error("Scan aborted due to inactivity, scanid:", s.ScanID)
-			return fmt.Errorf("Scan aborted due to inactivity")
-		} else if s.Stopped.Load() == true {
-			close(s.ScanStatusChan)
-			log.Error("Scan stopped by user request, scanid:", s.ScanID)
-			return fmt.Errorf("Scan stopped by user request")
-		} else {
-			s.ScanStatusChan <- true
-		}
-	}
-	return nil
 }

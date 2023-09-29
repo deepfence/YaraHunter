@@ -6,11 +6,11 @@ var (
 	running_jobs_num atomic.Int32
 )
 
-func startScanJob() {
+func StartScanJob() {
 	running_jobs_num.Add(1)
 }
 
-func stopScanJob() {
+func StopScanJob() {
 	running_jobs_num.Add(-1)
 }
 

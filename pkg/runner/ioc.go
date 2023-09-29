@@ -5,6 +5,7 @@ import (
 
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
+	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -13,8 +14,8 @@ import (
 // image - Name of the container image to scan (e.g. "alpine:3.5")
 // @returns
 // Error, if any. Otherwise, returns nil
-func FindIOCInImage(scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
-	res, err := scanner.ExtractAndScanImage(*scanner.ImageName)
+func FindIOCInImage(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
+	res, err := scanner.ExtractAndScanImage(ctx, *scanner.ImageName)
 	if err != nil {
 		return nil, err
 	}
@@ -31,10 +32,10 @@ func FindIOCInImage(scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
 // dir - Complete path of the directory to be scanned
 // @returns
 // Error, if any. Otherwise, returns nil
-func FindIOCInDir(scanner *scan.Scanner) (*output.JsonDirIOCOutput, error) {
+func FindIOCInDir(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JsonDirIOCOutput, error) {
 	dirName := *scanner.Local
 	var tempIOCsFound []output.IOCFound
-	err := scanner.ScanIOCInDir("", "", dirName, nil, &tempIOCsFound, false)
+	err := scanner.ScanIOCInDir("", "", dirName, nil, &tempIOCsFound, false, ctx)
 	if err != nil {
 		log.Errorf("findIOCInDir: %s", err)
 		return nil, err
@@ -54,9 +55,9 @@ func FindIOCInDir(scanner *scan.Scanner) (*output.JsonDirIOCOutput, error) {
 // containerId - Id of the container to scan (e.g. "0fdasf989i0")
 // @returns
 // Error, if any. Otherwise, returns nil
-func FindIOCInContainer(scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
+func FindIOCInContainer(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
 	var tempIOCsFound []output.IOCFound
-	tempIOCsFound, err := scanner.ExtractAndScanContainer(*scanner.ContainerId, *scanner.ContainerNS)
+	tempIOCsFound, err := scanner.ExtractAndScanContainer(ctx, *scanner.ContainerId, *scanner.ContainerNS)
 	if err != nil {
 		return nil, err
 	}

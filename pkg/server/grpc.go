@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/deepfence/YaraHunter/constants"
 	"github.com/deepfence/YaraHunter/pkg/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	yararules "github.com/deepfence/YaraHunter/pkg/yararules"
 	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
+	tasks "github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -73,8 +75,9 @@ func (s *gRPCServer) StopScan(c context.Context, req *pb.StopScanRequest) (*pb.S
 		result.Description = msg
 	}
 
-	scanner := obj.(*scan.Scanner)
-	scanner.Stopped.Store(true)
+	scanContext := obj.(*tasks.ScanContext)
+	scanContext.StopTriggered.Store(true)
+	scanContext.Cancel()
 
 	return result, nil
 }
@@ -91,10 +94,25 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 	go func() {
 		log.Infof("request to scan %+v", r)
 
+		jobs.StartScanJob()
+		defer jobs.StopScanJob()
+
 		yaraScanner, err := s.yaraRules.NewScanner()
 		scanner := scan.New(s.options, s.yaraConfig, yaraScanner, r.ScanId)
-		s.scanMap.Store(scanner.ScanID, scanner)
-		res := jobs.StartStatusReporter(context.Background(), r.ScanId, scanner)
+		res, ctx := tasks.StartStatusReporter(
+			r.ScanId,
+			func(status tasks.ScanStatus) error {
+				output.WriteScanStatus(status.ScanStatus, status.ScanId, status.ScanMessage)
+				return nil
+			},
+			tasks.StatusValues{
+				IN_PROGRESS: "IN_PROGRESS",
+				CANCELLED:   "CANCELLED",
+				FAILED:      "ERROR",
+				SUCCESS:     "COMPLETE",
+			},
+			time.Duration(*s.options.InactiveThreshold)*time.Second)
+		s.scanMap.Store(scanner.ScanID, ctx)
 		defer func() {
 			s.scanMap.Delete(scanner.ScanID)
 			res <- err
@@ -112,7 +130,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		trim := false
 		if r.GetPath() != "" {
 			log.Infof("scan for malwares in path %s", r.GetPath())
-			malwares, err = scanner.ScanIOCInDirStream("", "", r.GetPath(), nil, false)
+			malwares, err = scanner.ScanIOCInDirStream("", "", r.GetPath(), nil, false, ctx)
 			if err != nil {
 				log.Error("finding new err", err)
 				return
@@ -120,13 +138,13 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			trim = true
 		} else if r.GetImage() != nil && r.GetImage().Name != "" {
 			log.Infof("scan for malwares in image %s", r.GetImage())
-			malwares, err = scanner.ExtractAndScanImageStream(r.GetImage().Name)
+			malwares, err = scanner.ExtractAndScanImageStream(ctx, r.GetImage().Name)
 			if err != nil {
 				return
 			}
 		} else if r.GetContainer() != nil && r.GetContainer().Id != "" {
 			log.Infof("scan for malwares in container %s", r.GetContainer())
-			malwares, err = scanner.ExtractAndScanContainerStream(r.GetContainer().Id, r.GetContainer().Namespace)
+			malwares, err = scanner.ExtractAndScanContainerStream(ctx, r.GetContainer().Id, r.GetContainer().Namespace)
 			if err != nil {
 				return
 			}

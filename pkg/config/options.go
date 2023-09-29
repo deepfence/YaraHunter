@@ -23,8 +23,6 @@ type Options struct {
 	ContainerId          *string
 	ContainerNS          *string
 	SocketPath           *string
-	HttpPort             *string
-	StandAloneHttpPort   *string
 	RulesPath            *string
 	FailOnCompileWarning *bool
 	WorkersPerScan       *int
@@ -57,8 +55,6 @@ func ParseOptions() (*Options, error) {
 		ContainerId:          flag.String("container-id", "", "Id of existing container ID"),
 		ContainerNS:          flag.String("container-ns", "", "Namespace of existing container to scan, empty for docker runtime"),
 		SocketPath:           flag.String("socket-path", "", "The gRPC server unix socket path"),
-		HttpPort:             flag.String("http-port", "", "When set the http server will come up at port with df es as output"),
-		StandAloneHttpPort:   flag.String("standalone-http-port", "", "use to run malware scanner as a standalone service"),
 		WorkersPerScan:       flag.Int("workers-per-scan", 1, "Number of concurrent workers per scan"),
 		InactiveThreshold:    flag.Int("inactive-threshold", 600, "Threshold for Inactive scan in seconds"),
 		OutFormat:            flag.String("output", TableOutput, "Output format: json or table"),
@@ -103,7 +99,5 @@ func NewDefaultOptions() *Options {
 		ContainerId:          &emptyValue,
 		ContainerNS:          &emptyValue,
 		SocketPath:           &emptyValue,
-		HttpPort:             &emptyValue,
-		StandAloneHttpPort:   &emptyValue,
 	}
 }
