@@ -53,7 +53,9 @@ docker pull metal3d/xmrig
 docker run -i --rm --name=deepfence-yarahunter \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     deepfenceio/yara-hunter:latest --image-name metal3d/xmrig:latest --output=json > xmrig-scan.json
+     deepfenceio/yara-hunter:latest \
+     --image-name metal3d/xmrig:latest \
+     --output=json > xmrig-scan.json
 ```
 
 This returns, among other things, clear indication of the presence of XMRig. Note that we store the output (`xmrig-scan.json`) for quick and easy manipulation:
