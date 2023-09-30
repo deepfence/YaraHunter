@@ -121,7 +121,6 @@ func printIOCToJson(IOCJson interface{}) error {
 		return err
 	}
 
-	fmt.Println()
 	fmt.Println(string(file))
 
 	return nil
