@@ -40,19 +40,23 @@ Pull the official **yarahunter** image:
 docker pull deepfenceio/yara-hunter:latest
 ```
 
-Pull the image we want to inspect, and scan it:
+or Build it from source clone this repo and run below command
+```
+make docker
+```
+
+Pull the image that needs to be scanned for example `metal3d/xmrig` and scan it:
 
 ```
 docker pull metal3d/xmrig
 
-docker run -it --rm --name=deepfence-yarahunter \
+docker run -i --rm --name=deepfence-yarahunter \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     deepfenceio/yara-hunter:latest --image-name metal3d/xmrig:latest \
-     --json-filename=xmrig-scan.json
+     deepfenceio/yara-hunter:latest --image-name metal3d/xmrig:latest --output=json > xmrig-scan.json
 ```
 
-This returns, among other things, clear indication of the presence of XMRig. Note that we store the output (`/tmp/xmrig-scan.json`) for quick and easy manipulation:
+This returns, among other things, clear indication of the presence of XMRig. Note that we store the output (`xmrig-scan.json`) for quick and easy manipulation:
 
 ```
 # Extract the IOC array values.  From these, extract the values of the 'Matched Rule Name' key
@@ -60,6 +64,8 @@ cat /tmp/xmrig-scan.json | jq '.IOC[] | ."Matched Rule Name"'
 ```
 
 This returns a list of the IOCs identified in the container we scanned.
+
+To get table formatted output omit `--output=json` flag
 
 ## Get in touch
 

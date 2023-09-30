@@ -109,20 +109,18 @@ func runOnce(opts *config.Options, config *config.Config) {
 	}
 
 	counts := output.CountBySeverity(results.GetIOC())
-	log.Infof("result severity counts: %+v", counts)
-
-	fmt.Println("summary:")
-	fmt.Printf("  total=%d high=%d medium=%d low=%d\n",
-		counts.Total, counts.High, counts.Medium, counts.Low)
 
 	if *opts.OutFormat == "json" {
+		log.Infof("result severity counts: %+v", counts)
 		err = results.WriteJson()
 		if err != nil {
 			log.Errorf("error while writing IOC: %s", err)
 			return
 		}
-
 	} else {
+		fmt.Println("summary:")
+		fmt.Printf("  total=%d high=%d medium=%d low=%d\n",
+			counts.Total, counts.High, counts.Medium, counts.Low)
 		err = results.WriteTable()
 		if err != nil {
 			log.Errorf("error while writing IOC: %s", err)
