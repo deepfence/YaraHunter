@@ -34,10 +34,9 @@ Note that all files and directories used in YaraHunter configuration are local t
 
 ### Configure Output
 
-In addition to writing output to **stdout** / **stderr**, YaraHunter can write JSON output to a local file. You may wish to mount a directory on the host into `output-path` in the container so that you can easily obtain the JSON output file.
+YaraHunter can write output as Table and JSON format
 
- * `--json-filename string`: output json file name; required
- * `--output-path string`: location in container where json file will be stored (default `/home/deepfence/output`)
+ * `-output`: Output format: json or table (default "table")
 
 ### Configure Rules
 

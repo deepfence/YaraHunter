@@ -19,7 +19,7 @@ Pull an image to your local repository, then scan it
 ```bash
 docker pull node:latest
 
-docker run -it --rm --name=yara-hunter \
+docker run -i --rm --name=yara-hunter \
     -v /var/run/docker.sock:/var/run/docker.sock \
     deepfenceio/yara-hunter:latest \
     --image-name node:latest
@@ -32,11 +32,12 @@ docker rmi node:latest
 You can summarise the results by processing the JSON output, e.g. using `jq`:
 
 ```bash
-docker run -it --rm --name=yara-hunter \
+docker run -i --rm --name=yara-hunter \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v /tmp:/home/deepfence/output \
     deepfenceio/yara-hunter:latest \
-    --image-name node:latest --json-filename=node-scan.json
+    --image-name node:latest \
+    --output=json > node-latest.json
 
-cat /tmp/node-scan.json | jq '.IOC[] | ."Matched Rule Name"'
+cat /tmp/node-latest.json | jq '.IOC[] | ."Matched Rule Name"'
 ```
