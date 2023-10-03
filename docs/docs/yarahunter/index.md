@@ -26,11 +26,12 @@ Images may be compromised with the installation of a cryptominer such as XMRig. 
 ```bash
 docker pull metal3d/xmrig
 
-docker run -it --rm --name=yara-hunter \
+docker run -i --rm --name=deepfence-yarahunter \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     deepfenceio/yara-hunter:latest --image-name metal3d/xmrig:latest \
-     --json-filename=xmrig-scan.json
+     deepfenceio/yara-hunter:latest \
+     --image-name metal3d/xmrig:latest \
+     --output=json > xmrig-scan.json
 ```
 
 This returns, among other things, clear indication of the presence of XMRig.  Note that we store the output (`/tmp/xmrig-scan.json`) for quick and easy manipulation:
