@@ -13,6 +13,7 @@ import (
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	podmanRuntime "github.com/deepfence/vessel/podman"
 	vesselConstants "github.com/deepfence/vessel/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -38,11 +39,13 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 	var containerRuntimeInterface vessel.Runtime
 	switch containerRuntime {
 	case vesselConstants.DOCKER:
-		containerRuntimeInterface = dockerRuntime.New()
+		containerRuntimeInterface = dockerRuntime.New(endpoint)
 	case vesselConstants.CONTAINERD:
 		containerRuntimeInterface = containerdRuntime.New(endpoint)
 	case vesselConstants.CRIO:
 		containerRuntimeInterface = crioRuntime.New(endpoint)
+	case vesselConstants.PODMAN:
+		containerRuntimeInterface = podmanRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
 		return errors.New("could not detect container runtime")
@@ -105,9 +108,9 @@ type ContainerExtractionResult struct {
 	ContainerId string
 }
 
-func GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
+func GetFileSystemPathsForContainer(runtime string, containerId string, namespace string) ([]byte, error) {
 	// fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
-	return exec.Command("docker", "inspect", strings.TrimSpace(containerId)).Output()
+	return exec.Command(runtime, "inspect", strings.TrimSpace(containerId)).Output()
 }
 
 func (s *Scanner) ExtractAndScanContainer(ctx *tasks.ScanContext, containerId string, namespace string) ([]output.IOCFound, error) {
@@ -121,8 +124,8 @@ func (s *Scanner) ExtractAndScanContainer(ctx *tasks.ScanContext, containerId st
 	containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
 	containerRuntime, _, err := vessel.AutoDetectRuntime()
 	switch containerRuntime {
-	case vesselConstants.DOCKER:
-		containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
+	case vesselConstants.DOCKER, vesselConstants.PODMAN:
+		containerPath, err := GetFileSystemPathsForContainer(containerRuntime, containerId, namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -162,8 +165,8 @@ func (s *Scanner) ExtractAndScanContainerStream(ctx *tasks.ScanContext, containe
 		containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
 		containerRuntime, _, err := vessel.AutoDetectRuntime()
 		switch containerRuntime {
-		case vesselConstants.DOCKER:
-			containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
+		case vesselConstants.DOCKER, vesselConstants.PODMAN:
+			containerPath, err := GetFileSystemPathsForContainer(containerRuntime, containerId, namespace)
 			if err != nil {
 				return
 			}
