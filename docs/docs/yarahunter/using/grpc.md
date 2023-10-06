@@ -27,7 +27,7 @@ docker run -it --rm --name=deepfence-malwarescanner \
 	-v $(pwd):/home/deepfence/output \
 	-v /var/run/docker.sock:/var/run/docker.sock \
 	-v /tmp/sock:/tmp/sock \
-	deepfenceio/yara-hunter:latest \
+	deepfenceio/deepfence_malware_scanner_ce:2.0.0 \
 	-socket-path /tmp/sock/s.sock
 ```
 

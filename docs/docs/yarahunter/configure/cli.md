@@ -7,7 +7,7 @@ title: Command-Line Options
 Display the command line options:
 
 ```bash
-$ docker run -it --rm deepfenceio/yara-hunter:latest --help
+$ docker run -it --rm deepfenceio/deepfence_malware_scanner_ce:2.0.0 --help
 ```
 
 Note that all files and directories used in YaraHunter configuration are local to the container, not the host filesystem. The examples given illustrate how to map host directories to the container when needed.

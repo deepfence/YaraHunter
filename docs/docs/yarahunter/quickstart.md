@@ -9,7 +9,7 @@ Pull the latest YaraHunter image, and use it to scan a `node:latest` container.
 ## Pull the latest YaraHunter image
 
 ```bash
-docker pull deepfenceio/yara-hunter:latest
+docker pull deepfenceio/deepfence_malware_scanner_ce:2.0.0
 ```
 
 ## Scan a Container Image
@@ -21,7 +21,7 @@ docker pull node:latest
 
 docker run -i --rm --name=yara-hunter \
     -v /var/run/docker.sock:/var/run/docker.sock \
-    deepfenceio/yara-hunter:latest \
+    deepfenceio/deepfence_malware_scanner_ce:2.0.0 \
     --image-name node:latest
 
 docker rmi node:latest
@@ -35,7 +35,7 @@ You can summarise the results by processing the JSON output, e.g. using `jq`:
 docker run -i --rm --name=yara-hunter \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v /tmp:/home/deepfence/output \
-    deepfenceio/yara-hunter:latest \
+    deepfenceio/deepfence_malware_scanner_ce:2.0.0 \
     --image-name node:latest \
     --output=json > node-latest.json
 

@@ -88,7 +88,7 @@ func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) error {
 
 	if len(c.Warnings) > 0 {
 		for _, w := range c.Warnings {
-			log.Warn("YARA compiler warning in %s ruleset: %s:%d %s",
+			log.Warnf("YARA compiler warning in %s ruleset: %s:%d %s",
 				purposeStr, w.Filename, w.Line, w.Text)
 		}
 		if failOnCompileWarning {

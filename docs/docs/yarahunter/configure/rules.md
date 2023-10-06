@@ -18,7 +18,7 @@ docker run -it --rm --name=yara-hunter \
     -v /var/run/docker.sock:/var/run/docker.sock \
 # highlight-next-line
     -v $(pwd)/my-rules:/tmp/my-rules \
-    deepfenceio/yara-hunter:latest --image-name node:latest \
+    deepfenceio/deepfence_malware_scanner_ce:2.0.0 --image-name node:latest \
 # highlight-next-line
     --rules-path /tmp/my-rules
 ```

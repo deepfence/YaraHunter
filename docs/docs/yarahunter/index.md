@@ -29,7 +29,7 @@ docker pull metal3d/xmrig
 docker run -i --rm --name=deepfence-yarahunter \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     deepfenceio/yara-hunter:latest \
+     deepfenceio/deepfence_malware_scanner_ce:2.0.0 \
      --image-name metal3d/xmrig:latest \
      --output=json > xmrig-scan.json
 ```

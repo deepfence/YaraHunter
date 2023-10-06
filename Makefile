@@ -17,4 +17,4 @@ yarahunter: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
 
 .PHONY: docker
 docker:
-	docker build -t deepfenceio/yara-hunter:latest .
+	docker build -t deepfenceio/deepfence_malware_scanner_ce:latest .
