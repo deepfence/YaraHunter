@@ -13,7 +13,6 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/server"
 	"github.com/deepfence/YaraHunter/pkg/yararules"
 	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
-	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -57,7 +56,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 	if len(*opts.ImageName) > 0 {
 		node_type = "image"
 		node_id = *opts.ImageName
-		log.Info("Scanning image %s for IOC...\n", *opts.ImageName)
+		log.Infof("Scanning image %s for IOC...", *opts.ImageName)
 		results, err = FindIOCInImage(ctx, scanner)
 		if err != nil {
 			log.Errorf("error scanning the image: %s", err)
@@ -68,7 +67,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 	// Scan local directory for IOC
 	if len(*opts.Local) > 0 {
 		node_id = output.GetHostname()
-		log.Info("[*] Scanning local directory: %s\n", color.BlueString(*opts.Local))
+		log.Infof("Scanning local directory: %s", *opts.Local)
 		results, err = FindIOCInDir(ctx, scanner)
 		if err != nil {
 			log.Errorf("error scanning the dir: %s", err)
@@ -80,7 +79,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 	if len(*opts.ContainerId) > 0 {
 		node_type = "container_image"
 		node_id = *opts.ContainerId
-		log.Info("Scanning container %s for IOC...\n", *opts.ContainerId)
+		log.Infof("Scanning container %s for IOC...", *opts.ContainerId)
 		results, err = FindIOCInContainer(ctx, scanner)
 		if err != nil {
 			log.Errorf("error scanning the container: %s", err)
