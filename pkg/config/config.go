@@ -1,7 +1,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -24,7 +23,7 @@ func ParseConfig(configPath string) (*Config, error) {
 	)
 
 	if len(configPath) > 0 {
-		data, err = ioutil.ReadFile(path.Join(configPath, "config.yaml"))
+		data, err = os.ReadFile(path.Join(configPath, "config.yaml"))
 		if err != nil {
 			return config, err
 		}
@@ -36,10 +35,10 @@ func ParseConfig(configPath string) (*Config, error) {
 			return config, err
 		}
 		dir := filepath.Dir(ex)
-		data, err = ioutil.ReadFile(path.Join(dir, "config.yaml"))
+		data, err = os.ReadFile(path.Join(dir, "config.yaml"))
 		if err != nil {
 			dir, _ = os.Getwd()
-			data, err = ioutil.ReadFile(path.Join(dir, "config.yaml"))
+			data, err = os.ReadFile(path.Join(dir, "config.yaml"))
 			if err != nil {
 				return config, err
 			}
