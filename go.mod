@@ -8,7 +8,7 @@ require (
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
 	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20231004120553-da6d7332a0e5
 	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20231004120553-da6d7332a0e5
-	github.com/deepfence/vessel v0.11.2
+	github.com/deepfence/vessel v0.11.3-0.20231012181010-e8cc346d72b5
 	github.com/fatih/color v1.15.0
 	github.com/hillu/go-yara/v4 v4.3.2
 	github.com/olekukonko/tablewriter v0.0.5
