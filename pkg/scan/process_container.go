@@ -108,9 +108,9 @@ type ContainerExtractionResult struct {
 	ContainerId string
 }
 
-func GetFileSystemPathsForContainer(runtime string, containerId string, namespace string) ([]byte, error) {
+func GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
 	// fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
-	return exec.Command(runtime, "inspect", strings.TrimSpace(containerId)).Output()
+	return exec.Command("docker", "inspect", strings.TrimSpace(containerId)).Output()
 }
 
 func (s *Scanner) ExtractAndScanContainer(ctx *tasks.ScanContext, containerId string, namespace string) ([]output.IOCFound, error) {
@@ -124,8 +124,8 @@ func (s *Scanner) ExtractAndScanContainer(ctx *tasks.ScanContext, containerId st
 	containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
 	containerRuntime, _, err := vessel.AutoDetectRuntime()
 	switch containerRuntime {
-	case vesselConstants.DOCKER, vesselConstants.PODMAN:
-		containerPath, err := GetFileSystemPathsForContainer(containerRuntime, containerId, namespace)
+	case vesselConstants.DOCKER:
+		containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ func (s *Scanner) ExtractAndScanContainer(ctx *tasks.ScanContext, containerId st
 				iocsFound, err = containerScan.scanPath(ctx, s, containerPathToScan)
 			}
 		}
-	case vesselConstants.CONTAINERD, vesselConstants.CRIO:
+	case vesselConstants.CONTAINERD, vesselConstants.CRIO, vesselConstants.PODMAN:
 		err = containerScan.extractFileSystem()
 		if err != nil {
 			return nil, err
@@ -165,8 +165,8 @@ func (s *Scanner) ExtractAndScanContainerStream(ctx *tasks.ScanContext, containe
 		containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
 		containerRuntime, _, err := vessel.AutoDetectRuntime()
 		switch containerRuntime {
-		case vesselConstants.DOCKER, vesselConstants.PODMAN:
-			containerPath, err := GetFileSystemPathsForContainer(containerRuntime, containerId, namespace)
+		case vesselConstants.DOCKER:
+			containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
 			if err != nil {
 				return
 			}
@@ -180,7 +180,7 @@ func (s *Scanner) ExtractAndScanContainerStream(ctx *tasks.ScanContext, containe
 					}
 				}
 			}
-		case vesselConstants.CONTAINERD, vesselConstants.CRIO:
+		case vesselConstants.CONTAINERD, vesselConstants.CRIO, vesselConstants.PODMAN:
 			err = containerScan.extractFileSystem()
 			if err != nil {
 				return
