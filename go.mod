@@ -6,10 +6,9 @@ replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
 
 require (
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20231004120553-da6d7332a0e5
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20231004120553-da6d7332a0e5
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20231030062708-5506162b00b7
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20231030062708-5506162b00b7
 	github.com/deepfence/vessel v0.12.0
-	github.com/fatih/color v1.15.0
 	github.com/hillu/go-yara/v4 v4.3.2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
@@ -43,8 +42,6 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
