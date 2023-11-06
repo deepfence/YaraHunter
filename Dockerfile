@@ -66,14 +66,31 @@ COPY --from=skopeo-builder /usr/bin/skopeo /usr/bin/skopeo
 
 ENV LD_LIBRARY_PATH=/usr/local/yara/lib \
     DOCKERVERSION=24.0.6
-RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl3 libmagic1 libstdc++6 jq bash curl ca-certificates \
-    && nerdctl_version=1.6.0 \
-    && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v${nerdctl_version}/nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
-    && tar Cxzvvf /usr/local/bin nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
-    && rm nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
-    && curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
-    && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
-    && rm docker-${DOCKERVERSION}.tgz
+
+RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl3 libmagic1 libstdc++6 jq bash curl ca-certificates
+
+ARG TARGETARCH
+
+RUN <<EOF
+set -eux
+nerdctl_version=1.6.0
+curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v${nerdctl_version}/nerdctl-${nerdctl_version}-linux-${TARGETARCH}.tar.gz
+tar Cxzvvf /usr/local/bin nerdctl-${nerdctl_version}-linux-${TARGETARCH}.tar.gz
+rm nerdctl-${nerdctl_version}-linux-${TARGETARCH}.tar.gz
+
+if [ "$TARGETARCH" = "arm64" ]; then
+    ARCHITECTURE="aarch64"
+elif [ "$TARGETARCH" = "amd64" ]; then
+    ARCHITECTURE="x86_64"
+else
+    echo "Unsupported architecture $TARGETARCH" && exit 1;
+fi
+
+curl -fsSLO https://download.docker.com/linux/static/stable/${ARCHITECTURE}/docker-${DOCKERVERSION}.tgz
+tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 -C /usr/local/bin docker/docker
+rm docker-${DOCKERVERSION}.tgz
+
+EOF
 
 RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y libgpgme-dev libdevmapper-dev
 
