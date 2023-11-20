@@ -52,13 +52,13 @@ func ParseConfig(configPath string) (*Config, error) {
 	pathSeparator := string(os.PathSeparator)
 	var excludedPaths []string
 	for _, path := range config.ExcludedPaths {
-		excludedPaths = append(excludedPaths, strings.Replace(path, "{sep}", pathSeparator, -1))
+		excludedPaths = append(excludedPaths, strings.ReplaceAll(path, "{sep}", pathSeparator))
 	}
 	config.ExcludedPaths = excludedPaths
 
 	var excludedContainerPaths []string
 	for _, path := range config.ExcludedContainerPaths {
-		excludedContainerPaths = append(excludedContainerPaths, strings.Replace(path, "{sep}", pathSeparator, -1))
+		excludedContainerPaths = append(excludedContainerPaths, strings.ReplaceAll(path, "{sep}", pathSeparator))
 	}
 	config.ExcludedContainerPaths = excludedContainerPaths
 

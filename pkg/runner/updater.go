@@ -3,7 +3,6 @@ package runner
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -27,50 +26,50 @@ func ScheduleYaraHunterUpdater(opts *config.Options, newwg *sync.WaitGroup) {
 		// emits, we print `tock`
 		for t := range ticker.C {
 			fmt.Println("Invoked at ", t)
-			err := StartYaraHunterUpdater(*opts.RulesPath, *opts.ConfigPath, *opts.RulesListingUrl)
+			err := StartYaraHunterUpdater(*opts.RulesPath, *opts.ConfigPath, *opts.RulesListingURL)
 			if err != nil {
-				log.Fatal("main: failed to serve: %v", err)
+				log.Panicf("main: failed to serve: %v", err)
 			}
 		}
 	}
 }
 
-func StartYaraHunterUpdater(rulesPath, configPath, rulesListingUrl string) error {
-	err, yaraRuleUpdater := NewYaraRuleUpdater(rulesPath)
+func StartYaraHunterUpdater(rulesPath, configPath, rulesListingURL string) error {
+	yaraRuleUpdater, err := NewYaraRuleUpdater(rulesPath)
 	if err != nil {
 		log.Errorf("main: failed to serve: %v", err)
 		return err
 	}
-	_, err = utils.DownloadFile(rulesListingUrl, configPath)
+	_, err = utils.DownloadFile(rulesListingURL, configPath)
 	if err != nil {
 		log.Errorf("main: failed to serve: %v", err)
 		return err
 	}
-	content, err := ioutil.ReadFile(filepath.Join(configPath, "/listing.json"))
+	content, err := os.ReadFile(filepath.Join(configPath, "/listing.json"))
 	if err != nil {
 		log.Errorf("main: failed to serve: %v", err)
 		return err
 	}
-	var yaraRuleListingJson YaraRuleListing
-	err = json.Unmarshal(content, &yaraRuleListingJson)
+	var yaraRuleListingJSON YaraRuleListing
+	err = json.Unmarshal(content, &yaraRuleListingJSON)
 	if err != nil {
 		log.Errorf("main: failed to serve: %v", err)
 		return err
 	}
-	if len(yaraRuleListingJson.Available.V3) > 0 {
-		if yaraRuleListingJson.Available.V3[0].Checksum != yaraRuleUpdater.currentFileChecksum {
-			yaraRuleUpdater.currentFileChecksum = yaraRuleListingJson.Available.V3[0].Checksum
+	if len(yaraRuleListingJSON.Available.V3) > 0 {
+		if yaraRuleListingJSON.Available.V3[0].Checksum != yaraRuleUpdater.currentFileChecksum {
+			yaraRuleUpdater.currentFileChecksum = yaraRuleListingJSON.Available.V3[0].Checksum
 			file, err := json.MarshalIndent(yaraRuleUpdater, "", " ")
 			if err != nil {
 				log.Errorf("main: failed to serve: %v", err)
 				return err
 			}
-			err = ioutil.WriteFile(path.Join(rulesPath, "metaListingData.json"), file, 0644)
+			err = os.WriteFile(path.Join(rulesPath, "metaListingData.json"), file, 0644)
 			if err != nil {
 				log.Errorf("main: failed to serve: %v", err)
 				return err
 			}
-			fileName, err := utils.DownloadFile(yaraRuleListingJson.Available.V3[0].URL, configPath)
+			fileName, err := utils.DownloadFile(yaraRuleListingJSON.Available.V3[0].URL, configPath)
 			if err != nil {
 				log.Errorf("main: failed to serve: %v", err)
 				return err
@@ -106,21 +105,21 @@ func StartYaraHunterUpdater(rulesPath, configPath, rulesListingUrl string) error
 	return nil
 }
 
-func NewYaraRuleUpdater(rulesPath string) (error, *YaraRuleUpdater) {
+func NewYaraRuleUpdater(rulesPath string) (*YaraRuleUpdater, error) {
 	updater := &YaraRuleUpdater{
-		yaraRuleListingJson:  YaraRuleListing{},
+		yaraRuleListingJSON:  YaraRuleListing{},
 		yaraRulePath:         path.Join(rulesPath, "metaListingData.json"),
 		downloadYaraRulePath: "",
 	}
 	if utils.PathExists(updater.yaraRulePath) {
-		content, err := ioutil.ReadFile(updater.yaraRulePath)
+		content, err := os.ReadFile(updater.yaraRulePath)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 		err = json.Unmarshal(content, &updater)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 	}
-	return nil, updater
+	return updater, nil
 }

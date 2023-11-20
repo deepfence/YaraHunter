@@ -37,10 +37,10 @@ func init() {
 }
 
 type gRPCServer struct {
-	options     *config.Options
-	yaraConfig  *config.Config
-	yaraRules   *yararules.YaraRules
-	plugin_name string
+	options    *config.Options
+	yaraConfig *config.Config
+	yaraRules  *yararules.YaraRules
+	pluginName string
 	pb.UnimplementedMalwareScannerServer
 	pb.UnimplementedAgentPluginServer
 	pb.UnimplementedScannersServer
@@ -64,7 +64,7 @@ func (s *gRPCServer) StopScan(c context.Context, req *pb.StopScanRequest) (*pb.S
 	obj, found := s.scanMap.Load(scanID)
 	if !found {
 		msg := "Failed to Stop scan"
-		log.Info("%s, may have already completed, scan_id: %s", msg, scanID)
+		log.Infof("%s, may have already completed, scan_id: %s", msg, scanID)
 		result.Success = false
 		result.Description = "Failed to Stop scan"
 		return result, nil
@@ -83,11 +83,11 @@ func (s *gRPCServer) StopScan(c context.Context, req *pb.StopScanRequest) (*pb.S
 }
 
 func (s *gRPCServer) GetName(context.Context, *pb.Empty) (*pb.Name, error) {
-	return &pb.Name{Str: s.plugin_name}, nil
+	return &pb.Name{Str: s.pluginName}, nil
 }
 
 func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
-	return &pb.Uid{Str: fmt.Sprintf("%s-%s", s.plugin_name, *s.options.SocketPath)}, nil
+	return &pb.Uid{Str: fmt.Sprintf("%s-%s", s.pluginName, *s.options.SocketPath)}, nil
 }
 
 func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
@@ -119,8 +119,8 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			close(res)
 		}()
 
-		//Check for error only after the StartStatusReporter as we have to report
-		//the error if we failed to create the yara scanner
+		// Check for error only after the StartStatusReporter as we have to report
+		// the error if we failed to create the yara scanner
 		if err != nil {
 			log.Error("Failed to create Yara Scanner, error:", err)
 			return
@@ -128,7 +128,8 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 
 		var malwares chan output.IOCFound
 		trim := false
-		if r.GetPath() != "" {
+		switch {
+		case r.GetPath() != "":
 			log.Infof("scan for malwares in path %s", r.GetPath())
 			malwares, err = scanner.ScanIOCInDirStream("", "", r.GetPath(), nil, false, ctx)
 			if err != nil {
@@ -136,22 +137,23 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 				return
 			}
 			trim = true
-		} else if r.GetImage() != nil && r.GetImage().Name != "" {
+		case r.GetImage() != nil && r.GetImage().Name != "":
 			log.Infof("scan for malwares in image %s", r.GetImage())
 			malwares, err = scanner.ExtractAndScanImageStream(ctx, r.GetImage().Name)
 			if err != nil {
 				return
 			}
-		} else if r.GetContainer() != nil && r.GetContainer().Id != "" {
+		case r.GetContainer() != nil && r.GetContainer().Id != "":
 			log.Infof("scan for malwares in container %s", r.GetContainer())
 			malwares, err = scanner.ExtractAndScanContainerStream(ctx, r.GetContainer().Id, r.GetContainer().Namespace)
 			if err != nil {
 				return
 			}
 			trim = true
-		} else {
-			err = fmt.Errorf("Invalid request")
+		default:
+			err = fmt.Errorf("invalid request")
 			return
+
 		}
 
 		for malware := range malwares {
@@ -164,13 +166,13 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 	return &pb.MalwareResult{}, nil
 }
 
-func RunGrpcServer(opts *config.Options, config *config.Config, plugin_name string) error {
+func RunGrpcServer(opts *config.Options, config *config.Config, pluginName string) error {
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	lis, err := net.Listen("unix", fmt.Sprintf("%s", *opts.SocketPath))
+	lis, err := net.Listen("unix", *opts.SocketPath)
 	if err != nil {
 		return err
 	}
@@ -182,7 +184,7 @@ func RunGrpcServer(opts *config.Options, config *config.Config, plugin_name stri
 		done <- true
 	}()
 
-	impl := &gRPCServer{options: opts, plugin_name: plugin_name, yaraConfig: config}
+	impl := &gRPCServer{options: opts, pluginName: pluginName, yaraConfig: config}
 	if err != nil {
 		return err
 	}

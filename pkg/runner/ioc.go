@@ -14,14 +14,14 @@ import (
 // image - Name of the container image to scan (e.g. "alpine:3.5")
 // @returns
 // Error, if any. Otherwise, returns nil
-func FindIOCInImage(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
+func FindIOCInImage(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JSONImageIOCOutput, error) {
 	res, err := scanner.ExtractAndScanImage(ctx, *scanner.ImageName)
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ImageName: *scanner.ImageName, IOC: res.IOCs}
+	jsonImageIOCOutput := output.JSONImageIOCOutput{ImageName: *scanner.ImageName, IOC: res.IOCs}
 	jsonImageIOCOutput.SetTime()
-	jsonImageIOCOutput.SetImageId(res.ImageId)
+	jsonImageIOCOutput.SetImageID(res.ImageID)
 	jsonImageIOCOutput.SetIOC(res.IOCs)
 
 	return &jsonImageIOCOutput, nil
@@ -32,7 +32,7 @@ func FindIOCInImage(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.Json
 // dir - Complete path of the directory to be scanned
 // @returns
 // Error, if any. Otherwise, returns nil
-func FindIOCInDir(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JsonDirIOCOutput, error) {
+func FindIOCInDir(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JSONDirIOCOutput, error) {
 	dirName := *scanner.Local
 	var tempIOCsFound []output.IOCFound
 	err := scanner.ScanIOCInDir("", "", dirName, nil, &tempIOCsFound, false, ctx)
@@ -44,7 +44,7 @@ func FindIOCInDir(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JsonDi
 	if hostMountPath != "" {
 		dirName = strings.TrimPrefix(dirName, hostMountPath)
 	}
-	jsonDirIOCOutput := output.JsonDirIOCOutput{DirName: dirName, IOC: tempIOCsFound}
+	jsonDirIOCOutput := output.JSONDirIOCOutput{DirName: dirName, IOC: tempIOCsFound}
 	jsonDirIOCOutput.SetTime()
 
 	return &jsonDirIOCOutput, nil
@@ -55,13 +55,13 @@ func FindIOCInDir(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JsonDi
 // containerId - Id of the container to scan (e.g. "0fdasf989i0")
 // @returns
 // Error, if any. Otherwise, returns nil
-func FindIOCInContainer(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JsonImageIOCOutput, error) {
+func FindIOCInContainer(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JSONImageIOCOutput, error) {
 	var tempIOCsFound []output.IOCFound
-	tempIOCsFound, err := scanner.ExtractAndScanContainer(ctx, *scanner.ContainerId, *scanner.ContainerNS)
+	tempIOCsFound, err := scanner.ExtractAndScanContainer(ctx, *scanner.ContainerID, *scanner.ContainerNS)
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JsonImageIOCOutput{ContainerId: *scanner.ContainerId, IOC: tempIOCsFound}
+	jsonImageIOCOutput := output.JSONImageIOCOutput{ContainerID: *scanner.ContainerID, IOC: tempIOCsFound}
 	jsonImageIOCOutput.SetTime()
 
 	return &jsonImageIOCOutput, nil

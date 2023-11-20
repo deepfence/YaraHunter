@@ -1,7 +1,7 @@
 package constants
 
 const (
-	PLUGIN_NAME            = "MalwareScanner"
+	PluginName             = "MalwareScanner"
 	TempDirSuffix          = "YaraHunter"
 	ExtractedImageFilesDir = "ExtractedFiles"
 )

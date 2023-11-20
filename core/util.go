@@ -22,7 +22,7 @@ import (
 // Error - Errors if any. Otherwise, returns nil
 func CreateRecursiveDir(completePath string) error {
 	if _, err := os.Stat(completePath); os.IsNotExist(err) {
-		log.Debug("Folder does not exist. Creating folder... %s", completePath)
+		log.Debugf("Folder does not exist. Creating folder... %s", completePath)
 		err = os.MkdirAll(completePath, os.ModePerm)
 		if err != nil {
 			log.Errorf("createRecursiveDir %q: %s", completePath, err)
@@ -30,7 +30,7 @@ func CreateRecursiveDir(completePath string) error {
 		return err
 	} else if err != nil {
 		log.Errorf("createRecursiveDir %q: %s. Deleting temp dir", completePath, err)
-		DeleteTmpDir(completePath)
+		_ = DeleteTmpDir(completePath)
 		return err
 	}
 
@@ -43,6 +43,7 @@ func CreateRecursiveDir(completePath string) error {
 // @returns
 // string - Sanitized string which can used as part of filename
 func getSanitizedString(imageName string) string {
+	//nolint:gocritic
 	reg, err := regexp.Compile("[^A-Za-z0-9]+")
 	if err != nil {
 		return "error"
@@ -51,13 +52,13 @@ func getSanitizedString(imageName string) string {
 	return sanitizedName
 }
 
-// GetJsonFilepath Return complete path and filename for json output file
+// GetJSONFilepath Return complete path and filename for json output file
 // @parameters
 // image - Name of the container image or dir, for which json filename and path will be created
 // @returns
 // string - Sanitized string which can used as path and filename of json output file
 // Error - Errors if path can't be created. Otherwise, returns nil
-func GetJsonFilepath(jsonFilename, outputPath string) (string, error) {
+func GetJSONFilepath(jsonFilename, outputPath string) (string, error) {
 	if jsonFilename == "" {
 		return "", nil
 	}
@@ -70,7 +71,7 @@ func GetJsonFilepath(jsonFilename, outputPath string) (string, error) {
 		}
 	}
 	jsonFilePath := filepath.Join(outputDir, jsonFilename)
-	log.Info("Complete json file path and name: %s", jsonFilePath)
+	log.Infof("Complete json file path and name: %s", jsonFilePath)
 	return jsonFilePath, nil
 }
 
@@ -82,11 +83,11 @@ func GetJsonFilepath(jsonFilename, outputPath string) (string, error) {
 // Error - Errors if any. Otherwise, returns nil
 func GetTmpDir(imageName, tempDirectory string) (string, error) {
 
-	var scanId string = "df_" + getSanitizedString(imageName)
+	scanID := "df_" + getSanitizedString(imageName)
 
-	tempPath := filepath.Join(tempDirectory, "Deepfence", constants.TempDirSuffix, scanId)
+	tempPath := filepath.Join(tempDirectory, "Deepfence", constants.TempDirSuffix, scanID)
 
-	//if runtime.GOOS == "windows" {
+	// if runtime.GOOS == "windows" {
 	//	tempPath = dir + "\temp\Deepfence\IOCScanning\df_" + scanId
 	//}
 

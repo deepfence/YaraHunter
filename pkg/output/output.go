@@ -52,70 +52,70 @@ type IOCFound struct {
 	Class     string            `json:"Class,omitempty"`
 }
 
-type JsonDirIOCOutput struct {
+type JSONDirIOCOutput struct {
 	Timestamp time.Time
 	DirName   string `json:"Directory Name"`
 	IOC       []IOCFound
 }
 
-type JsonImageIOCOutput struct {
+type JSONImageIOCOutput struct {
 	Timestamp   time.Time
 	ImageName   string `json:"Image Name"`
-	ImageId     string `json:"Image ID"`
-	ContainerId string `json:"Container ID"`
+	ImageID     string `json:"Image ID"`
+	ContainerID string `json:"Container ID"`
 	IOC         []IOCFound
 }
 
-func (imageOutput *JsonImageIOCOutput) SetImageName(imageName string) {
+func (imageOutput *JSONImageIOCOutput) SetImageName(imageName string) {
 	imageOutput.ImageName = imageName
 }
 
-func (imageOutput *JsonImageIOCOutput) SetImageId(imageId string) {
-	imageOutput.ImageId = imageId
+func (imageOutput *JSONImageIOCOutput) SetImageID(imageID string) {
+	imageOutput.ImageID = imageID
 }
 
-func (imageOutput *JsonImageIOCOutput) SetTime() {
+func (imageOutput *JSONImageIOCOutput) SetTime() {
 	imageOutput.Timestamp = time.Now()
 }
 
-func (imageOutput *JsonImageIOCOutput) SetIOC(IOC []IOCFound) {
-	imageOutput.IOC = IOC
+func (imageOutput *JSONImageIOCOutput) SetIOC(ioc []IOCFound) {
+	imageOutput.IOC = ioc
 }
 
-func (imageOutput *JsonImageIOCOutput) GetIOC() []IOCFound {
+func (imageOutput *JSONImageIOCOutput) GetIOC() []IOCFound {
 	return imageOutput.IOC
 }
 
-func (imageOutput JsonImageIOCOutput) WriteJson() error {
-	return printIOCToJson(imageOutput)
+func (imageOutput JSONImageIOCOutput) WriteJSON() error {
+	return printIOCToJSON(imageOutput)
 }
 
-func (imageOutput JsonImageIOCOutput) WriteTable() error {
+func (imageOutput JSONImageIOCOutput) WriteTable() error {
 	return WriteTableOutput(&imageOutput.IOC)
 }
 
-func (dirOutput *JsonDirIOCOutput) SetTime() {
+func (dirOutput *JSONDirIOCOutput) SetTime() {
 	dirOutput.Timestamp = time.Now()
 }
 
-func (dirOutput *JsonDirIOCOutput) SetIOC(IOC []IOCFound) {
-	dirOutput.IOC = IOC
+func (dirOutput *JSONDirIOCOutput) SetIOC(ioc []IOCFound) {
+	dirOutput.IOC = ioc
 }
 
-func (dirOutput *JsonDirIOCOutput) GetIOC() []IOCFound {
+func (dirOutput *JSONDirIOCOutput) GetIOC() []IOCFound {
 	return dirOutput.IOC
 }
 
-func (dirOutput JsonDirIOCOutput) WriteJson() error {
-	return printIOCToJson(dirOutput)
+func (dirOutput JSONDirIOCOutput) WriteJSON() error {
+	return printIOCToJSON(dirOutput)
 }
 
-func (dirOutput JsonDirIOCOutput) WriteTable() error {
+func (dirOutput JSONDirIOCOutput) WriteTable() error {
 	return WriteTableOutput(&dirOutput.IOC)
 }
 
-func printIOCToJson(IOCJson interface{}) error {
-	file, err := json.MarshalIndent(IOCJson, "", Indent)
+func printIOCToJSON(iocJSON interface{}) error {
+	file, err := json.MarshalIndent(iocJSON, "", Indent)
 	if err != nil {
 		log.Errorf("printIOCToJsonFile: Couldn't format json output: %s", err)
 		return err
@@ -134,7 +134,7 @@ func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 		if MalwaresToMalwareInfo(v) != nil {
 			res = append(res, MalwaresToMalwareInfo(v))
 		}
-		//log.Error("did it reach to this point", v)
+		// log.Error("did it reach to this point", v)
 	}
 	return res
 }
@@ -152,10 +152,8 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	for i := range out.Meta {
 		if !utf8.ValidString(out.Meta[i]) && bool {
 			log.Debugf("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
-		} else {
-			if len(out.Meta[i]) > 0 {
-				meta = append(meta, out.Meta[i])
-			}
+		} else if len(out.Meta[i]) > 0 {
+			meta = append(meta, out.Meta[i])
 		}
 	}
 	out.Meta = meta
@@ -197,8 +195,8 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	}
 }
 
-func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool) {
-	for _, IOC := range IOCs {
+func PrintColoredIOC(iocs []IOCFound, isFirstIOC *bool) {
+	for _, IOC := range iocs {
 		printColoredIOCJsonObject(IOC, isFirstIOC, IOC.FileSevScore, IOC.FileSeverity)
 		*isFirstIOC = false
 	}
@@ -208,7 +206,7 @@ func PrintColoredIOC(IOCs []IOCFound, isFirstIOC *bool) {
 // @parameters
 // IOC - Structure with details of the IOC found
 // isFirstIOC - indicates if some IOC are already printed, used to properly format json
-func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64, severity string) {
+func printColoredIOCJsonObject(ioc IOCFound, isFirstIOC *bool, fileScore float64, severity string) {
 	Indent3 := Indent + Indent + Indent
 
 	if *isFirstIOC {
@@ -217,13 +215,13 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 		fmt.Fprintf(os.Stdout, ",\n"+Indent+Indent+"{\n")
 	}
 
-	if IOC.LayerID != "" {
-		fmt.Fprintf(os.Stdout, Indent3+"\"Image Layer ID\": %s,\n", jsonMarshal(IOC.LayerID))
+	if ioc.LayerID != "" {
+		fmt.Fprintf(os.Stdout, Indent3+"\"Image Layer ID\": %s,\n", jsonMarshal(ioc.LayerID))
 	}
-	fmt.Fprintf(os.Stdout, Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(IOC.RuleName))
+	fmt.Fprintf(os.Stdout, Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(ioc.RuleName))
 	fmt.Fprintf(os.Stdout, Indent3+"\"Strings to match are\": [\n")
 	var count = 0
-	for _, c := range IOC.StringsToMatch {
+	for _, c := range ioc.StringsToMatch {
 		if len(c) > 0 {
 			if count == 0 {
 				fmt.Fprintf(os.Stdout, Indent3+Indent3+jsonMarshal(c)+"\n")
@@ -238,40 +236,37 @@ func printColoredIOCJsonObject(IOC IOCFound, isFirstIOC *bool, fileScore float64
 	summary := ""
 	class := "Undefined"
 	categoryName := "["
-	for i, c := range IOC.CategoryName {
+	for i, c := range ioc.CategoryName {
 		if len(c) > 0 {
-			str := []string{"The file", IOC.CompleteFilename, "has a", c, "match."}
+			str := []string{"The file", ioc.CompleteFilename, "has a", c, "match."}
 			summary = strings.Join(str, " ")
-			categoryName = categoryName + jsonMarshal(c)
-			if i == 0 && len(IOC.CategoryName) > 1 {
-				categoryName = categoryName + ","
+			categoryName += jsonMarshal(c)
+			if i == 0 && len(ioc.CategoryName) > 1 {
+				categoryName += ","
 			}
 		}
 	}
-	categoryName = categoryName + "]"
+	categoryName += "]"
 
-	//fmt.Fprintf(os.Stdout, Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
-	//fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity\": %s,\n", jsonMarshal(severity))
-	//fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity Score\": %.2f,\n", fileScore)
+	// fmt.Fprintf(os.Stdout, Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
+	// fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity\": %s,\n", jsonMarshal(severity))
+	// fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity Score\": %.2f,\n", fileScore)
 	fmt.Fprintf(os.Stdout, Indent3+"\"Category\": %s,\n", categoryName)
-	fmt.Fprintf(os.Stdout, Indent3+"\"File Name\": %s,\n", jsonMarshal(IOC.CompleteFilename))
-	for _, c := range IOC.Meta {
+	fmt.Fprintf(os.Stdout, Indent3+"\"File Name\": %s,\n", jsonMarshal(ioc.CompleteFilename))
+	for _, c := range ioc.Meta {
 		var metaSplit = strings.Split(c, " : ")
 		if len(metaSplit) > 1 {
-			fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.Replace(metaSplit[1], "\n", "", -1))+",\n")
+			fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.ReplaceAll(metaSplit[1], "\n", ""))+",\n")
 			if metaSplit[0] == "description" {
-				str := []string{"The file has a rule match that ", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
-				summary = summary + strings.Join(str, " ")
+				str := []string{"The file has a rule match that ", strings.ReplaceAll(metaSplit[1], "\n", "") + "."}
+				summary += strings.Join(str, " ")
 			} else {
 				if metaSplit[0] == "info" {
-					class = strings.TrimSpace(strings.Replace(metaSplit[1], "\n", "", -1))
-				} else {
-					if len(metaSplit[0]) > 0 {
-						str := []string{"The matched rule file's ", metaSplit[0], " is", strings.Replace(metaSplit[1], "\n", "", -1) + "."}
-						summary = summary + strings.Join(str, " ")
-					}
+					class = strings.TrimSpace(strings.ReplaceAll(metaSplit[1], "\n", ""))
+				} else if len(metaSplit[0]) > 0 {
+					str := []string{"The matched rule file's ", metaSplit[0], " is", strings.ReplaceAll(metaSplit[1], "\n", "") + "."}
+					summary += strings.Join(str, " ")
 				}
-
 			}
 		}
 	}
@@ -287,15 +282,10 @@ func jsonMarshal(input string) string {
 	return string(output)
 }
 
-func removeFirstLastChar(input string) string {
-	if len(input) <= 1 {
-		return input
-	}
-	return input[1 : len(input)-1]
-}
-
 func writeToFile(malwareScanMsg string, filename string) error {
-	os.MkdirAll(filepath.Dir(filename), 0755)
+	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+		return fmt.Errorf("os.MkdirAll: %w", err)
+	}
 
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -304,26 +294,26 @@ func writeToFile(malwareScanMsg string, filename string) error {
 
 	defer f.Close()
 
-	malwareScanMsg = strings.Replace(malwareScanMsg, "\n", " ", -1)
+	malwareScanMsg = strings.ReplaceAll(malwareScanMsg, "\n", " ")
 	if _, err = f.WriteString(malwareScanMsg + "\n"); err != nil {
 		return err
 	}
 	return nil
 }
 
-func WriteScanStatus(status, scan_id, scan_message string) {
+func WriteScanStatus(status, scanID, scanMessage string) {
 	var scanLogDoc = make(map[string]interface{})
-	scanLogDoc["scan_id"] = scan_id
+	scanLogDoc["scan_id"] = scanID
 	scanLogDoc["scan_status"] = status
-	scanLogDoc["scan_message"] = scan_message
+	scanLogDoc["scan_message"] = scanMessage
 
-	byteJson, err := json.Marshal(scanLogDoc)
+	byteJSON, err := json.Marshal(scanLogDoc)
 	if err != nil {
 		log.Errorf("Error marshalling json for malware-logs-status: %s", err)
 		return
 	}
 
-	err = writeToFile(string(byteJson), scanStatusFilename)
+	err = writeToFile(string(byteJSON), scanStatusFilename)
 	if err != nil {
 		log.Errorf("Error in sending data to malware-logs-status to mark in progress: %s", err)
 		return
@@ -331,24 +321,24 @@ func WriteScanStatus(status, scan_id, scan_message string) {
 }
 
 type MalwareScanDoc struct {
-	pb.MalwareInfo
+	*pb.MalwareInfo
 	ScanID    string `json:"scan_id,omitempty"`
 	Timestamp string `json:"timestamp,omitempty"`
 }
 
-func WriteScanData(malwares []*pb.MalwareInfo, scan_id string) {
+func WriteScanData(malwares []*pb.MalwareInfo, scanID string) {
 	for _, malware := range malwares {
 		doc := MalwareScanDoc{
-			MalwareInfo: *malware,
-			ScanID:      scan_id,
+			MalwareInfo: malware,
+			ScanID:      scanID,
 			Timestamp:   time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z",
 		}
-		byteJson, err := json.Marshal(doc)
+		byteJSON, err := json.Marshal(&doc)
 		if err != nil {
 			log.Errorf("Error marshalling json: %s", err)
 			continue
 		}
-		err = writeToFile(string(byteJson), scanFilename)
+		err = writeToFile(string(byteJSON), scanFilename)
 		if err != nil {
 			log.Errorf("Error in writing data to malware scan file: %s", err)
 		}

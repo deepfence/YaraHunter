@@ -42,16 +42,16 @@ func PathExists(filename string) bool {
 	}
 }
 
-func DownloadFile(dUrl string, dest string) (string, error) {
-	//fmt.Println("the dynamic url is",dUrl)
-	fullUrlFile := dUrl
+func DownloadFile(dURL string, dest string) (string, error) {
+	// fmt.Println("the dynamic url is",dUrl)
+	fullURLFile := dURL
 
 	// Build fileName from fullPath
-	fileURL, err := url.Parse(fullUrlFile)
+	fileURL, err := url.Parse(fullURLFile)
 	if err != nil {
 		return "", err
 	}
-	//fmt.Println("the dynamic url is",fileURL)
+	// fmt.Println("the dynamic url is",fileURL)
 	path := fileURL.Path
 	segments := strings.Split(path, "/")
 	fileName := segments[len(segments)-1]
@@ -68,8 +68,8 @@ func DownloadFile(dUrl string, dest string) (string, error) {
 		},
 	}
 	// Put content on file
-	resp, err := client.Get(fullUrlFile)
-	//fmt.Println(" The dynamic url is ",fileName)
+	resp, err := client.Get(fullURLFile)
+	// fmt.Println(" The dynamic url is ",fileName)
 	if err != nil {
 		return "", err
 	}
@@ -105,14 +105,11 @@ func Untar(d *os.File, r io.Reader) error {
 			continue
 		}
 		// check the file type
-		switch header.Typeflag {
-		case tar.TypeReg:
-			if strings.Contains(header.Name, ".yar") {
-				if _, err := io.Copy(d, tr); err != nil {
-					return err
-				}
-				d.Close()
+		if header.Typeflag == tar.TypeReg && strings.Contains(header.Name, ".yar") {
+			if _, err := io.Copy(d, tr); err != nil {
+				return err
 			}
+			d.Close()
 		}
 	}
 }
