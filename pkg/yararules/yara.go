@@ -3,7 +3,7 @@ package yararules
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -98,7 +98,7 @@ func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) error {
 	}
 
 	if len(yr.rules.GetRules()) == 0 {
-		return errors.New("No YARA rules defined")
+		return errors.New("no YARA rules defined")
 	}
 	return nil
 }
@@ -144,7 +144,7 @@ func (yr *YaraRules) ScanMem(buf []byte, flags yara.ScanFlags,
 
 func getRuleFiles(rulesPath string) ([]string, error) {
 	var fileNames []string
-	files, err := ioutil.ReadDir(rulesPath)
+	files, err := os.ReadDir(rulesPath)
 	if err != nil {
 		return fileNames, err
 	}

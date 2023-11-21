@@ -19,15 +19,14 @@ import (
 func StartYaraHunter(opts *config.Options, config *config.Config, newwg *sync.WaitGroup) {
 	defer newwg.Done()
 
-	if *opts.SocketPath != "" {
-		err := server.RunGrpcServer(opts, config, constants.PLUGIN_NAME)
-		if err != nil {
-			log.Fatal("main: failed to serve: %v", err)
-		}
-	} else {
+	if *opts.SocketPath == "" {
 		runOnce(opts, config)
+		return
 	}
 
+	if err := server.RunGrpcServer(opts, config, constants.PluginName); err != nil {
+		log.Panicf("main: failed to serve: %v", err)
+	}
 }
 
 func runOnce(opts *config.Options, config *config.Config) {
@@ -49,13 +48,13 @@ func runOnce(opts *config.Options, config *config.Config) {
 	scanner := scan.New(opts, config, yaraScanner, "")
 	var ctx *tasks.ScanContext
 
-	node_type := ""
-	node_id := ""
+	nodeType := ""
+	nodeID := ""
 
 	// Scan container image for IOC
 	if len(*opts.ImageName) > 0 {
-		node_type = "image"
-		node_id = *opts.ImageName
+		nodeType = "image"
+		nodeID = *opts.ImageName
 		log.Infof("Scanning image %s for IOC...", *opts.ImageName)
 		results, err = FindIOCInImage(ctx, scanner)
 		if err != nil {
@@ -66,7 +65,7 @@ func runOnce(opts *config.Options, config *config.Config) {
 
 	// Scan local directory for IOC
 	if len(*opts.Local) > 0 {
-		node_id = output.GetHostname()
+		nodeID = output.GetHostname()
 		log.Infof("Scanning local directory: %s", *opts.Local)
 		results, err = FindIOCInDir(ctx, scanner)
 		if err != nil {
@@ -76,10 +75,10 @@ func runOnce(opts *config.Options, config *config.Config) {
 	}
 
 	// Scan existing container for IOC
-	if len(*opts.ContainerId) > 0 {
-		node_type = "container_image"
-		node_id = *opts.ContainerId
-		log.Infof("Scanning container %s for IOC...", *opts.ContainerId)
+	if len(*opts.ContainerID) > 0 {
+		nodeType = "container_image"
+		nodeID = *opts.ContainerID
+		log.Infof("Scanning container %s for IOC...", *opts.ContainerID)
 		results, err = FindIOCInContainer(ctx, scanner)
 		if err != nil {
 			log.Errorf("error scanning the container: %s", err)
@@ -92,26 +91,28 @@ func runOnce(opts *config.Options, config *config.Config) {
 		return
 	}
 
-	if len(*opts.ConsoleUrl) != 0 && len(*opts.DeepfenceKey) != 0 {
-		pub, err := output.NewPublisher(*opts.ConsoleUrl, strconv.Itoa(*opts.ConsolePort), *opts.DeepfenceKey)
+	if len(*opts.ConsoleURL) != 0 && len(*opts.DeepfenceKey) != 0 {
+		pub, err := output.NewPublisher(*opts.ConsoleURL, strconv.Itoa(*opts.ConsolePort), *opts.DeepfenceKey)
 		if err != nil {
 			log.Error(err.Error())
 		}
 
-		pub.SendReport(output.GetHostname(), *opts.ImageName, *opts.ContainerId, node_type)
-		scanId := pub.StartScan(node_id, node_type)
-		if len(scanId) == 0 {
-			scanId = fmt.Sprintf("%s-%d", node_id, time.Now().UnixMilli())
+		pub.SendReport(output.GetHostname(), *opts.ImageName, *opts.ContainerID, nodeType)
+		scanID := pub.StartScan(nodeID, nodeType)
+		if len(scanID) == 0 {
+			scanID = fmt.Sprintf("%s-%d", nodeID, time.Now().UnixMilli())
 		}
-		pub.IngestSecretScanResults(scanId, results.GetIOC())
-		log.Infof("scan id %s", scanId)
+		if err := pub.IngestSecretScanResults(scanID, results.GetIOC()); err != nil {
+			log.Errorf("IngestSecretScanResults: %v", err)
+		}
+		log.Infof("scan id %s", scanID)
 	}
 
 	counts := output.CountBySeverity(results.GetIOC())
 
 	if *opts.OutFormat == "json" {
 		log.Infof("result severity counts: %+v", counts)
-		err = results.WriteJson()
+		err = results.WriteJSON()
 		if err != nil {
 			log.Errorf("error while writing IOC: %s", err)
 			return

@@ -8,17 +8,16 @@ import (
 )
 
 type IOCWriter interface {
-	WriteJson() error
+	WriteJSON() error
 	WriteTable() error
 	GetIOC() []output.IOCFound
 }
 
 type YaraRuleUpdater struct {
-	yaraRuleListingJson  YaraRuleListing
+	yaraRuleListingJSON  YaraRuleListing
 	yaraRulePath         string
 	downloadYaraRulePath string
 	currentFileChecksum  string
-	currentFilePath      string
 	sync.RWMutex
 }
 

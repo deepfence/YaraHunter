@@ -19,21 +19,21 @@ import (
 )
 
 var (
-	MgmtConsoleUrl string
+	MgmtConsoleURL string
 	DeepfenceKey   string
 )
 
 func init() {
-	MgmtConsoleUrl = os.Getenv("MGMT_CONSOLE_URL")
+	MgmtConsoleURL = os.Getenv("MGMT_CONSOLE_URL")
 	mgmtConsolePort := os.Getenv("MGMT_CONSOLE_PORT")
 	if mgmtConsolePort != "" && mgmtConsolePort != "443" {
-		MgmtConsoleUrl += ":" + mgmtConsolePort
+		MgmtConsoleURL += ":" + mgmtConsolePort
 	}
 	DeepfenceKey = os.Getenv("DEEPFENCE_KEY")
 }
 
 func IngestMalwareScanResults(malwareScanMsg string, index string) error {
-	malwareScanMsg = strings.Replace(malwareScanMsg, "\n", " ", -1)
+	malwareScanMsg = strings.ReplaceAll(malwareScanMsg, "\n", " ")
 	postReader := bytes.NewReader([]byte(malwareScanMsg))
 	retryCount := 0
 	httpClient, err := buildClient()
@@ -42,7 +42,7 @@ func IngestMalwareScanResults(malwareScanMsg string, index string) error {
 		return err
 	}
 	for {
-		httpReq, err := http.NewRequest("POST", "https://"+MgmtConsoleUrl+"/df-api/ingest?doc_type="+index, postReader)
+		httpReq, err := http.NewRequest("POST", "https://"+MgmtConsoleURL+"/df-api/ingest?doc_type="+index, postReader)
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func NewPublisher(url string, port string, key string) (*Publisher, error) {
 	return &Publisher{client: client}, nil
 }
 
-func (p *Publisher) SendReport(hostname, image_name, container_id, node_type string) {
+func (p *Publisher) SendReport(hostname, imageName, containerID, nodeType string) {
 
 	report := dsc.IngestersReportIngestionData{}
 
@@ -125,22 +125,22 @@ func (p *Publisher) SendReport(hostname, image_name, container_id, node_type str
 	}
 	report.HostBatch = []map[string]interface{}{host}
 
-	if node_type != "" {
+	if nodeType != "" {
 		image := map[string]interface{}{
-			"docker_image_name_with_tag": image_name,
-			"docker_image_id":            image_name,
-			"node_id":                    image_name,
-			"node_name":                  image_name,
-			"node_type":                  node_type,
+			"docker_image_name_with_tag": imageName,
+			"docker_image_id":            imageName,
+			"node_id":                    imageName,
+			"node_name":                  imageName,
+			"node_type":                  nodeType,
 		}
-		s := strings.Split(image_name, ":")
+		s := strings.Split(imageName, ":")
 		if len(s) == 2 {
 			image["docker_image_name"] = s[0]
 			image["docker_image_tag"] = s[1]
 		}
 		containerImageEdge := map[string]interface{}{
 			"source":       hostname,
-			"destinations": image_name,
+			"destinations": imageName,
 		}
 		report.ContainerImageBatch = []map[string]interface{}{image}
 		report.ContainerImageEdgeBatch = []map[string]interface{}{containerImageEdge}
@@ -158,15 +158,15 @@ func (p *Publisher) SendReport(hostname, image_name, container_id, node_type str
 	log.Debugf("report response %s", resp.Status)
 }
 
-func (p *Publisher) StartScan(node_id, node_type string) string {
+func (p *Publisher) StartScan(nodeID, nodeType string) string {
 
 	scanTrigger := dsc.ModelMalwareScanTriggerReq{
 		Filters: *dsc.NewModelScanFilterWithDefaults(),
 		NodeIds: []dsc.ModelNodeIdentifier{},
 	}
 
-	nodeIds := dsc.ModelNodeIdentifier{NodeId: node_id, NodeType: node_type}
-	if node_type != "" {
+	nodeIds := dsc.ModelNodeIdentifier{NodeId: nodeID, NodeType: nodeType}
+	if nodeType != "" {
 		nodeIds.NodeType = "host"
 	}
 
@@ -186,9 +186,9 @@ func (p *Publisher) StartScan(node_id, node_type string) string {
 	return res.GetScanIds()[0]
 }
 
-func (p *Publisher) PublishScanStatusMessage(scan_id, message, status string) {
+func (p *Publisher) PublishScanStatusMessage(scanID, message, status string) {
 	data := dsc.IngestersMalwareScanStatus{}
-	data.SetScanId(scan_id)
+	data.SetScanId(scanID)
 	data.SetScanStatus(status)
 	data.SetScanMessage(message)
 
@@ -203,18 +203,18 @@ func (p *Publisher) PublishScanStatusMessage(scan_id, message, status string) {
 	log.Debugf("publish scan status response: %v", resp)
 }
 
-func (p *Publisher) PublishScanError(scan_id, errMsg string) {
-	p.PublishScanStatusMessage(scan_id, errMsg, "ERROR")
+func (p *Publisher) PublishScanError(scanID, errMsg string) {
+	p.PublishScanStatusMessage(scanID, errMsg, "ERROR")
 }
 
-func (p *Publisher) PublishScanStatusPeriodic(scan_id, status string) {
+func (p *Publisher) PublishScanStatusPeriodic(scanID, status string) {
 	go func() {
-		p.PublishScanStatusMessage(scan_id, "", status)
+		p.PublishScanStatusMessage(scanID, "", status)
 		ticker := time.NewTicker(30 * time.Second)
 		for {
 			select {
 			case <-ticker.C:
-				p.PublishScanStatusMessage(scan_id, "", status)
+				p.PublishScanStatusMessage(scanID, "", status)
 			case <-p.stopScanStatus:
 				return
 			}
@@ -227,7 +227,7 @@ func (p *Publisher) StopPublishScanStatus() {
 	time.Sleep(5 * time.Second)
 }
 
-func (p *Publisher) IngestSecretScanResults(scan_id string, malwares []IOCFound) error {
+func (p *Publisher) IngestSecretScanResults(scanID string, malwares []IOCFound) error {
 	data := []dsc.IngestersMalware{}
 
 	for _, malware := range malwares {
@@ -244,7 +244,7 @@ func (p *Publisher) IngestSecretScanResults(scan_id string, malwares []IOCFound)
 		mr.SetVersion(malware.MetaRules["version"])
 
 		m := dsc.NewIngestersMalware()
-		m.SetScanId(scan_id)
+		m.SetScanId(scanID)
 		m.SetTimestamp(time.Now())
 		m.SetClass(malware.Class)
 		m.SetRuleName(malware.RuleName)

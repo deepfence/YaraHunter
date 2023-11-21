@@ -57,18 +57,18 @@ func main() {
 
 	opts, err := config.ParseOptions()
 	if err != nil {
-		log.Fatal("main: failed to parse options: %v", err)
+		log.Panicf("main: failed to parse options: %v", err)
 	}
 	config, err := config.ParseConfig(*opts.ConfigPath)
 	if err != nil {
-		log.Fatal("main: failed to parse options: %v", err)
+		log.Panicf("main: failed to parse options: %v", err)
 	}
 
 	if *opts.EnableUpdater {
 		wg.Add(1)
-		err := runner.StartYaraHunterUpdater(*opts.ConfigPath, *opts.RulesPath, *opts.RulesListingUrl)
+		err := runner.StartYaraHunterUpdater(*opts.ConfigPath, *opts.RulesPath, *opts.RulesListingURL)
 		if err != nil {
-			log.Fatal("main: failed to serve: %v", err)
+			log.Panicf("main: failed to serve: %v", err)
 		}
 		go runner.ScheduleYaraHunterUpdater(opts, &wg)
 	}

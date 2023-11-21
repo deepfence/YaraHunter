@@ -42,8 +42,8 @@ func IsSkippableFileExtension(excludedExtensions []string, path string) bool {
 }
 
 // UpdateDirsPermissionsRW Update permissions for dirs in container images, so that they can be properly deleted
-func UpdateDirsPermissionsRW(dir string) {
-	filepath.WalkDir(dir, func(path string, f os.DirEntry, err error) error {
+func UpdateDirsPermissionsRW(dir string) error {
+	return filepath.WalkDir(dir, func(path string, f os.DirEntry, err error) error {
 		if f.IsDir() {
 			err := os.Chmod(path, 0700)
 			if err != nil {

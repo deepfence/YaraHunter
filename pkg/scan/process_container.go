@@ -19,10 +19,9 @@ import (
 )
 
 type ContainerScan struct {
-	containerId string
+	containerID string
 	tempDir     string
 	namespace   string
-	numIOC      uint
 }
 
 // Function to retrieve contents of container
@@ -50,7 +49,7 @@ func (containerScan *ContainerScan) extractFileSystem() error {
 	if containerRuntimeInterface == nil {
 		return errors.New("could not detect container runtime")
 	}
-	err = containerRuntimeInterface.ExtractFileSystemContainer(containerScan.containerId, containerScan.namespace, containerScan.tempDir+".tar")
+	err = containerRuntimeInterface.ExtractFileSystemContainer(containerScan.containerID, containerScan.namespace, containerScan.tempDir+".tar")
 
 	if err != nil {
 		return err
@@ -105,27 +104,30 @@ func (containerScan *ContainerScan) scanStream(ctx *tasks.ScanContext, scanner *
 
 type ContainerExtractionResult struct {
 	IOC         []output.IOCFound
-	ContainerId string
+	ContainerID string
 }
 
-func GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
+func GetFileSystemPathsForContainer(containerID string, namespace string) ([]byte, error) {
 	// fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
-	return exec.Command("docker", "inspect", strings.TrimSpace(containerId)).Output()
+	return exec.Command("docker", "inspect", strings.TrimSpace(containerID)).Output()
 }
 
-func (s *Scanner) ExtractAndScanContainer(ctx *tasks.ScanContext, containerId string, namespace string) ([]output.IOCFound, error) {
+func (s *Scanner) ExtractAndScanContainer(ctx *tasks.ScanContext, containerID string, namespace string) ([]output.IOCFound, error) {
 	var iocsFound []output.IOCFound
-	tempDir, err := core.GetTmpDir(containerId, *s.TempDirectory)
+	tempDir, err := core.GetTmpDir(containerID, *s.TempDirectory)
 	if err != nil {
 		return iocsFound, err
 	}
-	defer core.DeleteTmpDir(tempDir)
+	defer func() { _ = core.DeleteTmpDir(tempDir) }()
 
-	containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
+	containerScan := ContainerScan{containerID: containerID, tempDir: tempDir, namespace: namespace}
 	containerRuntime, _, err := vessel.AutoDetectRuntime()
+	if err != nil {
+		return nil, err
+	}
 	switch containerRuntime {
 	case vesselConstants.DOCKER:
-		containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
+		containerPath, err := GetFileSystemPathsForContainer(containerID, namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +135,7 @@ func (s *Scanner) ExtractAndScanContainer(ctx *tasks.ScanContext, containerId st
 			if strings.Contains(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"") {
 				containerPathToScan := strings.Split(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"")[0] + "/merged"
 				fmt.Println("Container Scan Path", containerPathToScan)
-				iocsFound, err = containerScan.scanPath(ctx, s, containerPathToScan)
+				iocsFound, _ = containerScan.scanPath(ctx, s, containerPathToScan)
 			}
 		}
 	case vesselConstants.CONTAINERD, vesselConstants.CRIO, vesselConstants.PODMAN:
@@ -149,24 +151,30 @@ func (s *Scanner) ExtractAndScanContainer(ctx *tasks.ScanContext, containerId st
 	return iocsFound, nil
 }
 
-func (s *Scanner) ExtractAndScanContainerStream(ctx *tasks.ScanContext, containerId string, namespace string) (chan output.IOCFound, error) {
-	tempDir, err := core.GetTmpDir(containerId, *s.TempDirectory)
+func (s *Scanner) ExtractAndScanContainerStream(ctx *tasks.ScanContext, containerID string, namespace string) (chan output.IOCFound, error) {
+	tempDir, err := core.GetTmpDir(containerID, *s.TempDirectory)
 
 	if err != nil {
 		return nil, err
 	}
-	res := make(chan output.IOCFound, output_channel_size)
+	res := make(chan output.IOCFound, outputChannelSize)
 
 	go func() {
-		defer core.DeleteTmpDir(tempDir)
+		defer func() { _ = core.DeleteTmpDir(tempDir) }()
 		defer close(res)
 
 		var middle chan output.IOCFound
-		containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
-		containerRuntime, _, err := vessel.AutoDetectRuntime()
+		containerScan := ContainerScan{containerID: containerID, tempDir: tempDir, namespace: namespace}
+
+		var containerRuntime string
+		containerRuntime, _, err = vessel.AutoDetectRuntime()
+		if err != nil {
+			return
+		}
+
 		switch containerRuntime {
 		case vesselConstants.DOCKER:
-			containerPath, err := GetFileSystemPathsForContainer(containerId, namespace)
+			containerPath, err := GetFileSystemPathsForContainer(containerID, namespace)
 			if err != nil {
 				return
 			}

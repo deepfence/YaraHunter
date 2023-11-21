@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	JsonOutput  = "json"
+	JSONOutput  = "json"
 	TableOutput = "table"
 )
 
@@ -20,7 +20,7 @@ type Options struct {
 	ConfigPath           *string
 	ImageName            *string
 	MaxIOC               *uint
-	ContainerId          *string
+	ContainerID          *string
 	ContainerNS          *string
 	SocketPath           *string
 	RulesPath            *string
@@ -28,14 +28,14 @@ type Options struct {
 	WorkersPerScan       *int
 	InactiveThreshold    *int
 	OutFormat            *string
-	ConsoleUrl           *string
+	ConsoleURL           *string
 	ConsolePort          *int
 	DeepfenceKey         *string
 	FailOnCount          *int
 	FailOnHighCount      *int
 	FailOnMediumCount    *int
 	FailOnLowCount       *int
-	RulesListingUrl      *string
+	RulesListingURL      *string
 	EnableUpdater        *bool
 }
 
@@ -52,20 +52,20 @@ func ParseOptions() (*Options, error) {
 		ConfigPath:           flag.String("config-path", "", "Searches for config.yaml from given directory. If not set, tries to find it from YaraHunter binary's and current directory"),
 		ImageName:            flag.String("image-name", "", "Name of the image along with tag to scan for IOC"),
 		MaxIOC:               flag.Uint("max-ioc", 1000, "Maximum number of indicator of compromise to find in one container image or file system."),
-		ContainerId:          flag.String("container-id", "", "Id of existing container ID"),
+		ContainerID:          flag.String("container-id", "", "Id of existing container ID"),
 		ContainerNS:          flag.String("container-ns", "", "Namespace of existing container to scan, empty for docker runtime"),
 		SocketPath:           flag.String("socket-path", "", "The gRPC server unix socket path"),
 		WorkersPerScan:       flag.Int("workers-per-scan", 1, "Number of concurrent workers per scan"),
 		InactiveThreshold:    flag.Int("inactive-threshold", 600, "Threshold for Inactive scan in seconds"),
 		OutFormat:            flag.String("output", TableOutput, "Output format: json or table"),
-		ConsoleUrl:           flag.String("console-url", "", "Deepfence Management Console URL"),
+		ConsoleURL:           flag.String("console-url", "", "Deepfence Management Console URL"),
 		ConsolePort:          flag.Int("console-port", 443, "Deepfence Management Console Port"),
 		DeepfenceKey:         flag.String("deepfence-key", "", "Deepfence key for auth"),
 		FailOnCount:          flag.Int("fail-on-count", -1, "Exit with status 1 if number of malwares found is >= this value (Default: -1)"),
 		FailOnHighCount:      flag.Int("fail-on-high-count", -1, "Exit with status 1 if number of high malwares found is >= this value (Default: -1)"),
 		FailOnMediumCount:    flag.Int("fail-on-medium-count", -1, "Exit with status 1 if number of medium malwares found is >= this value (Default: -1)"),
 		FailOnLowCount:       flag.Int("fail-on-low-count", -1, "Exit with status 1 if number of low malwares found is >= this value (Default: -1)"),
-		RulesListingUrl:      flag.String("rules-listing-url", "https://threat-intel.deepfence.io/yara-rules/listing.json", "Deepfence threat intel yara rules listing (Default: threat-intel.deepfence.io/yara-rules/listing.json)"),
+		RulesListingURL:      flag.String("rules-listing-url", "https://threat-intel.deepfence.io/yara-rules/listing.json", "Deepfence threat intel yara rules listing (Default: threat-intel.deepfence.io/yara-rules/listing.json)"),
 		EnableUpdater:        flag.Bool("enable-updater", true, "Enable rules updater (Default: true)"),
 	}
 	flag.Parse()
@@ -96,7 +96,7 @@ func NewDefaultOptions() *Options {
 		ConfigPath:           &emptyValue,
 		ImageName:            &emptyValue,
 		MaxIOC:               &maxIOC,
-		ContainerId:          &emptyValue,
+		ContainerID:          &emptyValue,
 		ContainerNS:          &emptyValue,
 		SocketPath:           &emptyValue,
 	}
