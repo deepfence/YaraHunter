@@ -41,7 +41,7 @@ jobs:
           make install
           cd $HOME/.local
           tar -czf yara.tar.gz yara
-          export PKG_CONFIG_PATH="$HOME/.local/yara/lib/pkgconfig"
+          echo "PKG_CONFIG_PATH=$HOME/.local/yara/lib/pkgconfig" >> "$GITHUB_ENV"
 
       - uses: actions/setup-go@v4
         with:
