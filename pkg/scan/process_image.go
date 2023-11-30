@@ -219,7 +219,6 @@ func isExecutable(path string) bool {
 	extension := filepath.Ext(path)
 
 	if isMIMETypeExec {
-		logrus.Infof("File %s is executable by MIME", path)
 		return true
 	}
 
