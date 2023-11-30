@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io"
 	"math"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -199,7 +198,7 @@ func isSharedLibrary(path string) bool {
 	return strings.HasSuffix(path, ".so") || strings.HasSuffix(path, ".a") || strings.HasSuffix(path, ".la")
 }
 
-func fileMimetypeCheck2(filePath string, mimeTypesList []string) bool {
+func fileMimetypeCheck(filePath string, mimeTypesList []string) bool {
 	mtype, err := mimetype.DetectFile(filePath)
 	if err != nil {
 		logrus.Errorf("Error: %v", err)
@@ -216,7 +215,7 @@ func fileMimetypeCheck2(filePath string, mimeTypesList []string) bool {
 }
 
 func isExecutable(path string) bool {
-	isMIMETypeExec := fileMimetypeCheck2(path, execMimeTypes)
+	isMIMETypeExec := fileMimetypeCheck(path, execMimeTypes)
 	extension := filepath.Ext(path)
 
 	if isMIMETypeExec {
@@ -226,32 +225,6 @@ func isExecutable(path string) bool {
 
 	for _, execType := range execExtensions {
 		if extension == execType {
-			return true
-		}
-	}
-
-	return false
-}
-
-func fileMimetypeCheck(filePath string, execMimeTypes []string) bool {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return false
-	}
-	defer file.Close()
-
-	// Read the first 512 bytes to determine the file's mimetype
-	buffer := make([]byte, 512)
-	_, err = file.Read(buffer)
-	if err != nil {
-		logrus.Errorf("Error: %v", err)
-		return false
-	}
-
-	mimetype := http.DetectContentType(buffer)
-
-	for _, execType := range execMimeTypes {
-		if strings.Contains(mimetype, execType) {
 			return true
 		}
 	}
