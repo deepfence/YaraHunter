@@ -21,6 +21,7 @@ import (
 	"github.com/deepfence/YaraHunter/constants"
 	"github.com/deepfence/YaraHunter/core"
 	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
+	"github.com/gabriel-vasile/mimetype"
 
 	// yaraConf "github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
@@ -32,6 +33,24 @@ import (
 var (
 	ErrmaxMalwaresExceeded = errors.New("number of secrets exceeded max-secrets")
 	execMimeTypes          = []string{"text/x-shellscript", "application/x-executable", "application/x-mach-binary", "application/x-msdownload", "application/exe", "application/x-msdos-program", "application/x-elf", "application/x-sharedlib", "application/x-pie-executable", "application/java-archive", "application/x-java-archive", "text/x-python", "application/x-batch"}
+	execExtensions         = []string{
+		".exe", ".bat", ".com", ".cmd", // Windows executables
+		".sh", ".bash", ".bashrc", ".bash_profile", // Shell scripts
+		".py", ".pyc", ".pyo", ".pyd", // Python scripts
+		".pl", ".pm", // Perl scripts
+		".rb", ".rbw", // Ruby scripts
+		".c", ".cpp", ".h", ".hpp", // C/C++ source files
+		".java", ".class", // Java files
+		".js", ".ts", // JavaScript/TypeScript files
+		".php", ".php3", ".php4", ".php5", ".phtml", // PHP files
+		".jar",         // Java Archive files
+		".msi", ".dll", // Windows Installer files
+		".app",         // macOS application bundles
+		".out",         // Compiled binaries
+		".apk",         // Android application packages
+		".deb", ".rpm", // Linux package formats
+		".dylib", // other
+	}
 )
 
 // Data type to store details about the container image after parsing manifest
@@ -180,6 +199,40 @@ func isSharedLibrary(path string) bool {
 	return strings.HasSuffix(path, ".so") || strings.HasSuffix(path, ".a") || strings.HasSuffix(path, ".la")
 }
 
+func fileMimetypeCheck2(filePath string, mimeTypesList []string) bool {
+	mtype, err := mimetype.DetectFile(filePath)
+	if err != nil {
+		logrus.Errorf("Error: %v", err)
+		return false
+	}
+
+	for _, execType := range mimeTypesList {
+		if strings.Contains(mtype.String(), execType) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isExecutable(path string) bool {
+	isMIMETypeExec := fileMimetypeCheck2(path, execMimeTypes)
+	extension := filepath.Ext(path)
+
+	if isMIMETypeExec {
+		logrus.Infof("File %s is executable by MIME", path)
+		return true
+	}
+
+	for _, execType := range execExtensions {
+		if extension == execType {
+			return true
+		}
+	}
+
+	return false
+}
+
 func fileMimetypeCheck(filePath string, execMimeTypes []string) bool {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -191,6 +244,7 @@ func fileMimetypeCheck(filePath string, execMimeTypes []string) bool {
 	buffer := make([]byte, 512)
 	_, err = file.Read(buffer)
 	if err != nil {
+		logrus.Errorf("Error: %v", err)
 		return false
 	}
 
@@ -217,8 +271,9 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	}
 
 	isSharedLib := isSharedLibrary(f.Name())
+	execmime := isExecutable(f.Name())
 
-	if !isSharedLib && !fileMimetypeCheck(f.Name(), execMimeTypes) {
+	if !isSharedLib && !execmime {
 		return nil
 	}
 
