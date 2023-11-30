@@ -176,15 +176,6 @@ func ScanFilePath(s *Scanner, path string, iocs *[]output.IOCFound, layer string
 	return
 }
 
-func isExecutable(path string) (bool, error) {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return false, err
-	}
-	mode := fileInfo.Mode()
-	return mode&0111 != 0, nil
-}
-
 func isSharedLibrary(path string) bool {
 	return strings.HasSuffix(path, ".so") || strings.HasSuffix(path, ".a") || strings.HasSuffix(path, ".la")
 }
@@ -203,10 +194,8 @@ func fileMimetypeCheck(filePath string, execMimeTypes []string) bool {
 		return false
 	}
 
-	// Determine the mimetype
 	mimetype := http.DetectContentType(buffer)
 
-	// Check if the mimetype is in the list of executable mimetypes
 	for _, execType := range execMimeTypes {
 		if strings.Contains(mimetype, execType) {
 			return true
