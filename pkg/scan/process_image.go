@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"math"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -30,6 +31,7 @@ import (
 
 var (
 	ErrmaxMalwaresExceeded = errors.New("number of secrets exceeded max-secrets")
+	execMimeTypes          = []string{"text/x-shellscript", "application/x-executable", "application/x-mach-binary", "application/x-msdownload", "application/exe", "application/x-msdos-program", "application/x-elf", "application/x-sharedlib", "application/x-pie-executable", "application/java-archive", "application/x-java-archive", "text/x-python", "application/x-batch"}
 )
 
 // Data type to store details about the container image after parsing manifest
@@ -174,6 +176,46 @@ func ScanFilePath(s *Scanner, path string, iocs *[]output.IOCFound, layer string
 	return
 }
 
+func isExecutable(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	mode := fileInfo.Mode()
+	return mode&0111 != 0, nil
+}
+
+func isSharedLibrary(path string) bool {
+	return strings.HasSuffix(path, ".so") || strings.HasSuffix(path, ".a") || strings.HasSuffix(path, ".la")
+}
+
+func fileMimetypeCheck(filePath string, execMimeTypes []string) bool {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	// Read the first 512 bytes to determine the file's mimetype
+	buffer := make([]byte, 512)
+	_, err = file.Read(buffer)
+	if err != nil {
+		return false
+	}
+
+	// Determine the mimetype
+	mimetype := http.DetectContentType(buffer)
+
+	// Check if the mimetype is in the list of executable mimetypes
+	for _, execType := range execMimeTypes {
+		if strings.Contains(mimetype, execType) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
 	var (
 		matches yr.MatchRules
@@ -183,6 +225,12 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	type ruleVariable struct {
 		name  string
 		value interface{}
+	}
+
+	isSharedLib := isSharedLibrary(f.Name())
+
+	if !isSharedLib && !fileMimetypeCheck(f.Name(), execMimeTypes) {
+		return nil
 	}
 
 	if filepath.Ext(f.Name()) != "" {
@@ -266,7 +314,11 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 		if len(matches) > 0 {
 			// output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
 			for _, m := range iocsFound {
-				m.FileSeverity = updatedSeverity
+				if isSharedLib {
+					m.FileSeverity = "low"
+				} else {
+					m.FileSeverity = updatedSeverity
+				}
 				m.FileSevScore = updatedScore
 				StringsMatch := make([]string, 0)
 				for _, c := range m.StringsToMatch {
