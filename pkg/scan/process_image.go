@@ -20,6 +20,7 @@ import (
 	"github.com/deepfence/YaraHunter/constants"
 	"github.com/deepfence/YaraHunter/core"
 	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
+	"github.com/gabriel-vasile/mimetype"
 
 	// yaraConf "github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
@@ -30,6 +31,8 @@ import (
 
 var (
 	ErrmaxMalwaresExceeded = errors.New("number of secrets exceeded max-secrets")
+	execMimeTypes          = []string{"text/x-shellscript", "application/x-executable", "application/x-mach-binary", "application/x-msdownload", "application/exe", "application/x-msdos-program", "application/x-elf", "application/x-sharedlib", "application/x-pie-executable", "application/java-archive", "application/x-java-archive", "text/x-python", "application/x-batch"}
+	sharedMimeTypesList    = []string{"application/x-sharedlib"}
 )
 
 // Data type to store details about the container image after parsing manifest
@@ -174,6 +177,41 @@ func ScanFilePath(s *Scanner, path string, iocs *[]output.IOCFound, layer string
 	return
 }
 
+func isSharedLibrary(filePath string) bool {
+	mtype, err := mimetype.DetectFile(filePath)
+	if err != nil {
+		logrus.Errorf("Error: %v", err)
+		return false
+	}
+	for _, execType := range sharedMimeTypesList {
+		if mtype.String() == execType {
+			return true
+		}
+	}
+	return false
+}
+
+func fileMimetypeCheck(filePath string, mimeTypesList []string) bool {
+	mtype, err := mimetype.DetectFile(filePath)
+	if err != nil {
+		logrus.Errorf("Error: %v", err)
+		return false
+	}
+
+	for _, execType := range mimeTypesList {
+		if strings.Contains(mtype.String(), execType) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isExecutable(path string) bool {
+	// todo: add more checks later
+	return fileMimetypeCheck(path, execMimeTypes)
+}
+
 func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
 	var (
 		matches yr.MatchRules
@@ -183,6 +221,13 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	type ruleVariable struct {
 		name  string
 		value interface{}
+	}
+
+	isSharedLib := isSharedLibrary(f.Name())
+	execmime := isExecutable(f.Name())
+
+	if !isSharedLib && !execmime {
+		return nil
 	}
 
 	if filepath.Ext(f.Name()) != "" {
@@ -266,7 +311,11 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 		if len(matches) > 0 {
 			// output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
 			for _, m := range iocsFound {
-				m.FileSeverity = updatedSeverity
+				if isSharedLib {
+					m.FileSeverity = "low"
+				} else {
+					m.FileSeverity = updatedSeverity
+				}
 				m.FileSevScore = updatedScore
 				StringsMatch := make([]string, 0)
 				for _, c := range m.StringsToMatch {
