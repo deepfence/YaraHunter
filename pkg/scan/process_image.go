@@ -33,24 +33,6 @@ var (
 	ErrmaxMalwaresExceeded = errors.New("number of secrets exceeded max-secrets")
 	execMimeTypes          = []string{"text/x-shellscript", "application/x-executable", "application/x-mach-binary", "application/x-msdownload", "application/exe", "application/x-msdos-program", "application/x-elf", "application/x-sharedlib", "application/x-pie-executable", "application/java-archive", "application/x-java-archive", "text/x-python", "application/x-batch"}
 	sharedMimeTypesList    = []string{"application/x-sharedlib"}
-	execExtensions         = []string{
-		".exe", ".bat", ".com", ".cmd", // Windows executables
-		".sh", ".bash", ".bashrc", ".bash_profile", // Shell scripts
-		".py", ".pyc", ".pyo", ".pyd", // Python scripts
-		".pl", ".pm", // Perl scripts
-		".rb", ".rbw", // Ruby scripts
-		".c", ".cpp", ".h", ".hpp", // C/C++ source files
-		".java", ".class", // Java files
-		".js", ".ts", // JavaScript/TypeScript files
-		".php", ".php3", ".php4", ".php5", ".phtml", // PHP files
-		".jar",         // Java Archive files
-		".msi", ".dll", // Windows Installer files
-		".app",         // macOS application bundles
-		".out",         // Compiled binaries
-		".apk",         // Android application packages
-		".deb", ".rpm", // Linux package formats
-		".dylib", // other
-	}
 )
 
 // Data type to store details about the container image after parsing manifest
