@@ -32,6 +32,7 @@ import (
 var (
 	ErrmaxMalwaresExceeded = errors.New("number of secrets exceeded max-secrets")
 	execMimeTypes          = []string{"text/x-shellscript", "application/x-executable", "application/x-mach-binary", "application/x-msdownload", "application/exe", "application/x-msdos-program", "application/x-elf", "application/x-sharedlib", "application/x-pie-executable", "application/java-archive", "application/x-java-archive", "text/x-python", "application/x-batch"}
+	sharedMimeTypesList    = []string{"application/x-sharedlib"}
 	execExtensions         = []string{
 		".exe", ".bat", ".com", ".cmd", // Windows executables
 		".sh", ".bash", ".bashrc", ".bash_profile", // Shell scripts
@@ -194,8 +195,18 @@ func ScanFilePath(s *Scanner, path string, iocs *[]output.IOCFound, layer string
 	return
 }
 
-func isSharedLibrary(path string) bool {
-	return strings.HasSuffix(path, ".so") || strings.HasSuffix(path, ".a") || strings.HasSuffix(path, ".la")
+func isSharedLibrary(filePath string) bool {
+	mtype, err := mimetype.DetectFile(filePath)
+	if err != nil {
+		logrus.Errorf("Error: %v", err)
+		return false
+	}
+	for _, execType := range sharedMimeTypesList {
+		if mtype.String() == execType {
+			return true
+		}
+	}
+	return false
 }
 
 func fileMimetypeCheck(filePath string, mimeTypesList []string) bool {
@@ -215,20 +226,8 @@ func fileMimetypeCheck(filePath string, mimeTypesList []string) bool {
 }
 
 func isExecutable(path string) bool {
-	isMIMETypeExec := fileMimetypeCheck(path, execMimeTypes)
-	extension := filepath.Ext(path)
-
-	if isMIMETypeExec {
-		return true
-	}
-
-	for _, execType := range execExtensions {
-		if extension == execType {
-			return true
-		}
-	}
-
-	return false
+	// todo: add more checks later
+	return fileMimetypeCheck(path, execMimeTypes)
 }
 
 func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
