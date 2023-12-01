@@ -6,9 +6,10 @@ replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
 
 require (
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20231030062708-5506162b00b7
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20231030062708-5506162b00b7
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20231201173641-092afefd00a2
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20231201173641-092afefd00a2
 	github.com/deepfence/vessel v0.12.0
+	github.com/gabriel-vasile/mimetype v1.4.3
 	github.com/hillu/go-yara/v4 v4.3.2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
@@ -32,7 +33,6 @@ require (
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -41,7 +41,7 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/moby/locker v1.0.1 // indirect
