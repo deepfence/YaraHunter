@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -24,8 +25,10 @@ import (
 )
 
 var (
-	MalwareScanDir = "/"
-	HostMountDir   = "/fenced/mnt/host"
+	MalwareScanDir          = "/"
+	HostMountDir            = "/fenced/mnt/host"
+	cntnrPathPrefixRegex    = `.+?\/overlay2\/[A-z0-9a-z]+\/[a-z]+\/`
+	cntnrPathPrefixRegexObj *regexp.Regexp
 )
 
 func init() {
@@ -34,6 +37,7 @@ func init() {
 	} else {
 		MalwareScanDir = HostMountDir
 	}
+	cntnrPathPrefixRegexObj = regexp.MustCompile(cntnrPathPrefixRegex)
 }
 
 type gRPCServer struct {
@@ -128,6 +132,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 
 		var malwares chan output.IOCFound
 		trim := false
+		isContainer := false
 		switch {
 		case r.GetPath() != "":
 			log.Infof("scan for malwares in path %s", r.GetPath())
@@ -149,6 +154,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			if err != nil {
 				return
 			}
+			isContainer = true
 			trim = true
 		default:
 			err = fmt.Errorf("invalid request")
@@ -157,9 +163,15 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		}
 
 		for malware := range malwares {
-			if trim {
+			if isContainer {
+				ret := cntnrPathPrefixRegexObj.FindStringSubmatchIndex(malware.CompleteFilename)
+				if ret != nil {
+					malware.CompleteFilename = malware.CompleteFilename[ret[1]-1:]
+				}
+			} else if trim {
 				malware.CompleteFilename = strings.TrimPrefix(malware.CompleteFilename, HostMountDir)
 			}
+
 			output.WriteScanData([]*pb.MalwareInfo{output.MalwaresToMalwareInfo(malware)}, r.GetScanId())
 		}
 	}()
