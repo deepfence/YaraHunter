@@ -17,4 +17,4 @@ yarahunter: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
 
 .PHONY: docker
 docker:
-	DOCKER_BUILDKIT=1 docker build -t deepfenceio/deepfence_malware_scanner:latest .
+	DOCKER_BUILDKIT=1 docker build -t quay.io/deepfenceio/deepfence_malware_scanner:2.2.0 .
