@@ -19,10 +19,10 @@ func FindIOCInImage(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JSON
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JSONImageIOCOutput{ImageName: *scanner.ImageName, IOC: res.IOCs}
+	jsonImageIOCOutput := output.JSONImageIOCOutput{ImageName: *scanner.ImageName}
 	jsonImageIOCOutput.SetTime()
 	jsonImageIOCOutput.SetImageID(res.ImageID)
-	jsonImageIOCOutput.SetIOC(res.IOCs)
+	jsonImageIOCOutput.SetIOC(removeDuplicateIOCs(res.IOCs))
 
 	return &jsonImageIOCOutput, nil
 }
@@ -44,7 +44,7 @@ func FindIOCInDir(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.JSONDi
 	if hostMountPath != "" {
 		dirName = strings.TrimPrefix(dirName, hostMountPath)
 	}
-	jsonDirIOCOutput := output.JSONDirIOCOutput{DirName: dirName, IOC: tempIOCsFound}
+	jsonDirIOCOutput := output.JSONDirIOCOutput{DirName: dirName, IOC: removeDuplicateIOCs(tempIOCsFound)}
 	jsonDirIOCOutput.SetTime()
 
 	return &jsonDirIOCOutput, nil
@@ -61,8 +61,23 @@ func FindIOCInContainer(ctx *tasks.ScanContext, scanner *scan.Scanner) (*output.
 	if err != nil {
 		return nil, err
 	}
-	jsonImageIOCOutput := output.JSONImageIOCOutput{ContainerID: *scanner.ContainerID, IOC: tempIOCsFound}
+	jsonImageIOCOutput := output.JSONImageIOCOutput{ContainerID: *scanner.ContainerID, IOC: removeDuplicateIOCs(tempIOCsFound)}
 	jsonImageIOCOutput.SetTime()
 
 	return &jsonImageIOCOutput, nil
+}
+
+func removeDuplicateIOCs(iocs []output.IOCFound) []output.IOCFound {
+	keys := make(map[string]bool)
+	list := []output.IOCFound{}
+	for _, entry := range iocs {
+		uniqueKey := entry.CompleteFilename + entry.RuleName + entry.Class + entry.LayerID
+		if _, value := keys[uniqueKey]; !value {
+			keys[uniqueKey] = true
+			list = append(list, entry)
+		} else {
+			log.Infof("Duplicate IOC found: %s", entry.CompleteFilename)
+		}
+	}
+	return list
 }
