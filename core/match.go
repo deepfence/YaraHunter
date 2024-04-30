@@ -37,6 +37,12 @@ func IsSkippableFileExtension(excludedExtensions []string, path string) bool {
 		if extension == skippableExt {
 			return true
 		}
+		// special check of .so
+		if skippableExt == ".so" {
+			if IsSharedLibrary(path) {
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -52,4 +58,30 @@ func UpdateDirsPermissionsRW(dir string) error {
 		}
 		return nil
 	})
+}
+
+// IsSharedLibrary Checks if the file is a shared library
+func IsSharedLibrary(path string) bool {
+	if path == "" {
+		return false
+	}
+
+	if strings.HasSuffix(path, ".so") {
+		return true
+	}
+
+	// check if the file is a shared library
+	// it could .so, .so.1, .so.1.2.3
+	// https://en.wikipedia.org/wiki/Shared_library
+	// below wouldn't work for .so.1.2.3
+	// extension := strings.ToLower(filepath.Ext(path))
+	filename := filepath.Base(path)
+	splitExt := strings.Split(filename, ".")
+	if len(splitExt) > 1 {
+		if splitExt[1] == "so" {
+			return true
+		}
+	}
+
+	return false
 }
