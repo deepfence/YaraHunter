@@ -18,8 +18,8 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	yararules "github.com/deepfence/YaraHunter/pkg/yararules"
-	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
-	tasks "github.com/deepfence/golang_deepfence_sdk/utils/tasks"
+	pb "github.com/khulnasoft-lab/agent-plugins-grpc/srcgo"
+	tasks "github.com/khulnasoft-lab/golang_sdk/utils/tasks"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )

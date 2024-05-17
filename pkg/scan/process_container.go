@@ -8,13 +8,13 @@ import (
 
 	"github.com/deepfence/YaraHunter/core"
 	"github.com/deepfence/YaraHunter/pkg/output"
-	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
-	"github.com/deepfence/vessel"
-	containerdRuntime "github.com/deepfence/vessel/containerd"
-	crioRuntime "github.com/deepfence/vessel/crio"
-	dockerRuntime "github.com/deepfence/vessel/docker"
-	podmanRuntime "github.com/deepfence/vessel/podman"
-	vesselConstants "github.com/deepfence/vessel/utils"
+	"github.com/khulnasoft-lab/golang_sdk/utils/tasks"
+	"github.com/khulnasoft-lab/vessel"
+	containerdRuntime "github.com/khulnasoft-lab/vessel/containerd"
+	crioRuntime "github.com/khulnasoft-lab/vessel/crio"
+	dockerRuntime "github.com/khulnasoft-lab/vessel/docker"
+	podmanRuntime "github.com/khulnasoft-lab/vessel/podman"
+	vesselConstants "github.com/khulnasoft-lab/vessel/utils"
 	log "github.com/sirupsen/logrus"
 )
 

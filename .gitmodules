@@ -1,4 +1,4 @@
 [submodule "agent-plugins-grpc"]
 	path = agent-plugins-grpc
-	url = https://github.com/deepfence/agent-plugins-grpc.git
+	url = https://github.com/khulnasoft-lab/agent-plugins-grpc.git
 	branch = main

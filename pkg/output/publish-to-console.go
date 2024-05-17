@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	dsc "github.com/deepfence/golang_deepfence_sdk/client"
-	oahttp "github.com/deepfence/golang_deepfence_sdk/utils/http"
+	dsc "github.com/khulnasoft-lab/golang_sdk/client"
+	oahttp "github.com/khulnasoft-lab/golang_sdk/utils/http"
 	log "github.com/sirupsen/logrus"
 )
 

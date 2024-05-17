@@ -2,18 +2,18 @@ module github.com/deepfence/YaraHunter
 
 go 1.21
 
-replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
+replace github.com/khulnasoft-lab/agent-plugins-grpc => ./agent-plugins-grpc
 
 require (
-	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230630084500-8fb0280d6010
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230929125743-1713a043efe5
-	github.com/deepfence/vessel v0.12.3
 	github.com/gabriel-vasile/mimetype v1.4.3
 	github.com/hillu/go-yara/v4 v4.3.2
+	github.com/khulnasoft-lab/agent-plugins-grpc v0.0.0-00010101000000-000000000000
+	github.com/khulnasoft-lab/golang_sdk/client v0.0.0-20240517042822-c98d5dfb7872
+	github.com/khulnasoft-lab/golang_sdk/utils v0.0.0-20240517042822-c98d5dfb7872
+	github.com/khulnasoft-lab/vessel v0.1.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
-	google.golang.org/grpc v1.63.2
+	google.golang.org/grpc v1.64.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -44,7 +44,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.6 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -69,5 +69,5 @@ require (
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/genproto v0.0.0-20240429193739-8cf5692501f6 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240429193739-8cf5692501f6 // indirect
-	google.golang.org/protobuf v1.34.0 // indirect
+	google.golang.org/protobuf v1.34.1 // indirect
 )
