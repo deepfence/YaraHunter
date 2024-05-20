@@ -17,16 +17,18 @@ type MatchFile struct {
 
 // IsSkippableDir Checks if the path is excluded
 func IsSkippableDir(excludedPaths []string, path, baseDir string) bool {
-
 	for _, skippablePathIndicator := range excludedPaths {
 		if strings.HasPrefix(path, skippablePathIndicator) || strings.HasPrefix(path, filepath.Join(baseDir, skippablePathIndicator)) {
+			log.Debugf("Path %s is skippable", path)
 			return true
 		}
 		if strings.Contains(path, skippablePathIndicator) || strings.Contains(path, filepath.Join(baseDir, skippablePathIndicator)) {
+			log.Debugf("Path %s is skippable", path)
 			return true
 		}
 	}
 
+	log.Debugf("Path %s is not skippable", path)
 	return false
 }
 

@@ -10,7 +10,11 @@ require (
 	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230929125743-1713a043efe5
 	github.com/deepfence/vessel v0.12.3
 	github.com/gabriel-vasile/mimetype v1.4.3
+	github.com/gorilla/handlers v1.5.2
+	github.com/gorilla/mux v1.8.1
+	github.com/hillu/go-yara v1.3.1
 	github.com/hillu/go-yara/v4 v4.3.2
+	github.com/jheise/yaramsg v0.0.0-20161011054113-41444562d276
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
 	google.golang.org/grpc v1.63.2

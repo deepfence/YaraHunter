@@ -213,6 +213,7 @@ func isExecutable(path string) bool {
 }
 
 func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
+	logrus.Debugf("Scanning file %s", f.Name())
 	var (
 		matches yr.MatchRules
 		err     error
@@ -230,130 +231,127 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 		return nil
 	}
 
-	if filepath.Ext(f.Name()) != "" {
-		variables := []ruleVariable{
-			{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
-			{"filepath", filepath.ToSlash(f.Name())},
-			{"extension", filepath.Ext(f.Name())},
-		}
+	variables := []ruleVariable{
+		{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
+		{"filepath", filepath.ToSlash(f.Name())},
+		{"extension", filepath.Ext(f.Name())},
+	}
 
-		yrScanner := s.YaraScanner
-		yrScanner.SetCallback(&matches)
-		for _, v := range variables {
-			if v.value != nil {
-				if err = yrScanner.DefineVariable(v.name, v.value); err != nil {
-					return filepath.SkipDir
-				}
-			}
-		}
-
-		fi, err := f.Stat()
-		if err != nil {
-			// report.AddStringf("yara: %s: Error accessing file information, error=%s",
-			// 	f.Name(), err.Error())
-			return err
-		}
-		fileName := f.Name()
-		hostMountPath := *s.HostMountPath
-		if hostMountPath != "" {
-			fileName = strings.TrimPrefix(fileName, hostMountPath)
-		}
-		if *s.MaximumFileSize > 0 && fi.Size() > *s.MaximumFileSize {
-			logrus.Debugf("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), *s.MaximumFileSize)
-			return nil
-		}
-		err = yrScanner.ScanFileDescriptor(f.Fd())
-		if err != nil {
-			fmt.Println("Scan File Descriptor error, trying alternative", err)
-			var buf []byte
-			if buf, err = io.ReadAll(f); err != nil {
-				logrus.Errorf("yara: %s: Error reading file, error=%s",
-					fileName, err.Error())
+	yrScanner := s.YaraScanner
+	yrScanner.SetCallback(&matches)
+	for _, v := range variables {
+		if v.value != nil {
+			if err = yrScanner.DefineVariable(v.name, v.value); err != nil {
 				return filepath.SkipDir
 			}
-			err = yrScanner.ScanMem(buf)
-			if err != nil {
-				fmt.Println("Scan File Mmory Error", err)
-				return filepath.SkipDir
-			}
-
 		}
-		var iocsFound []output.IOCFound
-		totalMatchesStringData := make([]string, 0)
-		for _, m := range matches {
-			matchesStringData := make([]string, len(m.Strings))
-			for _, str := range m.Strings {
-				if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
-					matchesStringData = append(matchesStringData, string(str.Data))
-					totalMatchesStringData = append(totalMatchesStringData, string(str.Data))
-				}
-			}
-			matchesMetaData := make([]string, len(m.Metas))
-			for _, strMeta := range m.Metas {
-				matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
-			}
+	}
 
-			iocsFound = append(iocsFound, output.IOCFound{
-				RuleName:         m.Rule,
-				CategoryName:     m.Tags,
-				StringsToMatch:   matchesStringData,
-				Meta:             matchesMetaData,
-				CompleteFilename: fileName,
-			})
+	fi, err := f.Stat()
+	if err != nil {
+		// report.AddStringf("yara: %s: Error accessing file information, error=%s",
+		// 	f.Name(), err.Error())
+		return err
+	}
+	fileName := f.Name()
+	hostMountPath := *s.HostMountPath
+	if hostMountPath != "" {
+		fileName = strings.TrimPrefix(fileName, hostMountPath)
+	}
+	if *s.MaximumFileSize > 0 && fi.Size() > *s.MaximumFileSize {
+		logrus.Debugf("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), *s.MaximumFileSize)
+		return nil
+	}
+	err = yrScanner.ScanFileDescriptor(f.Fd())
+	if err != nil {
+		fmt.Println("Scan File Descriptor error, trying alternative", err)
+		var buf []byte
+		if buf, err = io.ReadAll(f); err != nil {
+			logrus.Errorf("yara: %s: Error reading file, error=%s",
+				fileName, err.Error())
+			return filepath.SkipDir
 		}
-		var fileMat fileMatches
-		fileMat.fileName = fileName
-		fileMat.iocs = iocsFound
-		updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
-		fileMat.updatedSeverity = updatedSeverity
-		fileMat.updatedScore = updatedScore
-		// var isFirstIOC bool = true
-		if len(matches) > 0 {
-			// output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
-			for _, m := range iocsFound {
-				if isSharedLib {
-					m.FileSeverity = "low"
-				} else {
-					m.FileSeverity = updatedSeverity
-				}
-				m.FileSevScore = updatedScore
-				StringsMatch := make([]string, 0)
-				for _, c := range m.StringsToMatch {
-					if len(c) > 0 {
-						StringsMatch = append(StringsMatch, c)
-					}
-				}
-				m.StringsToMatch = StringsMatch
-				m.LayerID = layer
-				summary := ""
-				class := "Undefined"
-				m.MetaRules = make(map[string]string)
-				for _, c := range m.Meta {
-					var metaSplit = strings.Split(c, " : ")
-					if len(metaSplit) > 1 {
+		err = yrScanner.ScanMem(buf)
+		if err != nil {
+			fmt.Println("Scan File Mmory Error", err)
+			return filepath.SkipDir
+		}
 
-						// fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.Replace(metaSplit[1], "\n", "", -1))+",\n")
-						m.MetaRules[metaSplit[0]] = strings.ReplaceAll(metaSplit[1], "\n", "")
-						if metaSplit[0] == "description" {
-							str := []string{"The file has a rule match that ", strings.ReplaceAll(metaSplit[1], "\n", "") + "."}
+	}
+	var iocsFound []output.IOCFound
+	totalMatchesStringData := make([]string, 0)
+	for _, m := range matches {
+		matchesStringData := make([]string, len(m.Strings))
+		for _, str := range m.Strings {
+			if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
+				matchesStringData = append(matchesStringData, string(str.Data))
+				totalMatchesStringData = append(totalMatchesStringData, string(str.Data))
+			}
+		}
+		matchesMetaData := make([]string, len(m.Metas))
+		for _, strMeta := range m.Metas {
+			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
+		}
+
+		iocsFound = append(iocsFound, output.IOCFound{
+			RuleName:         m.Rule,
+			CategoryName:     m.Tags,
+			StringsToMatch:   matchesStringData,
+			Meta:             matchesMetaData,
+			CompleteFilename: fileName,
+		})
+	}
+	var fileMat fileMatches
+	fileMat.fileName = fileName
+	fileMat.iocs = iocsFound
+	updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
+	fileMat.updatedSeverity = updatedSeverity
+	fileMat.updatedScore = updatedScore
+	// var isFirstIOC bool = true
+	if len(matches) > 0 {
+		// output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
+		for _, m := range iocsFound {
+			if isSharedLib {
+				m.FileSeverity = "low"
+			} else {
+				m.FileSeverity = updatedSeverity
+			}
+			m.FileSevScore = updatedScore
+			StringsMatch := make([]string, 0)
+			for _, c := range m.StringsToMatch {
+				if len(c) > 0 {
+					StringsMatch = append(StringsMatch, c)
+				}
+			}
+			m.StringsToMatch = StringsMatch
+			m.LayerID = layer
+			summary := ""
+			class := "Undefined"
+			m.MetaRules = make(map[string]string)
+			for _, c := range m.Meta {
+				var metaSplit = strings.Split(c, " : ")
+				if len(metaSplit) > 1 {
+
+					// fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.Replace(metaSplit[1], "\n", "", -1))+",\n")
+					m.MetaRules[metaSplit[0]] = strings.ReplaceAll(metaSplit[1], "\n", "")
+					if metaSplit[0] == "description" {
+						str := []string{"The file has a rule match that ", strings.ReplaceAll(metaSplit[1], "\n", "") + "."}
+						summary += strings.Join(str, " ")
+					} else {
+						if metaSplit[0] == "info" {
+							class = strings.TrimSpace(strings.ReplaceAll(metaSplit[1], "\n", ""))
+						} else if len(metaSplit[0]) > 0 {
+							str := []string{"The matched rule file's ", metaSplit[0], " is", strings.ReplaceAll(metaSplit[1], "\n", "") + "."}
 							summary += strings.Join(str, " ")
-						} else {
-							if metaSplit[0] == "info" {
-								class = strings.TrimSpace(strings.ReplaceAll(metaSplit[1], "\n", ""))
-							} else if len(metaSplit[0]) > 0 {
-								str := []string{"The matched rule file's ", metaSplit[0], " is", strings.ReplaceAll(metaSplit[1], "\n", "") + "."}
-								summary += strings.Join(str, " ")
-							}
 						}
 					}
 				}
-				m.Summary = summary
-				m.Class = class
-				// *(*(*iocs)) = append(*(*(*iocs)), m)
-				*iocs = append(*iocs, m)
 			}
+			m.Summary = summary
+			m.Class = class
+			// *(*(*iocs)) = append(*(*(*iocs)), m)
+			*iocs = append(*iocs, m)
 		}
-
 	}
 	return err
 }
