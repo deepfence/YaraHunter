@@ -213,7 +213,7 @@ func isExecutable(path string) bool {
 }
 
 func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
-	logrus.Infof("Scanning file %s", f.Name())
+	logrus.Debugf("Scanning file %s", f.Name())
 	var (
 		matches yr.MatchRules
 		err     error
