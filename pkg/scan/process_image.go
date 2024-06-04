@@ -163,18 +163,16 @@ func calculateSeverity(inputString []string, severity string, severityScore floa
 func ScanFilePath(s *Scanner, path string, iocs *[]output.IOCFound, layer string) (err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		logrus.Errorf("Error: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		logrus.Errorf("Could not seek to start of file %s: %v", path, err)
 		return err
 	}
-	if e := ScanFile(s, f, iocs, layer); err == nil && e != nil {
-		err = e
+	if err = ScanFile(s, f, iocs, layer); err != nil {
+		return err
 	}
-	return
+	return nil
 }
 
 func isSharedLibrary(filePath string) bool {
@@ -430,7 +428,8 @@ func (s *Scanner) ScanIOCInDir(layer string, baseDir string, fullDir string, mat
 		}
 		tmpIOCs := []output.IOCFound{}
 		if err = ScanFilePath(s, path, &tmpIOCs, layer); err != nil {
-			logrus.Errorf("Scan file failed: %v", err)
+			logrus.Warnf("Scan file failed: %v", err)
+			return nil
 		}
 
 		*iocs = append(*iocs, tmpIOCs...)
@@ -519,7 +518,7 @@ func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir strin
 			}
 			tmpIOCs := []output.IOCFound{}
 			if err = ScanFilePath(s, path, &tmpIOCs, layer); err != nil {
-				logrus.Errorf("Scan file failed: %v", err)
+				logrus.Warnf("Scan file failed: %v", err)
 			}
 
 			for i := range tmpIOCs {
