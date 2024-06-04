@@ -68,7 +68,7 @@ func main() {
 		wg.Add(1)
 		err := runner.StartYaraHunterUpdater(*opts.ConfigPath, *opts.RulesPath, *opts.RulesListingURL)
 		if err != nil {
-			log.Panicf("main: failed to serve: %v", err)
+			log.Panicf("main: failed to start updater: %v", err)
 		}
 		go runner.ScheduleYaraHunterUpdater(opts, &wg)
 	}

@@ -109,7 +109,6 @@ func Untar(d *os.File, r io.Reader) error {
 			if _, err := io.Copy(d, tr); err != nil {
 				return err
 			}
-			d.Close()
 		}
 	}
 }

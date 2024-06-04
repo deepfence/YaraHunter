@@ -61,17 +61,17 @@ func StartYaraHunterUpdater(rulesPath, configPath, rulesListingURL string) error
 			yaraRuleUpdater.currentFileChecksum = yaraRuleListingJSON.Available.V3[0].Checksum
 			file, err := json.MarshalIndent(yaraRuleUpdater, "", " ")
 			if err != nil {
-				log.Errorf("main: failed to serve: %v", err)
+				log.Errorf("main: failed to marshal: %v", err)
 				return err
 			}
 			err = os.WriteFile(path.Join(rulesPath, "metaListingData.json"), file, 0644)
 			if err != nil {
-				log.Errorf("main: failed to serve: %v", err)
+				log.Errorf("main: failed to write to metaListingData.json: %v", err)
 				return err
 			}
 			fileName, err := utils.DownloadFile(yaraRuleListingJSON.Available.V3[0].URL, configPath)
 			if err != nil {
-				log.Errorf("main: failed to serve: %v", err)
+				log.Errorf("main: failed to download file: %v", err)
 				return err
 			}
 
@@ -80,7 +80,7 @@ func StartYaraHunterUpdater(rulesPath, configPath, rulesListingURL string) error
 
 				readFile, readErr := os.OpenFile(filepath.Join(configPath, fileName), os.O_CREATE|os.O_RDWR, 0755)
 				if readErr != nil {
-					log.Errorf("main: failed to serve: %v", readErr)
+					log.Errorf("main: failed to open rules tar file : %v", readErr)
 					return readErr
 				}
 
@@ -88,7 +88,7 @@ func StartYaraHunterUpdater(rulesPath, configPath, rulesListingURL string) error
 
 				newFile, err := utils.CreateFile(configPath, "malware.yar")
 				if err != nil {
-					log.Errorf("main: failed to create: %v", err)
+					log.Errorf("main: failed to create malware.yar: %v", err)
 					return err
 				}
 
@@ -96,7 +96,7 @@ func StartYaraHunterUpdater(rulesPath, configPath, rulesListingURL string) error
 
 				err = utils.Untar(newFile, readFile)
 				if err != nil {
-					log.Errorf("main: failed to serve: %v", err)
+					log.Errorf("main: failed to untar: %v", err)
 					return err
 				}
 			}
