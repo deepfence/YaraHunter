@@ -80,7 +80,7 @@ func (containerScan *ContainerScan) scanPath(ctx *tasks.ScanContext, scanner *Sc
 }
 
 func (containerScan *ContainerScan) scanPathStream(ctx *tasks.ScanContext, scanner *Scanner, containerPath string) (chan output.IOCFound, error) {
-	return scanner.ScanIOCInDirStream("", "", "/fenced/mnt/host/"+containerPath, nil, true, ctx)
+	return scanner.ScanIOCInDirStream("", "", "/fenced/mnt/host/"+containerPath, nil, true, ctx, "", nil)
 }
 
 // Function to scan extracted layers of container file system for IOC file by file
@@ -99,7 +99,7 @@ func (containerScan *ContainerScan) scan(ctx *tasks.ScanContext, scanner *Scanne
 	return iocsFound, nil
 }
 func (containerScan *ContainerScan) scanStream(ctx *tasks.ScanContext, scanner *Scanner) (chan output.IOCFound, error) {
-	return scanner.ScanIOCInDirStream("", "", containerScan.tempDir, nil, false, ctx)
+	return scanner.ScanIOCInDirStream("", "", containerScan.tempDir, nil, false, ctx, "", nil)
 }
 
 type ContainerExtractionResult struct {

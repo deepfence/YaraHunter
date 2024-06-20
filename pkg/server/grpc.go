@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net"
 	"os"
@@ -20,6 +21,7 @@ import (
 	yararules "github.com/deepfence/YaraHunter/pkg/yararules"
 	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
 	tasks "github.com/deepfence/golang_deepfence_sdk/utils/tasks"
+	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -27,6 +29,7 @@ import (
 var (
 	MalwareScanDir          = "/"
 	HostMountDir            = "/fenced/mnt/host"
+	SqliteDBPath            = "/var/tmp/.malware.db"
 	cntnrPathPrefixRegex    = `.+?\/overlay2\/[A-z0-9a-z]+\/[a-z]+\/`
 	cntnrPathPrefixRegexObj *regexp.Regexp
 )
@@ -136,7 +139,13 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		switch {
 		case r.GetPath() != "":
 			log.Infof("scan for malwares in path %s", r.GetPath())
-			malwares, err = scanner.ScanIOCInDirStream("", "", r.GetPath(), nil, false, ctx)
+			// creating sqlite db to cache the scanned files, to avoid scanning next time (quick scanning)
+			db, err := sql.Open("sqlite3", SqliteDBPath)
+			if err != nil {
+				log.Error("failed to open sqlite db", err)
+				return
+			}
+			malwares, err = scanner.ScanIOCInDirStream("", "", r.GetPath(), nil, false, ctx, r.GetScanMethod(), db)
 			if err != nil {
 				log.Error("finding new err", err)
 				return

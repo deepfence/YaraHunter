@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -53,6 +54,8 @@ type fileMatches struct {
 var (
 	imageTarFileName = "save-output.tar"
 )
+
+const batchSize = 5000
 
 type ImageScan struct {
 	imageName     string
@@ -449,7 +452,7 @@ const (
 	outputChannelSize = 100
 )
 
-func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, isContainerRunTime bool, scanCtx *tasks.ScanContext) (chan output.IOCFound, error) {
+func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir string, matchedRuleSet map[uint]uint, isContainerRunTime bool, scanCtx *tasks.ScanContext, scanMethod string, db *sql.DB) (chan output.IOCFound, error) {
 	if layer != "" {
 		logrus.Debugf("Scan results in selected image with layer %s", layer)
 	}
@@ -464,7 +467,49 @@ func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir strin
 		baseDir = *s.Options.HostMountPath
 	}
 
+	tableName := ""
+
 	res := make(chan output.IOCFound, outputChannelSize)
+	if db != nil {
+		if scanMethod == "deep" {
+			tableName = "deep_scan_file_metadata"
+			_, err := db.Exec("DROP TABLE IF EXISTS " + tableName)
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = db.Exec(`
+			CREATE TABLE IF NOT EXISTS ` + tableName + ` (
+				hash INTEGER PRIMARY KEY,
+				path TEXT
+			)
+		`)
+			if err != nil {
+				return nil, err
+			}
+		} else if scanMethod == "quick" {
+			tableName = "quick_scan_file_metadata"
+			_, err := db.Exec("DROP TABLE IF EXISTS " + tableName)
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = db.Exec(`
+			CREATE TABLE IF NOT EXISTS ` + tableName + ` (
+				hash INTEGER PRIMARY KEY,
+				path TEXT
+			)
+		`)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, errors.New("invalid scan method")
+		}
+	}
+
+	var batch []string
+	var batchArgs []interface{}
 
 	go func() {
 		defer close(res)
@@ -516,22 +561,86 @@ func (s *Scanner) ScanIOCInDirStream(layer string, baseDir string, fullDir strin
 			if finfo.Size() > maxFileSize || core.IsSkippableFileExtension(s.Config.ExcludedExtensions, path) {
 				return nil
 			}
-			tmpIOCs := []output.IOCFound{}
-			if err = ScanFilePath(s, path, &tmpIOCs, layer); err != nil {
-				logrus.Warnf("Scan file failed: %v", err)
-			}
 
-			for i := range tmpIOCs {
-				res <- tmpIOCs[i]
+			if db != nil {
+				// todo: before scanning we need to understand what is the method of scanning
+				// is it deep scanning or is it quick scanning
+				// for deep scanning we need to scan at the same time write the data to db(a db is created at the beginning)
+				hash := GetHashFrom(path + finfo.ModTime().String())
+				batch = append(batch, "(?, ?)")
+				batchArgs = append(batchArgs, hash, path)
+				if len(batch) >= batchSize {
+					logrus.Infof("Executing batch")
+					err = ExecuteBatch(db, batch, batchArgs, tableName)
+					if err != nil {
+						return err
+					}
+					batch = nil
+					batchArgs = nil
+				}
 			}
-			iocCount += len(tmpIOCs)
+			// in case of deep scan, scan the file in case of quick don't just index the file we'll scan after getting the diff
+			if scanMethod == "deep" || db == nil {
+				tmpIOCs := []output.IOCFound{}
+				if err = ScanFilePath(s, path, &tmpIOCs, layer); err != nil {
+					logrus.Warnf("Scan file failed: %v", err)
+				}
 
-			// Don't report secrets if number of secrets exceeds MAX value
-			if uint(iocCount) >= *s.Options.MaxIOC {
-				return ErrmaxMalwaresExceeded
+				for i := range tmpIOCs {
+					res <- tmpIOCs[i]
+				}
+				iocCount += len(tmpIOCs)
+
+				// Don't report secrets if number of secrets exceeds MAX value
+				if uint(iocCount) >= *s.Options.MaxIOC {
+					return ErrmaxMalwaresExceeded
+				}
 			}
 			return nil
 		})
+		if len(batch) > 0 {
+			err := ExecuteBatch(db, batch, batchArgs, tableName)
+			if err != nil {
+				logrus.Errorf("Error executing batch: %v", err)
+			}
+		}
+		_, err := db.Exec("CREATE INDEX IF NOT EXISTS idx_" + tableName + "_hash ON " + tableName + "(hash)")
+		if err != nil {
+			logrus.Errorf("Error creating index: %w", err)
+		}
+
+		// create index
+		_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_" + tableName + "_path ON " + tableName + "(path)")
+		if err != nil {
+			logrus.Errorf("Error creating index: %w", err)
+		}
+
+		// if it is quickscan, we need to get the diff and scan the files
+		if scanMethod == "quick" {
+			// get add/mods
+			addMods, err := FindDeltaOfFiles("quick_scan_file_metadata", "deep_scan_file_metadata", db, false)
+			logrus.Infof("AddMods: %v", addMods)
+			if err != nil {
+				logrus.Errorf("Error finding delta: %v", err)
+				return
+			}
+			for _, v := range addMods {
+				tmpIOCs := []output.IOCFound{}
+				if err = ScanFilePath(s, v, &tmpIOCs, layer); err != nil {
+					logrus.Warnf("Scan file failed: %v", err)
+				}
+
+				for i := range tmpIOCs {
+					res <- tmpIOCs[i]
+				}
+				iocCount += len(tmpIOCs)
+
+				// Don't report secrets if number of secrets exceeds MAX value
+				if uint(iocCount) >= *s.Options.MaxIOC {
+					return
+				}
+			}
+		}
 	}()
 
 	return res, nil
@@ -633,7 +742,7 @@ func (imageScan *ImageScan) processImageLayersStream(ctx *tasks.ScanContext, sca
 				// return tempIOCsFound, error
 			}
 			logrus.Debugf("Analyzing dir: %s", targetDir)
-			iocs, err := scanner.ScanIOCInDirStream(layerIDs[i], extractPath, targetDir, matchedRuleSet, false, ctx)
+			iocs, err := scanner.ScanIOCInDirStream(layerIDs[i], extractPath, targetDir, matchedRuleSet, false, ctx, "", nil)
 			if err != nil {
 				logrus.Errorf("ProcessImageLayers: %s", err)
 				// return tempIOCsFound, err
