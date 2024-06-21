@@ -262,7 +262,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	}
 	err = yrScanner.ScanFileDescriptor(f.Fd())
 	if err != nil {
-		fmt.Println("Scan File Descriptor error, trying alternative", err)
+		logrus.Errorf("yara: %s: Error scanning file, error=%s, trying alternative", fileName, err.Error())
 		var buf []byte
 		if buf, err = io.ReadAll(f); err != nil {
 			logrus.Errorf("yara: %s: Error reading file, error=%s",
@@ -271,7 +271,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 		}
 		err = yrScanner.ScanMem(buf)
 		if err != nil {
-			fmt.Println("Scan File Mmory Error", err)
+			logrus.Errorf("yara: %s: Error scanning file, error=%s", fileName, err.Error())
 			return filepath.SkipDir
 		}
 
