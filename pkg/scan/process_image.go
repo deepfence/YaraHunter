@@ -279,13 +279,19 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	var iocsFound []output.IOCFound
 	totalMatchesStringData := make([]string, 0)
 	for _, m := range matches {
-		matchesStringData := make([]string, len(m.Strings))
+		matchesStringData := make(map[string]struct{})
 		for _, str := range m.Strings {
-			if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
-				matchesStringData = append(matchesStringData, string(str.Data))
+			if _, exists := matchesStringData[string(str.Data)]; !exists {
+				matchesStringData[string(str.Data)] = struct{}{}
 				totalMatchesStringData = append(totalMatchesStringData, string(str.Data))
 			}
 		}
+		// Convert map keys to slice since the rest of your code expects a slice
+		matchesStringDataSlice := make([]string, 0, len(matchesStringData))
+		for key := range matchesStringData {
+			matchesStringDataSlice = append(matchesStringDataSlice, key)
+		}
+
 		matchesMetaData := make([]string, len(m.Metas))
 		for _, strMeta := range m.Metas {
 			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
@@ -294,7 +300,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 		iocsFound = append(iocsFound, output.IOCFound{
 			RuleName:         m.Rule,
 			CategoryName:     m.Tags,
-			StringsToMatch:   matchesStringData,
+			StringsToMatch:   matchesStringDataSlice,
 			Meta:             matchesMetaData,
 			CompleteFilename: fileName,
 		})
