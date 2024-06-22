@@ -15,6 +15,7 @@ import (
 	"slices"
 	"strings"
 	"syscall"
+	"unsafe"
 
 	"fmt"
 
@@ -211,6 +212,10 @@ func isExecutable(path string) bool {
 	return fileMimetypeCheck(path, execMimeTypes)
 }
 
+func BytesToString(b []byte) (s string) {
+	return unsafe.String(unsafe.SliceData(b), len(b))
+}
+
 func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
 	logrus.Debugf("Scanning file %s", f.Name())
 	var (
@@ -281,7 +286,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	totalMatchesStringData := make([]string, 0)
 	for _, m := range matches {
 		for _, str := range m.Strings {
-			totalMatchesStringData = append(totalMatchesStringData, string(str.Data))
+			totalMatchesStringData = append(totalMatchesStringData, BytesToString(str.Data))
 		}
 
 		slices.Sort(totalMatchesStringData)
