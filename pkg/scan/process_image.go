@@ -12,8 +12,10 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
+	"unsafe"
 
 	"fmt"
 
@@ -210,6 +212,10 @@ func isExecutable(path string) bool {
 	return fileMimetypeCheck(path, execMimeTypes)
 }
 
+func BytesToString(b []byte) (s string) {
+	return unsafe.String(unsafe.SliceData(b), len(b))
+}
+
 func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
 	logrus.Debugf("Scanning file %s", f.Name())
 	var (
@@ -262,7 +268,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	}
 	err = yrScanner.ScanFileDescriptor(f.Fd())
 	if err != nil {
-		fmt.Println("Scan File Descriptor error, trying alternative", err)
+		logrus.Errorf("yara: %s: Error scanning file, error=%s, trying alternative", fileName, err.Error())
 		var buf []byte
 		if buf, err = io.ReadAll(f); err != nil {
 			logrus.Errorf("yara: %s: Error reading file, error=%s",
@@ -271,7 +277,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 		}
 		err = yrScanner.ScanMem(buf)
 		if err != nil {
-			fmt.Println("Scan File Mmory Error", err)
+			logrus.Errorf("yara: %s: Error scanning file, error=%s", fileName, err.Error())
 			return filepath.SkipDir
 		}
 
@@ -279,13 +285,13 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	var iocsFound []output.IOCFound
 	totalMatchesStringData := make([]string, 0)
 	for _, m := range matches {
-		matchesStringData := make([]string, len(m.Strings))
 		for _, str := range m.Strings {
-			if !strings.Contains(strings.Join(matchesStringData, " "), string(str.Data)) {
-				matchesStringData = append(matchesStringData, string(str.Data))
-				totalMatchesStringData = append(totalMatchesStringData, string(str.Data))
-			}
+			totalMatchesStringData = append(totalMatchesStringData, BytesToString(str.Data))
 		}
+
+		slices.Sort(totalMatchesStringData)
+		matchesStringDataSlice := slices.Compact(totalMatchesStringData)
+
 		matchesMetaData := make([]string, len(m.Metas))
 		for _, strMeta := range m.Metas {
 			matchesMetaData = append(matchesMetaData, fmt.Sprintf("%v : %v \n", strMeta.Identifier, strMeta.Value))
@@ -294,7 +300,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 		iocsFound = append(iocsFound, output.IOCFound{
 			RuleName:         m.Rule,
 			CategoryName:     m.Tags,
-			StringsToMatch:   matchesStringData,
+			StringsToMatch:   matchesStringDataSlice,
 			Meta:             matchesMetaData,
 			CompleteFilename: fileName,
 		})
