@@ -25,7 +25,9 @@ package main
 // ------------------------------------------------------------------------------
 
 import (
+	"context"
 	"os"
+	"os/signal"
 	"path"
 	"runtime"
 	"strconv"
@@ -33,6 +35,7 @@ import (
 
 	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/runner"
+	cfg "github.com/deepfence/match-scanner/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -55,11 +58,18 @@ func main() {
 		},
 	})
 
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
 	opts, err := config.ParseOptions()
 	if err != nil {
 		log.Panicf("main: failed to parse options: %v", err)
 	}
 	config, err := config.ParseConfig(*opts.ConfigPath)
+	if err != nil {
+		log.Panicf("main: failed to parse options: %v", err)
+	}
+	executorConfig, err := cfg.ParseConfig(*opts.ExecutorConfigPath)
 	if err != nil {
 		log.Panicf("main: failed to parse options: %v", err)
 	}
@@ -70,9 +80,9 @@ func main() {
 		if err != nil {
 			log.Panicf("main: failed to start updater: %v", err)
 		}
-		go runner.ScheduleYaraHunterUpdater(opts, &wg)
+		go runner.ScheduleYaraHunterUpdater(ctx, opts)
 	}
-	wg.Add(1)
-	go runner.StartYaraHunter(opts, config, &wg)
-	wg.Wait()
+
+	go runner.StartYaraHunter(ctx, opts, config, executorConfig)
+	<-ctx.Done()
 }

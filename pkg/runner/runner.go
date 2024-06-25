@@ -1,9 +1,9 @@
 package runner
 
 import (
+	"context"
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/deepfence/YaraHunter/constants"
@@ -12,24 +12,23 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	"github.com/deepfence/YaraHunter/pkg/server"
 	"github.com/deepfence/YaraHunter/pkg/yararules"
-	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
+	cfg "github.com/deepfence/match-scanner/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 
-func StartYaraHunter(opts *config.Options, config *config.Config, newwg *sync.WaitGroup) {
-	defer newwg.Done()
+func StartYaraHunter(ctx context.Context, opts *config.Options, config *config.Config, extractorConfig cfg.Config) {
 
 	if *opts.SocketPath == "" {
-		runOnce(opts, config)
+		runOnce(opts, config, extractorConfig)
 		return
 	}
 
-	if err := server.RunGrpcServer(opts, config, constants.PluginName); err != nil {
+	if err := server.RunGrpcServer(ctx, opts, config, constants.PluginName); err != nil {
 		log.Panicf("main: failed to serve: %v", err)
 	}
 }
 
-func runOnce(opts *config.Options, config *config.Config) {
+func runOnce(opts *config.Options, config *config.Config, extractorConfig cfg.Config) {
 	var results IOCWriter
 
 	yaraRules := yararules.New(*opts.RulesPath)
@@ -45,49 +44,44 @@ func runOnce(opts *config.Options, config *config.Config) {
 		return
 	}
 
-	scanner := scan.New(opts, config, yaraScanner, "")
-	var ctx *tasks.ScanContext
+	scanner := scan.New(opts, config, extractorConfig, yaraScanner, "")
+	//var ctx *tasks.ScanContext
 
-	nodeType := ""
+	outputs := []output.IOCFound{}
+	writeToArray := func(res output.IOCFound, scanID string) {
+		outputs = append(outputs, res)
+	}
+
+	var st scan.ScanType
 	nodeID := ""
-
-	// Scan container image for IOC
-	if len(*opts.ImageName) > 0 {
-		nodeType = "image"
+	switch {
+	case len(*opts.Local) > 0:
+		st = scan.DIR_SCAN
+		nodeID = *opts.Local
+		log.Infof("scan for malwares in path %s", nodeID)
+		err = scanner.Scan(st, "", *opts.Local, "", writeToArray)
+		results = &output.JSONDirIOCOutput{DirName: nodeID, IOC: removeDuplicateIOCs(outputs)}
+	case len(*opts.ImageName) > 0:
+		st = scan.IMAGE_SCAN
 		nodeID = *opts.ImageName
-		log.Infof("Scanning image %s for IOC...", *opts.ImageName)
-		results, err = FindIOCInImage(ctx, scanner)
-		if err != nil {
-			log.Errorf("error scanning the image: %s", err)
-			return
-		}
-	}
-
-	// Scan local directory for IOC
-	if len(*opts.Local) > 0 {
-		nodeID = output.GetHostname()
-		log.Infof("Scanning local directory: %s", *opts.Local)
-		results, err = FindIOCInDir(ctx, scanner)
-		if err != nil {
-			log.Errorf("error scanning the dir: %s", err)
-			return
-		}
-	}
-
-	// Scan existing container for IOC
-	if len(*opts.ContainerID) > 0 {
-		nodeType = "container_image"
+		log.Infof("Scanning image %s for IOC...", nodeID)
+		//TODO ID
+		err = scanner.Scan(st, "", *opts.ImageName, "", writeToArray)
+		results = &output.JSONImageIOCOutput{ImageID: nodeID, IOC: removeDuplicateIOCs(outputs)}
+	case len(*opts.ContainerID) > 0:
+		st = scan.CONTAINER_SCAN
 		nodeID = *opts.ContainerID
-		log.Infof("Scanning container %s for IOC...", *opts.ContainerID)
-		results, err = FindIOCInContainer(ctx, scanner)
-		if err != nil {
-			log.Errorf("error scanning the container: %s", err)
-			return
-		}
+		log.Infof("scan for malwares in container %s", nodeID)
+		err = scanner.Scan(st, "", nodeID, "", writeToArray)
+		results = &output.JSONImageIOCOutput{ContainerID: nodeID, IOC: removeDuplicateIOCs(outputs)}
+	default:
+		err = fmt.Errorf("invalid request")
 	}
 
-	if results == nil {
-		log.Error("set either -local or -image-name flag")
+	results.SetTime()
+
+	if err != nil {
+		println(err.Error())
 		return
 	}
 
@@ -97,8 +91,8 @@ func runOnce(opts *config.Options, config *config.Config) {
 			log.Error(err.Error())
 		}
 
-		pub.SendReport(output.GetHostname(), *opts.ImageName, *opts.ContainerID, nodeType)
-		scanID := pub.StartScan(nodeID, nodeType)
+		pub.SendReport(output.GetHostname(), *opts.ImageName, *opts.ContainerID, scan.ScanTypeString(st))
+		scanID := pub.StartScan(nodeID, scan.ScanTypeString(st))
 		if len(scanID) == 0 {
 			scanID = fmt.Sprintf("%s-%d", nodeID, time.Now().UnixMilli())
 		}
@@ -126,6 +120,11 @@ func runOnce(opts *config.Options, config *config.Config) {
 			log.Errorf("error while writing IOC: %s", err)
 			return
 		}
+	}
+
+	if results == nil {
+		log.Error("set either -local or -image-name flag")
+		return
 	}
 
 	output.FailOn(counts,

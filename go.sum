@@ -38,6 +38,8 @@ github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230630084500-8fb0280d6
 github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230630084500-8fb0280d6010/go.mod h1:+rchMc4YNjCoHo0YAwKsT+DRBNr1hdDG0WrvAOOCc5k=
 github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230929125743-1713a043efe5 h1:6rE9xqyf4VgWIkpv51ihiSPMrXJ9mZ6pFXtBRfJEFNE=
 github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230929125743-1713a043efe5/go.mod h1:C3CqMr7oE9RmHZWXIVDWFLuGaNDDaoSBSlILLQJxlew=
+github.com/deepfence/match-scanner v0.0.0-20240625015128-8a9d2f6b9f1b h1:S1/+kG7zEetZHGqbeTdXeC00KZY3q5diljSF+oTAo/M=
+github.com/deepfence/match-scanner v0.0.0-20240625015128-8a9d2f6b9f1b/go.mod h1:nWSIuhgqf8ByciUebsPaCbkdlOnjvfnG7eoPp47oN20=
 github.com/deepfence/vessel v0.12.3 h1:C34t+sV+JoFdfYhg+uyS+YOEDAFIYjBKHShD3emDISA=
 github.com/deepfence/vessel v0.12.3/go.mod h1:bY97YUKMm0Oxasz/9o7Te60FjWCQWUYpgiWNC1E00xo=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=
@@ -92,10 +94,6 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/gorilla/handlers v1.5.2 h1:cLTUSsNkgcwhgRqvCNmdbRWG0A3N4F+M2nWKdScwyEE=
-github.com/gorilla/handlers v1.5.2/go.mod h1:dX+xVpaxdSw+q0Qek8SSsl3dfMk3jNddUkMzo0GtH0w=
-github.com/gorilla/mux v1.8.1 h1:TuBL49tXwgrFYWhqrNgrUNEY92u81SPhu7sTdzQEiWY=
-github.com/gorilla/mux v1.8.1/go.mod h1:AKf9I4AEqPTmMytcMc0KkNouC66V3BtZ4qD5fmWSiMQ=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0 h1:YBftPWNWd4WwGqtY2yeZL2ef8rHAxPBD8KFhJpmcqms=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0/go.mod h1:YN5jB8ie0yfIUg6VvR9Kz84aCaG7AsGZnLjhHbUqwPg=
 github.com/hashicorp/go-cleanhttp v0.5.2 h1:035FKYIWjmULyFRBKPs8TBQoi0x6d9G4xc9neXJWAZQ=
@@ -104,12 +102,8 @@ github.com/hashicorp/go-hclog v0.9.2 h1:CG6TE5H9/JXsFWJCfoIVpKFIkFe6ysEuHirp4DxC
 github.com/hashicorp/go-hclog v0.9.2/go.mod h1:5CU+agLiy3J7N7QjHK5d05KxGsuXiQLrjA0H7acj2lQ=
 github.com/hashicorp/go-retryablehttp v0.7.4 h1:ZQgVdpTdAL7WpMIwLzCfbalOcSUdkDZnpUv3/+BxzFA=
 github.com/hashicorp/go-retryablehttp v0.7.4/go.mod h1:Jy/gPYAdjqffZ/yFGCFV2doI5wjtH1ewM9u8iYVjtX8=
-github.com/hillu/go-yara v1.3.1 h1:DlIPDhRDXmbV2gFV9yhGpt10wzTprnOXI5bN0XIWs6k=
-github.com/hillu/go-yara v1.3.1/go.mod h1:KLxCsvD3F8cgVK866UDHi961qbzP+twKjhNdDsuz/2M=
 github.com/hillu/go-yara/v4 v4.3.2 h1:HGqUN3ORUduWZbb95RQjut4UzavGDbtt/C6SnGB3Amk=
 github.com/hillu/go-yara/v4 v4.3.2/go.mod h1:AHEs/FXVMQKVVlT6iG9d+q1BRr0gq0WoAWZQaZ0gS7s=
-github.com/jheise/yaramsg v0.0.0-20161011054113-41444562d276 h1:pq9AaNjlA2Oiljorl9+QxZR6GmzIYbZe9/EoB2L3gxk=
-github.com/jheise/yaramsg v0.0.0-20161011054113-41444562d276/go.mod h1:/+N5vT6ah10PM3rvPV2E4noyNb4CDTWm0PFnQOL/grA=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.17.8 h1:YcnTYrq7MikUT7k0Yb5eceMmALQPYBW/Xltxn0NAMnU=
@@ -213,7 +207,6 @@ golang.org/x/sys v0.0.0-20180830151530-49385e6e1522/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20210616094352-59db8d763f22/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

@@ -18,6 +18,7 @@ type Options struct {
 	Local                *string
 	HostMountPath        *string
 	ConfigPath           *string
+	ExecutorConfigPath   *string
 	ImageName            *string
 	MaxIOC               *uint
 	ContainerID          *string
@@ -50,6 +51,7 @@ func ParseOptions() (*Options, error) {
 		Local:                flag.String("local", "", "Specify local directory (absolute path) which to scan. Scans only given directory recursively."),
 		HostMountPath:        flag.String("host-mount-path", "", "If scanning the host, specify the host mount path for path exclusions to work correctly."),
 		ConfigPath:           flag.String("config-path", "", "Searches for config.yaml from given directory. If not set, tries to find it from YaraHunter binary's and current directory"),
+		ExecutorConfigPath:   flag.String("executor-config-path", "", "Searches for config.yaml from given directory. If not set, tries to find it from YaraHunter binary's and current directory"),
 		ImageName:            flag.String("image-name", "", "Name of the image along with tag to scan for IOC"),
 		MaxIOC:               flag.Uint("max-ioc", 1000, "Maximum number of indicator of compromise to find in one container image or file system."),
 		ContainerID:          flag.String("container-id", "", "Id of existing container ID"),

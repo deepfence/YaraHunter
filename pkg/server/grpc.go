@@ -5,11 +5,8 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/signal"
 	"regexp"
-	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/deepfence/YaraHunter/constants"
@@ -22,6 +19,8 @@ import (
 	tasks "github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+
+	cfg "github.com/deepfence/match-scanner/pkg/config"
 )
 
 var (
@@ -41,10 +40,11 @@ func init() {
 }
 
 type gRPCServer struct {
-	options    *config.Options
-	yaraConfig *config.Config
-	yaraRules  *yararules.YaraRules
-	pluginName string
+	options         *config.Options
+	yaraConfig      *config.Config
+	extractorConfig cfg.Config
+	yaraRules       *yararules.YaraRules
+	pluginName      string
 	pb.UnimplementedMalwareScannerServer
 	pb.UnimplementedAgentPluginServer
 	pb.UnimplementedScannersServer
@@ -102,7 +102,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		defer jobs.StopScanJob()
 
 		yaraScanner, err := s.yaraRules.NewScanner()
-		scanner := scan.New(s.options, s.yaraConfig, yaraScanner, r.ScanId)
+		scanner := scan.New(s.options, s.yaraConfig, s.extractorConfig, yaraScanner, r.ScanId)
 		res, ctx := tasks.StartStatusReporter(
 			r.ScanId,
 			func(status tasks.ScanStatus) error {
@@ -129,72 +129,38 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 			log.Error("Failed to create Yara Scanner, error:", err)
 			return
 		}
-
-		var malwares chan output.IOCFound
-		trim := false
-		isContainer := false
+		writeToFile := func(res output.IOCFound, scanID string) {
+			output.WriteScanData([]*pb.MalwareInfo{output.MalwaresToMalwareInfo(res)}, scanID)
+		}
 		switch {
 		case r.GetPath() != "":
 			log.Infof("scan for malwares in path %s", r.GetPath())
-			malwares, err = scanner.ScanIOCInDirStream("", "", r.GetPath(), nil, false, ctx)
-			if err != nil {
-				log.Error("finding new err", err)
-				return
-			}
-			trim = true
+			err = scanner.Scan(scan.DIR_SCAN, "", r.GetPath(), r.GetScanId(), writeToFile)
 		case r.GetImage() != nil && r.GetImage().Name != "":
 			log.Infof("scan for malwares in image %s", r.GetImage())
-			malwares, err = scanner.ExtractAndScanImageStream(ctx, r.GetImage().Name)
-			if err != nil {
-				return
-			}
+			//TODO ID
+			err = scanner.Scan(scan.IMAGE_SCAN, "", r.GetImage().Name, r.GetScanId(), writeToFile)
 		case r.GetContainer() != nil && r.GetContainer().Id != "":
 			log.Infof("scan for malwares in container %s", r.GetContainer())
-			malwares, err = scanner.ExtractAndScanContainerStream(ctx, r.GetContainer().Id, r.GetContainer().Namespace)
-			if err != nil {
-				return
-			}
-			isContainer = true
-			trim = true
+			err = scanner.Scan(scan.CONTAINER_SCAN, r.GetContainer().Namespace, r.GetContainer().Id, r.GetScanId(), writeToFile)
 		default:
 			err = fmt.Errorf("invalid request")
-			return
-
 		}
 
-		for malware := range malwares {
-			if isContainer {
-				ret := cntnrPathPrefixRegexObj.FindStringSubmatchIndex(malware.CompleteFilename)
-				if ret != nil {
-					malware.CompleteFilename = malware.CompleteFilename[ret[1]-1:]
-				}
-			} else if trim {
-				malware.CompleteFilename = strings.TrimPrefix(malware.CompleteFilename, HostMountDir)
-			}
-
-			output.WriteScanData([]*pb.MalwareInfo{output.MalwaresToMalwareInfo(malware)}, r.GetScanId())
+		if err != nil {
+			println(err.Error())
 		}
 	}()
 	return &pb.MalwareResult{}, nil
 }
 
-func RunGrpcServer(opts *config.Options, config *config.Config, pluginName string) error {
-	sigs := make(chan os.Signal, 1)
-	done := make(chan bool, 1)
-
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+func RunGrpcServer(ctx context.Context, opts *config.Options, config *config.Config, pluginName string) error {
 
 	lis, err := net.Listen("unix", *opts.SocketPath)
 	if err != nil {
 		return err
 	}
 	s := grpc.NewServer()
-
-	go func() {
-		<-sigs
-		s.GracefulStop()
-		done <- true
-	}()
 
 	impl := &gRPCServer{options: opts, pluginName: pluginName, yaraConfig: config}
 	if err != nil {
@@ -214,11 +180,15 @@ func RunGrpcServer(opts *config.Options, config *config.Config, pluginName strin
 	pb.RegisterMalwareScannerServer(s, impl)
 	pb.RegisterScannersServer(s, impl)
 	log.Info("main: server listening at ", lis.Addr())
-	if err := s.Serve(lis); err != nil {
-		return err
-	}
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Errorf("server: %v", err)
+		}
+	}()
 
-	<-done
+	<-ctx.Done()
+	s.GracefulStop()
+
 	log.Info("main: exiting gracefully")
 	return nil
 }

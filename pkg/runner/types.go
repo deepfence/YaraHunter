@@ -11,6 +11,7 @@ type IOCWriter interface {
 	WriteJSON() error
 	WriteTable() error
 	GetIOC() []output.IOCFound
+	SetTime()
 }
 
 type YaraRuleUpdater struct {
