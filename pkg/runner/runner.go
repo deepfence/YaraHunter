@@ -16,10 +16,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func StartYaraHunter(ctx context.Context, opts *config.Options, config *config.Config, extractorConfig cfg.Config) {
+func StartYaraHunter(ctx context.Context, opts *config.Options, config cfg.Config) {
 
 	if *opts.SocketPath == "" {
-		runOnce(opts, config, extractorConfig)
+		runOnce(opts, config)
 		return
 	}
 
@@ -28,7 +28,7 @@ func StartYaraHunter(ctx context.Context, opts *config.Options, config *config.C
 	}
 }
 
-func runOnce(opts *config.Options, config *config.Config, extractorConfig cfg.Config) {
+func runOnce(opts *config.Options, extractorConfig cfg.Config) {
 	var results IOCWriter
 
 	yaraRules := yararules.New(*opts.RulesPath)
@@ -44,8 +44,7 @@ func runOnce(opts *config.Options, config *config.Config, extractorConfig cfg.Co
 		return
 	}
 
-	scanner := scan.New(opts, config, extractorConfig, yaraScanner, "")
-	//var ctx *tasks.ScanContext
+	scanner := scan.New(opts, extractorConfig, yaraScanner, "")
 
 	outputs := []output.IOCFound{}
 	writeToArray := func(res output.IOCFound, scanID string) {
@@ -56,20 +55,19 @@ func runOnce(opts *config.Options, config *config.Config, extractorConfig cfg.Co
 	nodeID := ""
 	switch {
 	case len(*opts.Local) > 0:
-		st = scan.DIR_SCAN
+		st = scan.DirScan
 		nodeID = *opts.Local
 		log.Infof("scan for malwares in path %s", nodeID)
 		err = scanner.Scan(st, "", *opts.Local, "", writeToArray)
 		results = &output.JSONDirIOCOutput{DirName: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	case len(*opts.ImageName) > 0:
-		st = scan.IMAGE_SCAN
+		st = scan.ImageScan
 		nodeID = *opts.ImageName
 		log.Infof("Scanning image %s for IOC...", nodeID)
-		//TODO ID
 		err = scanner.Scan(st, "", *opts.ImageName, "", writeToArray)
 		results = &output.JSONImageIOCOutput{ImageID: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	case len(*opts.ContainerID) > 0:
-		st = scan.CONTAINER_SCAN
+		st = scan.ContainerScan
 		nodeID = *opts.ContainerID
 		log.Infof("scan for malwares in container %s", nodeID)
 		err = scanner.Scan(st, "", nodeID, "", writeToArray)

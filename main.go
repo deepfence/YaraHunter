@@ -31,7 +31,6 @@ import (
 	"path"
 	"runtime"
 	"strconv"
-	"sync"
 
 	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/runner"
@@ -42,8 +41,6 @@ import (
 // Read the regex signatures from config file, options etc.
 // and setup the session to start scanning for IOC
 // var session = core.GetSession()
-
-var wg sync.WaitGroup
 
 func main() {
 	log.SetOutput(os.Stderr)
@@ -65,24 +62,15 @@ func main() {
 	if err != nil {
 		log.Panicf("main: failed to parse options: %v", err)
 	}
-	config, err := config.ParseConfig(*opts.ConfigPath)
-	if err != nil {
-		log.Panicf("main: failed to parse options: %v", err)
-	}
-	executorConfig, err := cfg.ParseConfig(*opts.ExecutorConfigPath)
+	config, err := cfg.ParseConfig(*opts.ConfigPath)
 	if err != nil {
 		log.Panicf("main: failed to parse options: %v", err)
 	}
 
 	if *opts.EnableUpdater {
-		wg.Add(1)
-		err := runner.StartYaraHunterUpdater(*opts.ConfigPath, *opts.RulesPath, *opts.RulesListingURL)
-		if err != nil {
-			log.Panicf("main: failed to start updater: %v", err)
-		}
 		go runner.ScheduleYaraHunterUpdater(ctx, opts)
 	}
 
-	go runner.StartYaraHunter(ctx, opts, config, executorConfig)
+	go runner.StartYaraHunter(ctx, opts, config)
 	<-ctx.Done()
 }

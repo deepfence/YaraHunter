@@ -9,20 +9,19 @@ import (
 	cfg "github.com/deepfence/match-scanner/pkg/config"
 	"github.com/deepfence/match-scanner/pkg/extractor"
 	"github.com/hillu/go-yara/v4"
+	"github.com/sirupsen/logrus"
 
 	genscan "github.com/deepfence/match-scanner/pkg/scanner"
 )
 
 func New(
 	opts *config.Options,
-	yaraconfig *config.Config,
 	extractorConfig cfg.Config,
 	yaraScannerIn *yara.Scanner,
 	scanID string) *Scanner {
 
 	obj := Scanner{
 		opts,
-		yaraconfig,
 		yaraScannerIn,
 		scanID,
 		cfg.Config2Filter(extractorConfig),
@@ -32,7 +31,6 @@ func New(
 
 type Scanner struct {
 	*config.Options
-	*config.Config
 
 	YaraScanner *yara.Scanner
 	ScanID      string
@@ -47,18 +45,18 @@ func (s *Scanner) SetImageName(imageName string) {
 type ScanType int
 
 const (
-	DIR_SCAN ScanType = iota
-	IMAGE_SCAN
-	CONTAINER_SCAN
+	DirScan ScanType = iota
+	ImageScan
+	ContainerScan
 )
 
 func ScanTypeString(st ScanType) string {
 	switch st {
-	case DIR_SCAN:
+	case DirScan:
 		return "host"
-	case IMAGE_SCAN:
+	case ImageScan:
 		return "image"
-	case CONTAINER_SCAN:
+	case ContainerScan:
 		return "container"
 	}
 	return ""
@@ -67,20 +65,15 @@ func ScanTypeString(st ScanType) string {
 func (s *Scanner) Scan(stype ScanType, namespace, id string, scanID string, outputFn func(output.IOCFound, string)) error {
 	var (
 		extract extractor.FileExtractor
-		//isContainer bool
-		//trim        bool
-		err error
+		err     error
 	)
 	switch stype {
-	case DIR_SCAN:
+	case DirScan:
 		extract, err = extractor.NewDirectoryExtractor(s.Filters, id)
-		//trim = true
-	case IMAGE_SCAN:
+	case ImageScan:
 		extract, err = extractor.NewImageExtractor(s.Filters, namespace, id)
-	case CONTAINER_SCAN:
+	case ContainerScan:
 		extract, err = extractor.NewContainerExtractor(s.Filters, namespace, id)
-		//isContainer = true
-		//trim = true
 	default:
 		err = fmt.Errorf("invalid request")
 	}
@@ -89,8 +82,12 @@ func (s *Scanner) Scan(stype ScanType, namespace, id string, scanID string, outp
 	}
 	defer extract.Close()
 
+	// results has to be 1 element max
+	// to avoid overwriting the buffer entries
 	results := make(chan []output.IOCFound)
 	defer close(results)
+	m := [2][]output.IOCFound{}
+	i := 0
 
 	go func() {
 		for malwares := range results {
@@ -100,11 +97,19 @@ func (s *Scanner) Scan(stype ScanType, namespace, id string, scanID string, outp
 		}
 	}()
 
-	m := []output.IOCFound{}
 	genscan.ApplyScan(context.Background(), extract, func(f extractor.ExtractedFile) {
-		m = m[:0]
-		ScanFile(s, f.Filename, f.Content, &m, "")
-		results <- m
+		if isExecutable(f.Filename) || isSharedLibrary(f.Filename) {
+			return
+		}
+		buf := m[i][:0]
+		err := ScanFile(s, f.Filename, f.Content, f.ContentSize, &buf, "")
+		if err != nil {
+			logrus.Infof("file: %v, err: %v", f.Filename, err)
+		}
+
+		results <- buf
+		i += 1
+		i %= len(m)
 	})
 	return nil
 }
