@@ -1,6 +1,6 @@
 module github.com/deepfence/YaraHunter
 
-go 1.21
+go 1.22.0
 
 replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
 
@@ -8,13 +8,10 @@ require (
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
 	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230630084500-8fb0280d6010
 	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230929125743-1713a043efe5
+	github.com/deepfence/match-scanner v0.0.0-20240625015128-8a9d2f6b9f1b
 	github.com/deepfence/vessel v0.12.3
 	github.com/gabriel-vasile/mimetype v1.4.3
-	github.com/gorilla/handlers v1.5.2
-	github.com/gorilla/mux v1.8.1
-	github.com/hillu/go-yara v1.3.1
 	github.com/hillu/go-yara/v4 v4.3.2
-	github.com/jheise/yaramsg v0.0.0-20161011054113-41444562d276
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
 	google.golang.org/grpc v1.63.2
@@ -24,7 +21,6 @@ require (
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20231105174938-2b5cbb29f3e2 // indirect
-	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Microsoft/hcsshim v0.12.3 // indirect
 	github.com/containerd/cgroups/v3 v3.0.2 // indirect

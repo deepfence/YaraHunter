@@ -1,12 +1,12 @@
 package runner
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/deepfence/YaraHunter/pkg/config"
@@ -14,21 +14,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ScheduleYaraHunterUpdater(opts *config.Options, newwg *sync.WaitGroup) {
-	defer newwg.Done()
+func ScheduleYaraHunterUpdater(ctx context.Context, opts *config.Options) {
 	if *opts.SocketPath != "" {
-		// fmt.Println("Go Tickers Tutorial")
-		// this creates a new ticker which will
-		// `tick` every 1 second.
 		ticker := time.NewTicker(10 * time.Hour)
-
-		// for every `tick` that our `ticker`
-		// emits, we print `tock`
-		for t := range ticker.C {
-			fmt.Println("Invoked at ", t)
+		for {
+			fmt.Println("Updater invoked")
 			err := StartYaraHunterUpdater(*opts.RulesPath, *opts.ConfigPath, *opts.RulesListingURL)
 			if err != nil {
 				log.Panicf("main: failed to serve: %v", err)
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
 			}
 		}
 	}

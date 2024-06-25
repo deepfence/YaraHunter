@@ -171,7 +171,7 @@ func ScanFilePath(s *Scanner, path string, iocs *[]output.IOCFound, layer string
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
-	if err = ScanFile(s, f, iocs, layer); err != nil {
+	if err = ScanFile(s, f.Name(), f, iocs, layer); err != nil {
 		return err
 	}
 	return nil
@@ -216,8 +216,8 @@ func BytesToString(b []byte) (s string) {
 	return unsafe.String(unsafe.SliceData(b), len(b))
 }
 
-func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) error {
-	logrus.Debugf("Scanning file %s", f.Name())
+func ScanFile(s *Scanner, fileName string, f io.Reader, iocs *[]output.IOCFound, layer string) error {
+	logrus.Debugf("Scanning file %s", fileName)
 	var (
 		matches yr.MatchRules
 		err     error
@@ -228,17 +228,10 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 		value interface{}
 	}
 
-	isSharedLib := isSharedLibrary(f.Name())
-	execmime := isExecutable(f.Name())
-
-	if !isSharedLib && !execmime {
-		return nil
-	}
-
 	variables := []ruleVariable{
-		{"filename", filepath.ToSlash(filepath.Base(f.Name()))},
-		{"filepath", filepath.ToSlash(f.Name())},
-		{"extension", filepath.Ext(f.Name())},
+		{"filename", filepath.ToSlash(filepath.Base(fileName))},
+		{"filepath", filepath.ToSlash(fileName)},
+		{"extension", filepath.Ext(fileName)},
 	}
 
 	yrScanner := s.YaraScanner
@@ -246,42 +239,27 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	for _, v := range variables {
 		if v.value != nil {
 			if err = yrScanner.DefineVariable(v.name, v.value); err != nil {
-				return filepath.SkipDir
+				return err
 			}
 		}
 	}
 
-	fi, err := f.Stat()
-	if err != nil {
-		// report.AddStringf("yara: %s: Error accessing file information, error=%s",
-		// 	f.Name(), err.Error())
-		return err
-	}
-	fileName := f.Name()
 	hostMountPath := *s.HostMountPath
 	if hostMountPath != "" {
 		fileName = strings.TrimPrefix(fileName, hostMountPath)
 	}
-	if *s.MaximumFileSize > 0 && fi.Size() > *s.MaximumFileSize {
-		logrus.Debugf("\nyara: %v: Skipping large file, size=%v, max_size=%v", fileName, fi.Size(), *s.MaximumFileSize)
-		return nil
-	}
-	err = yrScanner.ScanFileDescriptor(f.Fd())
-	if err != nil {
-		logrus.Errorf("yara: %s: Error scanning file, error=%s, trying alternative", fileName, err.Error())
-		var buf []byte
-		if buf, err = io.ReadAll(f); err != nil {
-			logrus.Errorf("yara: %s: Error reading file, error=%s",
-				fileName, err.Error())
-			return filepath.SkipDir
-		}
-		err = yrScanner.ScanMem(buf)
-		if err != nil {
-			logrus.Errorf("yara: %s: Error scanning file, error=%s", fileName, err.Error())
-			return filepath.SkipDir
-		}
 
+	logrus.Errorf("yara: %s: Error scanning file, error=%s, trying alternative", fileName, err.Error())
+	var buf []byte
+	if buf, err = io.ReadAll(f); err != nil {
+		return err
 	}
+
+	err = yrScanner.ScanMem(buf)
+	if err != nil {
+		return err
+	}
+
 	var iocsFound []output.IOCFound
 	totalMatchesStringData := make([]string, 0)
 	for _, m := range matches {
@@ -315,11 +293,7 @@ func ScanFile(s *Scanner, f *os.File, iocs *[]output.IOCFound, layer string) err
 	if len(matches) > 0 {
 		// output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
 		for _, m := range iocsFound {
-			if isSharedLib {
-				m.FileSeverity = "low"
-			} else {
-				m.FileSeverity = updatedSeverity
-			}
+			m.FileSeverity = updatedSeverity
 			m.FileSevScore = updatedScore
 			StringsMatch := make([]string, 0)
 			for _, c := range m.StringsToMatch {
