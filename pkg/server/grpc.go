@@ -41,7 +41,6 @@ func init() {
 
 type gRPCServer struct {
 	options         *config.Options
-	yaraConfig      *config.Config
 	extractorConfig cfg.Config
 	yaraRules       *yararules.YaraRules
 	pluginName      string
@@ -102,7 +101,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		defer jobs.StopScanJob()
 
 		yaraScanner, err := s.yaraRules.NewScanner()
-		scanner := scan.New(s.options, s.yaraConfig, s.extractorConfig, yaraScanner, r.ScanId)
+		scanner := scan.New(s.options, s.extractorConfig, yaraScanner, r.ScanId)
 		res, ctx := tasks.StartStatusReporter(
 			r.ScanId,
 			func(status tasks.ScanStatus) error {
@@ -135,14 +134,13 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		switch {
 		case r.GetPath() != "":
 			log.Infof("scan for malwares in path %s", r.GetPath())
-			err = scanner.Scan(scan.DIR_SCAN, "", r.GetPath(), r.GetScanId(), writeToFile)
+			err = scanner.Scan(scan.DirScan, "", r.GetPath(), r.GetScanId(), writeToFile)
 		case r.GetImage() != nil && r.GetImage().Name != "":
 			log.Infof("scan for malwares in image %s", r.GetImage())
-			//TODO ID
-			err = scanner.Scan(scan.IMAGE_SCAN, "", r.GetImage().Name, r.GetScanId(), writeToFile)
+			err = scanner.Scan(scan.ImageScan, "", r.GetImage().Name, r.GetScanId(), writeToFile)
 		case r.GetContainer() != nil && r.GetContainer().Id != "":
 			log.Infof("scan for malwares in container %s", r.GetContainer())
-			err = scanner.Scan(scan.CONTAINER_SCAN, r.GetContainer().Namespace, r.GetContainer().Id, r.GetScanId(), writeToFile)
+			err = scanner.Scan(scan.ContainerScan, r.GetContainer().Namespace, r.GetContainer().Id, r.GetScanId(), writeToFile)
 		default:
 			err = fmt.Errorf("invalid request")
 		}
@@ -154,7 +152,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 	return &pb.MalwareResult{}, nil
 }
 
-func RunGrpcServer(ctx context.Context, opts *config.Options, config *config.Config, pluginName string) error {
+func RunGrpcServer(ctx context.Context, opts *config.Options, config cfg.Config, pluginName string) error {
 
 	lis, err := net.Listen("unix", *opts.SocketPath)
 	if err != nil {
@@ -162,7 +160,7 @@ func RunGrpcServer(ctx context.Context, opts *config.Options, config *config.Con
 	}
 	s := grpc.NewServer()
 
-	impl := &gRPCServer{options: opts, pluginName: pluginName, yaraConfig: config}
+	impl := &gRPCServer{options: opts, pluginName: pluginName, extractorConfig: config}
 	if err != nil {
 		return err
 	}

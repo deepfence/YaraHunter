@@ -38,8 +38,8 @@ github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230630084500-8fb0280d6
 github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230630084500-8fb0280d6010/go.mod h1:+rchMc4YNjCoHo0YAwKsT+DRBNr1hdDG0WrvAOOCc5k=
 github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230929125743-1713a043efe5 h1:6rE9xqyf4VgWIkpv51ihiSPMrXJ9mZ6pFXtBRfJEFNE=
 github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230929125743-1713a043efe5/go.mod h1:C3CqMr7oE9RmHZWXIVDWFLuGaNDDaoSBSlILLQJxlew=
-github.com/deepfence/match-scanner v0.0.0-20240625015128-8a9d2f6b9f1b h1:S1/+kG7zEetZHGqbeTdXeC00KZY3q5diljSF+oTAo/M=
-github.com/deepfence/match-scanner v0.0.0-20240625015128-8a9d2f6b9f1b/go.mod h1:nWSIuhgqf8ByciUebsPaCbkdlOnjvfnG7eoPp47oN20=
+github.com/deepfence/match-scanner v0.0.0-20240626154542-d0b51bf651e8 h1:FfjjPeYVNNRp9HiSCC6z62n+KuCn9qGSO+uxkOzSyZY=
+github.com/deepfence/match-scanner v0.0.0-20240626154542-d0b51bf651e8/go.mod h1:tpt+vx4UDNTNXUznWYSt3FgYFQj1km2WwS90Igfqcl0=
 github.com/deepfence/vessel v0.12.3 h1:C34t+sV+JoFdfYhg+uyS+YOEDAFIYjBKHShD3emDISA=
 github.com/deepfence/vessel v0.12.3/go.mod h1:bY97YUKMm0Oxasz/9o7Te60FjWCQWUYpgiWNC1E00xo=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=

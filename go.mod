@@ -1,6 +1,6 @@
 module github.com/deepfence/YaraHunter
 
-go 1.22.0
+go 1.21.0
 
 replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
 
@@ -8,8 +8,7 @@ require (
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
 	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230630084500-8fb0280d6010
 	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230929125743-1713a043efe5
-	github.com/deepfence/match-scanner v0.0.0-20240625015128-8a9d2f6b9f1b
-	github.com/deepfence/vessel v0.12.3
+	github.com/deepfence/match-scanner v0.0.0-20240626154542-d0b51bf651e8
 	github.com/gabriel-vasile/mimetype v1.4.3
 	github.com/hillu/go-yara/v4 v4.3.2
 	github.com/olekukonko/tablewriter v0.0.5
@@ -31,6 +30,7 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/ttrpc v1.2.3 // indirect
 	github.com/containerd/typeurl/v2 v2.1.1 // indirect
+	github.com/deepfence/vessel v0.12.3 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v26.1.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect

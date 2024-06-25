@@ -19,7 +19,7 @@ func ScheduleYaraHunterUpdater(ctx context.Context, opts *config.Options) {
 		ticker := time.NewTicker(10 * time.Hour)
 		for {
 			fmt.Println("Updater invoked")
-			err := StartYaraHunterUpdater(*opts.RulesPath, *opts.ConfigPath, *opts.RulesListingURL)
+			err := StartYaraHunterUpdater(*opts.RulesPath, filepath.Dir(*opts.ConfigPath), *opts.RulesListingURL)
 			if err != nil {
 				log.Panicf("main: failed to serve: %v", err)
 			}
