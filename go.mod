@@ -8,7 +8,7 @@ require (
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
 	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20240626143546-e4ec9311fdf9
 	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20240626143546-e4ec9311fdf9
-	github.com/deepfence/match-scanner v0.0.0-20240626154542-d0b51bf651e8
+	github.com/deepfence/match-scanner v0.0.0-20240627050855-6af32dc8f4c2
 	github.com/gabriel-vasile/mimetype v1.4.4
 	github.com/hillu/go-yara/v4 v4.3.2
 	github.com/olekukonko/tablewriter v0.0.5

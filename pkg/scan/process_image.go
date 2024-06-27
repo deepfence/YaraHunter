@@ -18,6 +18,7 @@ import (
 
 	// yaraConf "github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
+	"github.com/hillu/go-yara/v4"
 	yr "github.com/hillu/go-yara/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -119,7 +120,45 @@ func BytesToString(b []byte) (s string) {
 	return unsafe.String(unsafe.SliceData(b), len(b))
 }
 
-func ScanFile(s *Scanner, fileName string, f io.Reader, fsize int, iocs *[]output.IOCFound, layer string) error {
+type Iterator struct {
+	blocksize int
+	rs        io.ReadSeeker
+	offset    int64
+	length    int
+}
+
+func (s *Iterator) read(buf []byte) {
+	s.rs.Seek(s.offset, io.SeekStart)
+	s.rs.Read(buf)
+}
+
+func (s *Iterator) First() *yara.MemoryBlock {
+	s.offset = 0
+	return &yara.MemoryBlock{
+		Base:      uint64(s.offset),
+		Size:      uint64(s.length),
+		FetchData: s.read,
+	}
+}
+
+func (s *Iterator) Next() *yara.MemoryBlock {
+	s.offset += int64(s.length)
+	end, _ := s.rs.Seek(0, io.SeekEnd)
+	s.length = int(end - s.offset)
+	if s.length <= 0 {
+		return nil
+	}
+	if s.length > s.blocksize {
+		s.length = s.blocksize
+	}
+	return &yara.MemoryBlock{
+		Base:      uint64(s.offset),
+		Size:      uint64(s.length),
+		FetchData: s.read,
+	}
+}
+
+func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]output.IOCFound, layer string) error {
 	logrus.Debugf("Scanning file %s", fileName)
 	var (
 		matches yr.MatchRules
@@ -152,12 +191,8 @@ func ScanFile(s *Scanner, fileName string, f io.Reader, fsize int, iocs *[]outpu
 		fileName = strings.TrimPrefix(fileName, hostMountPath)
 	}
 
-	buf := make([]byte, 0, fsize)
-	if buf, err = io.ReadAll(f); err != nil {
-		return err
-	}
-
-	err = yrScanner.ScanMem(buf)
+	it := Iterator{blocksize: 1*1024*1024, rs: f}
+	err = yrScanner.ScanMemBlocks(&it)
 	if err != nil {
 		return err
 	}
