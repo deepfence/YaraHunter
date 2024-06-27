@@ -134,13 +134,13 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		switch {
 		case r.GetPath() != "":
 			log.Infof("scan for malwares in path %s", r.GetPath())
-			err = scanner.Scan(scan.DirScan, "", r.GetPath(), r.GetScanId(), writeToFile)
+			err = scanner.Scan(ctx, scan.DirScan, "", r.GetPath(), r.GetScanId(), writeToFile)
 		case r.GetImage() != nil && r.GetImage().Name != "":
 			log.Infof("scan for malwares in image %s", r.GetImage())
-			err = scanner.Scan(scan.ImageScan, "", r.GetImage().Name, r.GetScanId(), writeToFile)
+			err = scanner.Scan(ctx, scan.ImageScan, "", r.GetImage().Name, r.GetScanId(), writeToFile)
 		case r.GetContainer() != nil && r.GetContainer().Id != "":
 			log.Infof("scan for malwares in container %s", r.GetContainer())
-			err = scanner.Scan(scan.ContainerScan, r.GetContainer().Namespace, r.GetContainer().Id, r.GetScanId(), writeToFile)
+			err = scanner.Scan(ctx, scan.ContainerScan, r.GetContainer().Namespace, r.GetContainer().Id, r.GetScanId(), writeToFile)
 		default:
 			err = fmt.Errorf("invalid request")
 		}
