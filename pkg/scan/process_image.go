@@ -16,9 +16,7 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 
-	// yaraConf "github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
-	"github.com/hillu/go-yara/v4"
 	yr "github.com/hillu/go-yara/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -128,20 +126,20 @@ type Iterator struct {
 }
 
 func (s *Iterator) read(buf []byte) {
-	s.rs.Seek(s.offset, io.SeekStart)
-	s.rs.Read(buf)
+	_, _ = s.rs.Seek(s.offset, io.SeekStart)
+	_, _ = s.rs.Read(buf)
 }
 
-func (s *Iterator) First() *yara.MemoryBlock {
+func (s *Iterator) First() *yr.MemoryBlock {
 	s.offset = 0
-	return &yara.MemoryBlock{
+	return &yr.MemoryBlock{
 		Base:      uint64(s.offset),
 		Size:      uint64(s.length),
 		FetchData: s.read,
 	}
 }
 
-func (s *Iterator) Next() *yara.MemoryBlock {
+func (s *Iterator) Next() *yr.MemoryBlock {
 	s.offset += int64(s.length)
 	end, _ := s.rs.Seek(0, io.SeekEnd)
 	s.length = int(end - s.offset)
@@ -151,7 +149,7 @@ func (s *Iterator) Next() *yara.MemoryBlock {
 	if s.length > s.blocksize {
 		s.length = s.blocksize
 	}
-	return &yara.MemoryBlock{
+	return &yr.MemoryBlock{
 		Base:      uint64(s.offset),
 		Size:      uint64(s.length),
 		FetchData: s.read,
@@ -169,6 +167,7 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 		name  string
 		value interface{}
 	}
+	*iocs = (*iocs)[:0]
 
 	variables := []ruleVariable{
 		{"filename", filepath.ToSlash(filepath.Base(fileName))},
@@ -191,13 +190,13 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 		fileName = strings.TrimPrefix(fileName, hostMountPath)
 	}
 
-	it := Iterator{blocksize: 1*1024*1024, rs: f}
+	it := Iterator{blocksize: 32 * 1024 * 1024, rs: f}
 	err = yrScanner.ScanMemBlocks(&it)
 	if err != nil {
 		return err
 	}
 
-	var iocsFound []output.IOCFound
+	iocsFound := make([]output.IOCFound, 0, len(matches))
 	totalMatchesStringData := make([]string, 0)
 	for _, m := range matches {
 		for _, str := range m.Strings {
@@ -226,9 +225,7 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 	updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
 	fileMat.updatedSeverity = updatedSeverity
 	fileMat.updatedScore = updatedScore
-	// var isFirstIOC bool = true
 	if len(matches) > 0 {
-		// output.PrintColoredIOC(tempIOCsFound, &isFirstIOC, fileMat.updatedScore, fileMat.updatedSeverity)
 		for _, m := range iocsFound {
 			m.FileSeverity = updatedSeverity
 			m.FileSevScore = updatedScore
@@ -247,7 +244,6 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 				var metaSplit = strings.Split(c, " : ")
 				if len(metaSplit) > 1 {
 
-					// fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.Replace(metaSplit[1], "\n", "", -1))+",\n")
 					m.MetaRules[metaSplit[0]] = strings.ReplaceAll(metaSplit[1], "\n", "")
 					if metaSplit[0] == "description" {
 						str := []string{"The file has a rule match that ", strings.ReplaceAll(metaSplit[1], "\n", "") + "."}
@@ -264,16 +260,11 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 			}
 			m.Summary = summary
 			m.Class = class
-			// *(*(*iocs)) = append(*(*(*iocs)), m)
 			*iocs = append(*iocs, m)
 		}
 	}
 	return err
 }
-
-const (
-	outputChannelSize = 100
-)
 
 // Execute the specified command and return the output
 // @parameters

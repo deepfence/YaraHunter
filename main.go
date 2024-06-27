@@ -71,6 +71,5 @@ func main() {
 		go runner.ScheduleYaraHunterUpdater(ctx, opts)
 	}
 
-	go runner.StartYaraHunter(ctx, opts, config)
-	<-ctx.Done()
+	runner.StartYaraHunter(ctx, opts, config)
 }
