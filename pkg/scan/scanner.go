@@ -6,6 +6,7 @@ import (
 
 	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
+	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	cfg "github.com/deepfence/match-scanner/pkg/config"
 	"github.com/deepfence/match-scanner/pkg/extractor"
 	"github.com/hillu/go-yara/v4"
@@ -62,7 +63,7 @@ func ScanTypeString(st ScanType) string {
 	return ""
 }
 
-func (s *Scanner) Scan(stype ScanType, namespace, id string, scanID string, outputFn func(output.IOCFound, string)) error {
+func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id string, scanID string, outputFn func(output.IOCFound, string)) error {
 	var (
 		extract extractor.FileExtractor
 		err     error
@@ -98,11 +99,19 @@ func (s *Scanner) Scan(stype ScanType, namespace, id string, scanID string, outp
 	}()
 
 	genscan.ApplyScan(context.Background(), extract, func(f extractor.ExtractedFile) {
+		if ctx != nil {
+			err := ctx.Checkpoint("scan_phase")
+			if err != nil {
+				return
+			}
+		}
+
 		if isExecutable(f.Filename) || isSharedLibrary(f.Filename) {
 			return
 		}
+
 		buf := m[i][:0]
-		err := ScanFile(s, f.Filename, f.Content, f.ContentSize, &buf, "")
+		err = ScanFile(s, f.Filename, f.Content, f.ContentSize, &buf, "")
 		if err != nil {
 			logrus.Infof("file: %v, err: %v", f.Filename, err)
 		}

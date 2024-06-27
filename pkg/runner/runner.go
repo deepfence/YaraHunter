@@ -58,19 +58,19 @@ func runOnce(opts *config.Options, extractorConfig cfg.Config) {
 		st = scan.DirScan
 		nodeID = *opts.Local
 		log.Infof("scan for malwares in path %s", nodeID)
-		err = scanner.Scan(st, "", *opts.Local, "", writeToArray)
+		err = scanner.Scan(nil, st, "", *opts.Local, "", writeToArray)
 		results = &output.JSONDirIOCOutput{DirName: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	case len(*opts.ImageName) > 0:
 		st = scan.ImageScan
 		nodeID = *opts.ImageName
 		log.Infof("Scanning image %s for IOC...", nodeID)
-		err = scanner.Scan(st, "", *opts.ImageName, "", writeToArray)
+		err = scanner.Scan(nil, st, "", *opts.ImageName, "", writeToArray)
 		results = &output.JSONImageIOCOutput{ImageID: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	case len(*opts.ContainerID) > 0:
 		st = scan.ContainerScan
 		nodeID = *opts.ContainerID
 		log.Infof("scan for malwares in container %s", nodeID)
-		err = scanner.Scan(st, "", nodeID, "", writeToArray)
+		err = scanner.Scan(nil, st, "", nodeID, "", writeToArray)
 		results = &output.JSONImageIOCOutput{ContainerID: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	default:
 		err = fmt.Errorf("invalid request")
