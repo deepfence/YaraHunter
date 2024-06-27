@@ -70,7 +70,7 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 	)
 	switch stype {
 	case DirScan:
-		extract, err = extractor.NewDirectoryExtractor(s.Filters, id)
+		extract, err = extractor.NewDirectoryExtractor(s.Filters, id, true)
 	case ImageScan:
 		extract, err = extractor.NewImageExtractor(s.Filters, namespace, id)
 	case ContainerScan:
