@@ -110,13 +110,12 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 			return
 		}
 
-		buf := m[i][:0]
-		err = ScanFile(s, f.Filename, f.Content, f.ContentSize, &buf, "")
+		err = ScanFile(s, f.Filename, f.Content, f.ContentSize, &m[i], "")
 		if err != nil {
 			logrus.Infof("file: %v, err: %v", f.Filename, err)
 		}
 
-		results <- buf
+		results <- m[i]
 		i += 1
 		i %= len(m)
 	})

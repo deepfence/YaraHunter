@@ -23,9 +23,13 @@ func StartYaraHunter(ctx context.Context, opts *config.Options, config cfg.Confi
 		return
 	}
 
-	if err := server.RunGrpcServer(ctx, opts, config, constants.PluginName); err != nil {
-		log.Panicf("main: failed to serve: %v", err)
-	}
+	go func() {
+		if err := server.RunGrpcServer(ctx, opts, config, constants.PluginName); err != nil {
+			log.Panicf("main: failed to serve: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
 }
 
 func runOnce(opts *config.Options, extractorConfig cfg.Config) {
