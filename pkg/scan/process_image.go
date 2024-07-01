@@ -42,10 +42,6 @@ type fileMatches struct {
 	updatedSeverity string
 }
 
-var (
-	imageTarFileName = "save-output.tar"
-)
-
 func calculateSeverity(inputString []string, severity string, severityScore float64) (string, float64) {
 	updatedSeverity := "low"
 	lenMatch := len(inputString)

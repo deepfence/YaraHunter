@@ -3,6 +3,7 @@ package scan
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
@@ -67,6 +68,7 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 	var (
 		extract extractor.FileExtractor
 		err     error
+		wg      sync.WaitGroup
 	)
 	switch stype {
 	case DirScan:
@@ -86,11 +88,12 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 	// results has to be 1 element max
 	// to avoid overwriting the buffer entries
 	results := make(chan []output.IOCFound)
-	defer close(results)
 	m := [2][]output.IOCFound{}
 	i := 0
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for malwares := range results {
 			for _, malware := range malwares {
 				outputFn(malware, scanID)
@@ -106,18 +109,16 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 			}
 		}
 
-		if isExecutable(f.Filename) || isSharedLibrary(f.Filename) {
-			return
-		}
-
 		err = ScanFile(s, f.Filename, f.Content, f.ContentSize, &m[i], "")
 		if err != nil {
-			logrus.Infof("file: %v, err: %v", f.Filename, err)
+			logrus.Warnf("file: %v, err: %v", f.Filename, err)
 		}
 
 		results <- m[i]
 		i += 1
 		i %= len(m)
 	})
+	close(results)
+	wg.Wait()
 	return nil
 }
