@@ -88,15 +88,26 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 	// results has to be 1 element max
 	// to avoid overwriting the buffer entries
 	results := make(chan []output.IOCFound)
+	defer close(results)
+
+	done := make(chan bool)
+	defer close(done)
+
 	m := [2][]output.IOCFound{}
 	i := 0
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for malwares := range results {
-			for _, malware := range malwares {
-				outputFn(malware, scanID)
+		for {
+			select {
+			case malwares := <-results:
+				for _, malware := range malwares {
+					outputFn(malware, scanID)
+				}
+			case <-done:
+				logrus.Info("scan completed")
+				return
 			}
 		}
 	}()
@@ -118,7 +129,9 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 		i += 1
 		i %= len(m)
 	})
-	close(results)
+
+	done <- true
+
 	wg.Wait()
 	return nil
 }
