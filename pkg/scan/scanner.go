@@ -3,6 +3,7 @@ package scan
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/deepfence/YaraHunter/pkg/config"
@@ -64,6 +65,10 @@ func ScanTypeString(st ScanType) string {
 	return ""
 }
 
+func IsExecAll(mode os.FileMode) bool {
+	return mode&0111 == 0111
+}
+
 func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id string, scanID string, outputFn func(output.IOCFound, string)) error {
 	var (
 		extract extractor.FileExtractor
@@ -118,6 +123,11 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 			if err != nil {
 				return
 			}
+		}
+
+		if s.Filters.SkipNonExecutable && !IsExecAll(f.FilePermissions) {
+			logrus.Debugf("Skipping non-executable file: %v", f.Filename)
+			return
 		}
 
 		err = ScanFile(s, f.Filename, f.Content, f.ContentSize, &m[i], "")
