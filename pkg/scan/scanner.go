@@ -1,7 +1,6 @@
 package scan
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -107,7 +106,7 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 		}
 	}()
 
-	genscan.ApplyScan(context.Background(), extract, func(f extractor.ExtractedFile) {
+	genscan.ApplyScan(ctx.Context, extract, func(f extractor.ExtractedFile) {
 		if ctx != nil {
 			err := ctx.Checkpoint("scan_phase")
 			if err != nil {

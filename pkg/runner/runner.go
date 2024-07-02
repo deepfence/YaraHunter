@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/deepfence/YaraHunter/constants"
@@ -12,6 +13,7 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	"github.com/deepfence/YaraHunter/pkg/server"
 	"github.com/deepfence/YaraHunter/pkg/yararules"
+	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	cfg "github.com/deepfence/match-scanner/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
@@ -19,7 +21,7 @@ import (
 func StartYaraHunter(ctx context.Context, opts *config.Options, config cfg.Config) {
 
 	if *opts.SocketPath == "" {
-		runOnce(opts, config)
+		runOnce(ctx, opts, config)
 		return
 	}
 
@@ -32,7 +34,7 @@ func StartYaraHunter(ctx context.Context, opts *config.Options, config cfg.Confi
 	<-ctx.Done()
 }
 
-func runOnce(opts *config.Options, extractorConfig cfg.Config) {
+func runOnce(ctx context.Context, opts *config.Options, extractorConfig cfg.Config) {
 	var results IOCWriter
 
 	yaraRules := yararules.New(*opts.RulesPath)
@@ -55,6 +57,12 @@ func runOnce(opts *config.Options, extractorConfig cfg.Config) {
 		outputs = append(outputs, res)
 	}
 
+	scanCtx := tasks.ScanContext{
+		Res:     nil,
+		IsAlive: atomic.Bool{},
+		Context: ctx,
+	}
+
 	var st scan.ScanType
 	nodeID := ""
 	switch {
@@ -62,19 +70,19 @@ func runOnce(opts *config.Options, extractorConfig cfg.Config) {
 		st = scan.DirScan
 		nodeID = *opts.Local
 		log.Infof("scan for malwares in path %s", nodeID)
-		err = scanner.Scan(nil, st, "", *opts.Local, "", writeToArray)
+		err = scanner.Scan(&scanCtx, st, "", *opts.Local, "", writeToArray)
 		results = &output.JSONDirIOCOutput{DirName: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	case len(*opts.ImageName) > 0:
 		st = scan.ImageScan
 		nodeID = *opts.ImageName
 		log.Infof("Scanning image %s for IOC...", nodeID)
-		err = scanner.Scan(nil, st, "", *opts.ImageName, "", writeToArray)
+		err = scanner.Scan(&scanCtx, st, "", *opts.ImageName, "", writeToArray)
 		results = &output.JSONImageIOCOutput{ImageID: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	case len(*opts.ContainerID) > 0:
 		st = scan.ContainerScan
 		nodeID = *opts.ContainerID
 		log.Infof("scan for malwares in container %s", nodeID)
-		err = scanner.Scan(nil, st, "", nodeID, "", writeToArray)
+		err = scanner.Scan(&scanCtx, st, "", nodeID, "", writeToArray)
 		results = &output.JSONImageIOCOutput{ContainerID: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	default:
 		err = fmt.Errorf("invalid request")
