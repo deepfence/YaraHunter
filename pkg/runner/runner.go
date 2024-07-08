@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/deepfence/YaraHunter/constants"
-	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
 	"github.com/deepfence/YaraHunter/pkg/server"
@@ -18,15 +17,37 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func StartYaraHunter(ctx context.Context, opts *config.Options, config cfg.Config) {
+type RunnerOptions struct {
+	SocketPath                                                      string
+	RulesPath                                                       string
+	RulesListingURL                                                 string
+	HostMountPath                                                   string
+	FailOnCompileWarning                                            bool
+	Local                                                           string
+	ImageName                                                       string
+	ContainerID                                                     string
+	ConsoleURL                                                      string
+	ConsolePort                                                     int
+	DeepfenceKey                                                    string
+	OutFormat                                                       string
+	FailOnHighCount, FailOnMediumCount, FailOnLowCount, FailOnCount int
+	InactiveThreshold                                               int
+}
 
-	if *opts.SocketPath == "" {
+func StartYaraHunter(ctx context.Context, opts RunnerOptions, config cfg.Config) {
+
+	if opts.SocketPath == "" {
 		runOnce(ctx, opts, config)
 		return
 	}
 
 	go func() {
-		if err := server.RunGrpcServer(ctx, opts, config, constants.PluginName); err != nil {
+		if err := server.RunGrpcServer(ctx,
+			opts.HostMountPath,
+			opts.SocketPath,
+			opts.RulesPath,
+			opts.InactiveThreshold,
+			opts.FailOnCompileWarning, config, constants.PluginName); err != nil {
 			log.Panicf("main: failed to serve: %v", err)
 		}
 	}()
@@ -34,11 +55,11 @@ func StartYaraHunter(ctx context.Context, opts *config.Options, config cfg.Confi
 	<-ctx.Done()
 }
 
-func runOnce(ctx context.Context, opts *config.Options, extractorConfig cfg.Config) {
+func runOnce(ctx context.Context, opts RunnerOptions, extractorConfig cfg.Config) {
 	var results IOCWriter
 
-	yaraRules := yararules.New(*opts.RulesPath)
-	err := yaraRules.Compile(constants.Filescan, *opts.FailOnCompileWarning)
+	yaraRules := yararules.New(opts.RulesPath)
+	err := yaraRules.Compile(constants.Filescan, opts.FailOnCompileWarning)
 	if err != nil {
 		log.Errorf("error in runOnce compiling yara rules: %s", err)
 		return
@@ -50,7 +71,7 @@ func runOnce(ctx context.Context, opts *config.Options, extractorConfig cfg.Conf
 		return
 	}
 
-	scanner := scan.New(opts, extractorConfig, yaraScanner, "")
+	scanner := scan.New(opts.HostMountPath, extractorConfig, yaraScanner, "")
 
 	outputs := []output.IOCFound{}
 	writeToArray := func(res output.IOCFound, scanID string) {
@@ -66,21 +87,21 @@ func runOnce(ctx context.Context, opts *config.Options, extractorConfig cfg.Conf
 	var st scan.ScanType
 	nodeID := ""
 	switch {
-	case len(*opts.Local) > 0:
+	case len(opts.Local) > 0:
 		st = scan.DirScan
-		nodeID = *opts.Local
+		nodeID = opts.Local
 		log.Infof("scan for malwares in path %s", nodeID)
-		err = scanner.Scan(&scanCtx, st, "", *opts.Local, "", writeToArray)
+		err = scanner.Scan(&scanCtx, st, "", opts.Local, "", writeToArray)
 		results = &output.JSONDirIOCOutput{DirName: nodeID, IOC: removeDuplicateIOCs(outputs)}
-	case len(*opts.ImageName) > 0:
+	case len(opts.ImageName) > 0:
 		st = scan.ImageScan
-		nodeID = *opts.ImageName
+		nodeID = opts.ImageName
 		log.Infof("Scanning image %s for IOC...", nodeID)
-		err = scanner.Scan(&scanCtx, st, "", *opts.ImageName, "", writeToArray)
+		err = scanner.Scan(&scanCtx, st, "", opts.ImageName, "", writeToArray)
 		results = &output.JSONImageIOCOutput{ImageID: nodeID, IOC: removeDuplicateIOCs(outputs)}
-	case len(*opts.ContainerID) > 0:
+	case len(opts.ContainerID) > 0:
 		st = scan.ContainerScan
-		nodeID = *opts.ContainerID
+		nodeID = opts.ContainerID
 		log.Infof("scan for malwares in container %s", nodeID)
 		err = scanner.Scan(&scanCtx, st, "", nodeID, "", writeToArray)
 		results = &output.JSONImageIOCOutput{ContainerID: nodeID, IOC: removeDuplicateIOCs(outputs)}
@@ -95,13 +116,13 @@ func runOnce(ctx context.Context, opts *config.Options, extractorConfig cfg.Conf
 		return
 	}
 
-	if len(*opts.ConsoleURL) != 0 && len(*opts.DeepfenceKey) != 0 {
-		pub, err := output.NewPublisher(*opts.ConsoleURL, strconv.Itoa(*opts.ConsolePort), *opts.DeepfenceKey)
+	if len(opts.ConsoleURL) != 0 && len(opts.DeepfenceKey) != 0 {
+		pub, err := output.NewPublisher(opts.ConsoleURL, strconv.Itoa(opts.ConsolePort), opts.DeepfenceKey)
 		if err != nil {
 			log.Error(err.Error())
 		}
 
-		pub.SendReport(output.GetHostname(), *opts.ImageName, *opts.ContainerID, scan.ScanTypeString(st))
+		pub.SendReport(output.GetHostname(), opts.ImageName, opts.ContainerID, scan.ScanTypeString(st))
 		scanID := pub.StartScan(nodeID, scan.ScanTypeString(st))
 		if len(scanID) == 0 {
 			scanID = fmt.Sprintf("%s-%d", nodeID, time.Now().UnixMilli())
@@ -114,7 +135,7 @@ func runOnce(ctx context.Context, opts *config.Options, extractorConfig cfg.Conf
 
 	counts := output.CountBySeverity(results.GetIOC())
 
-	if *opts.OutFormat == "json" {
+	if opts.OutFormat == "json" {
 		log.Infof("result severity counts: %+v", counts)
 		err = results.WriteJSON()
 		if err != nil {
@@ -138,5 +159,5 @@ func runOnce(ctx context.Context, opts *config.Options, extractorConfig cfg.Conf
 	}
 
 	output.FailOn(counts,
-		*opts.FailOnHighCount, *opts.FailOnMediumCount, *opts.FailOnLowCount, *opts.FailOnCount)
+		opts.FailOnHighCount, opts.FailOnMediumCount, opts.FailOnLowCount, opts.FailOnCount)
 }

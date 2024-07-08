@@ -9,17 +9,16 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/deepfence/YaraHunter/pkg/config"
 	utils "github.com/deepfence/YaraHunter/utils"
 	log "github.com/sirupsen/logrus"
 )
 
-func ScheduleYaraHunterUpdater(ctx context.Context, opts *config.Options) {
-	if *opts.SocketPath != "" {
+func ScheduleYaraHunterUpdater(ctx context.Context, opts RunnerOptions) {
+	if opts.SocketPath != "" {
 		ticker := time.NewTicker(10 * time.Hour)
 		for {
 			fmt.Println("Updater invoked")
-			err := StartYaraHunterUpdater(*opts.RulesPath, filepath.Dir(*opts.ConfigPath), *opts.RulesListingURL)
+			err := StartYaraHunterUpdater(opts.RulesPath, filepath.Dir(opts.RulesPath), opts.RulesListingURL)
 			if err != nil {
 				log.Panicf("main: failed to serve: %v", err)
 			}

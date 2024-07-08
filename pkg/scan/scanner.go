@@ -5,7 +5,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	cfg "github.com/deepfence/match-scanner/pkg/config"
@@ -17,31 +16,26 @@ import (
 )
 
 func New(
-	opts *config.Options,
+	hostMountPath string,
 	extractorConfig cfg.Config,
 	yaraScannerIn *yara.Scanner,
 	scanID string) *Scanner {
 
 	obj := Scanner{
-		opts,
-		yaraScannerIn,
-		scanID,
-		cfg.Config2Filter(extractorConfig),
+		YaraScanner:   yaraScannerIn,
+		ScanID:        scanID,
+		Filters:       cfg.Config2Filter(extractorConfig),
+		hostMountPath: hostMountPath,
 	}
 	return &obj
 }
 
 type Scanner struct {
-	*config.Options
-
-	YaraScanner *yara.Scanner
-	ScanID      string
+	hostMountPath string
+	YaraScanner   *yara.Scanner
+	ScanID        string
 
 	Filters cfg.Filters
-}
-
-func (s *Scanner) SetImageName(imageName string) {
-	s.ImageName = &imageName
 }
 
 type ScanType int
