@@ -16,6 +16,7 @@ import (
 	yararules "github.com/deepfence/YaraHunter/pkg/yararules"
 	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
 	tasks "github.com/deepfence/golang_deepfence_sdk/utils/tasks"
+	"github.com/hillu/go-yara/v4"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
@@ -38,26 +39,29 @@ func init() {
 	cntnrPathPrefixRegexObj = regexp.MustCompile(cntnrPathPrefixRegex)
 }
 
-type gRPCServer struct {
+type GRPCScannerServer struct {
 	HostMountPath, SocketPath string
 	InactiveThreshold         int
 	extractorConfig           cfg.Config
 	yaraRules                 *yararules.YaraRules
 	pluginName                string
-	pb.UnimplementedMalwareScannerServer
 	pb.UnimplementedAgentPluginServer
 	pb.UnimplementedScannersServer
-
 	scanMap sync.Map
 }
 
-func (s *gRPCServer) ReportJobsStatus(context.Context, *pb.Empty) (*pb.JobReports, error) {
+type MalwareRPCServer struct {
+	*GRPCScannerServer
+	pb.UnimplementedMalwareScannerServer
+}
+
+func (s *GRPCScannerServer) ReportJobsStatus(context.Context, *pb.Empty) (*pb.JobReports, error) {
 	return &pb.JobReports{
 		RunningJobs: jobs.GetRunningJobCount(),
 	}, nil
 }
 
-func (s *gRPCServer) StopScan(c context.Context, req *pb.StopScanRequest) (*pb.StopScanResult, error) {
+func (s *GRPCScannerServer) StopScan(c context.Context, req *pb.StopScanRequest) (*pb.StopScanResult, error) {
 	scanID := req.ScanId
 	result := &pb.StopScanResult{
 		Success:     true,
@@ -85,113 +89,156 @@ func (s *gRPCServer) StopScan(c context.Context, req *pb.StopScanRequest) (*pb.S
 	return result, nil
 }
 
-func (s *gRPCServer) GetName(context.Context, *pb.Empty) (*pb.Name, error) {
+func (s *GRPCScannerServer) GetName(context.Context, *pb.Empty) (*pb.Name, error) {
 	return &pb.Name{Str: s.pluginName}, nil
 }
 
-func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
+func (s *GRPCScannerServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
 	return &pb.Uid{Str: fmt.Sprintf("%s-%s", s.pluginName, s.SocketPath)}, nil
 }
 
-func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
+func (s *MalwareRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
+	yaraScanner, err := s.yaraRules.NewScanner()
+	if err != nil {
+		return &pb.MalwareResult{}, err
+	}
+
 	go func() {
 		log.Infof("request to scan %+v", r)
 
-		jobs.StartScanJob()
-		defer jobs.StopScanJob()
-
-		yaraScanner, err := s.yaraRules.NewScanner()
-		scanner := scan.New(s.HostMountPath, s.extractorConfig, yaraScanner, r.ScanId)
-		res, ctx := tasks.StartStatusReporter(
-			r.ScanId,
-			func(status tasks.ScanStatus) error {
-				output.WriteScanStatus(status.ScanStatus, status.ScanId, status.ScanMessage)
-				return nil
-			},
-			tasks.StatusValues{
-				IN_PROGRESS: "IN_PROGRESS",
-				CANCELLED:   "CANCELLED",
-				FAILED:      "ERROR",
-				SUCCESS:     "COMPLETE",
-			},
-			time.Duration(s.InactiveThreshold)*time.Second)
-		s.scanMap.Store(scanner.ScanID, ctx)
-		defer func() {
-			s.scanMap.Delete(scanner.ScanID)
-			res <- err
-			close(res)
-		}()
-
-		// Check for error only after the StartStatusReporter as we have to report
-		// the error if we failed to create the yara scanner
-		if err != nil {
-			log.Error("Failed to create Yara Scanner, error:", err)
-			return
-		}
-		writeToFile := func(res output.IOCFound, scanID string) {
-			output.WriteScanData([]*pb.MalwareInfo{output.MalwaresToMalwareInfo(res)}, scanID)
-		}
+		namespace := ""
+		container := ""
+		image := ""
+		path := ""
 		switch {
-		case r.GetPath() != "":
-			log.Infof("scan for malwares in path %s", r.GetPath())
-			err = scanner.Scan(ctx, scan.DirScan, "", r.GetPath(), r.GetScanId(), writeToFile)
-		case r.GetImage() != nil && r.GetImage().Name != "":
-			log.Infof("scan for malwares in image %s", r.GetImage())
-			err = scanner.Scan(ctx, scan.ImageScan, "", r.GetImage().Name, r.GetScanId(), writeToFile)
-		case r.GetContainer() != nil && r.GetContainer().Id != "":
-			log.Infof("scan for malwares in container %s", r.GetContainer())
-			err = scanner.Scan(ctx, scan.ContainerScan, r.GetContainer().Namespace, r.GetContainer().Id, r.GetScanId(), writeToFile)
+		case r.GetContainer() != nil:
+			namespace = r.GetContainer().GetNamespace()
+			container = r.GetContainer().GetId()
+		case r.GetImage() != nil:
+			image = r.GetImage().GetName()
 		default:
-			err = fmt.Errorf("invalid request")
+			path = r.GetPath()
 		}
 
-		if err != nil {
-			println(err.Error())
-		}
+		DoScan(
+			r.ScanId,
+			s.HostMountPath,
+			s.extractorConfig,
+			s.InactiveThreshold,
+			&s.scanMap,
+			namespace,
+			path,
+			image,
+			container,
+			yaraScanner,
+			func(res output.IOCFound, scanID string) {
+				output.WriteScanData([]*pb.MalwareInfo{output.MalwaresToMalwareInfo(res)}, scanID)
+			},
+		)
 	}()
 	return &pb.MalwareResult{}, nil
 }
 
-func RunGrpcServer(ctx context.Context,
+func DoScan(
+	scanID string,
+	hostMountPath string,
+	extractorConfig cfg.Config,
+	inactiveThreshold int,
+	scanMap *sync.Map,
+	namespace,
+	path, image, container string,
+	yaraScanner *yara.Scanner, writeToFile func(res output.IOCFound, scanID string)) {
+
+	jobs.StartScanJob()
+	defer jobs.StopScanJob()
+
+	scanner := scan.New(hostMountPath, extractorConfig, yaraScanner, scanID)
+	res, ctx := tasks.StartStatusReporter(
+		scanID,
+		func(status tasks.ScanStatus) error {
+			output.WriteScanStatus(status.ScanStatus, status.ScanId, status.ScanMessage)
+			return nil
+		},
+		tasks.StatusValues{
+			IN_PROGRESS: "IN_PROGRESS",
+			CANCELLED:   "CANCELLED",
+			FAILED:      "ERROR",
+			SUCCESS:     "COMPLETE",
+		},
+		time.Duration(inactiveThreshold)*time.Second)
+	scanMap.Store(scanner.ScanID, ctx)
+	var err error
+	defer func() {
+		scanMap.Delete(scanner.ScanID)
+		res <- err
+		close(res)
+	}()
+
+	switch {
+	case path != "":
+		log.Infof("scan for malwares in path %s", path)
+		err = scanner.Scan(ctx, scan.DirScan, "", path, scanID, writeToFile)
+	case image != "":
+		log.Infof("scan for malwares in image %s", image)
+		err = scanner.Scan(ctx, scan.ImageScan, "", image, scanID, writeToFile)
+	case container != "":
+		log.Infof("scan for malwares in container %s", container)
+		err = scanner.Scan(ctx, scan.ContainerScan, namespace, container, scanID, writeToFile)
+	default:
+		err = fmt.Errorf("invalid request")
+	}
+
+	if err != nil {
+		log.Errorf("err: %v", err)
+	}
+}
+
+func NewGRPCScannerServer(
 	hostMoundPath, socketPath, rulesPath string,
 	InactiveThreshold int,
 	failOnCompileWarning bool,
-	config cfg.Config, pluginName string) error {
+	config cfg.Config, pluginName string,
+) (*GRPCScannerServer, error) {
+	yaraRules := yararules.New(rulesPath)
+	err := yaraRules.Compile(constants.Filescan, failOnCompileWarning)
+	if err != nil {
+		return nil, err
+	}
+	res := &GRPCScannerServer{
+		HostMountPath:                  hostMoundPath,
+		SocketPath:                     socketPath,
+		InactiveThreshold:              InactiveThreshold,
+		extractorConfig:                config,
+		yaraRules:                      yaraRules,
+		pluginName:                     pluginName,
+		UnimplementedAgentPluginServer: pb.UnimplementedAgentPluginServer{},
+		UnimplementedScannersServer:    pb.UnimplementedScannersServer{},
+		scanMap:                        sync.Map{},
+	}
+
+	return res, nil
+}
+
+func RunGrpcServer(ctx context.Context,
+	socketPath string,
+	impl any,
+	customImpl func(s grpc.ServiceRegistrar, impl any)) error {
 
 	lis, err := net.Listen("unix", socketPath)
 	if err != nil {
 		return err
 	}
+
 	s := grpc.NewServer()
 
-	impl := &gRPCServer{
-		HostMountPath:                     hostMoundPath,
-		SocketPath:                        socketPath,
-		InactiveThreshold:                 InactiveThreshold,
-		extractorConfig:                   config,
-		yaraRules:                         &yararules.YaraRules{},
-		pluginName:                        pluginName,
-		UnimplementedMalwareScannerServer: pb.UnimplementedMalwareScannerServer{},
-		UnimplementedAgentPluginServer:    pb.UnimplementedAgentPluginServer{},
-		UnimplementedScannersServer:       pb.UnimplementedScannersServer{},
-		scanMap:                           sync.Map{},
-	}
 	if err != nil {
 		return err
 	}
 
-	impl.scanMap = sync.Map{}
+	pb.RegisterAgentPluginServer(s, impl.(pb.AgentPluginServer))
+	pb.RegisterScannersServer(s, impl.(pb.ScannersServer))
+	customImpl(s, impl)
 
-	// compile yara rules
-	impl.yaraRules = yararules.New(rulesPath)
-	err = impl.yaraRules.Compile(constants.Filescan, failOnCompileWarning)
-	if err != nil {
-		return err
-	}
-
-	pb.RegisterAgentPluginServer(s, impl)
-	pb.RegisterMalwareScannerServer(s, impl)
-	pb.RegisterScannersServer(s, impl)
 	log.Info("main: server listening at ", lis.Addr())
 	go func() {
 		if err := s.Serve(lis); err != nil {
