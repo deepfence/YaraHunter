@@ -67,9 +67,29 @@ func main() {
 		log.Panicf("main: failed to parse options: %v", err)
 	}
 
-	if *opts.EnableUpdater {
-		go runner.ScheduleYaraHunterUpdater(ctx, opts)
+	runnerOpts := runner.RunnerOptions{
+		SocketPath:           *opts.SocketPath,
+		RulesPath:            *opts.RulesPath,
+		RulesListingURL:      *opts.RulesListingURL,
+		HostMountPath:        *opts.HostMountPath,
+		FailOnCompileWarning: *opts.FailOnCompileWarning,
+		Local:                *opts.Local,
+		ImageName:            *opts.ImageName,
+		ContainerID:          *opts.ContainerID,
+		ConsoleURL:           *opts.ConsoleURL,
+		ConsolePort:          *opts.ConsolePort,
+		DeepfenceKey:         *opts.DeepfenceKey,
+		OutFormat:            *opts.OutFormat,
+		FailOnHighCount:      *opts.FailOnHighCount,
+		FailOnMediumCount:    *opts.FailOnMediumCount,
+		FailOnLowCount:       *opts.FailOnLowCount,
+		FailOnCount:          *opts.FailOnCount,
+		InactiveThreshold:    *opts.InactiveThreshold,
 	}
 
-	runner.StartYaraHunter(ctx, opts, config)
+	if *opts.EnableUpdater {
+		go runner.ScheduleYaraHunterUpdater(ctx, runnerOpts)
+	}
+
+	runner.StartYaraHunter(ctx, runnerOpts, config)
 }

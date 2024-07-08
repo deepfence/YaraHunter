@@ -181,9 +181,8 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 		}
 	}
 
-	hostMountPath := *s.HostMountPath
-	if hostMountPath != "" {
-		fileName = strings.TrimPrefix(fileName, hostMountPath)
+	if s.hostMountPath != "" {
+		fileName = strings.TrimPrefix(fileName, s.hostMountPath)
 	}
 
 	it := Iterator{blocksize: 32 * 1024 * 1024, rs: f}

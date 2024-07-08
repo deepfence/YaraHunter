@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/deepfence/YaraHunter/constants"
-	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/jobs"
 	"github.com/deepfence/YaraHunter/pkg/output"
 	"github.com/deepfence/YaraHunter/pkg/scan"
@@ -40,10 +39,11 @@ func init() {
 }
 
 type gRPCServer struct {
-	options         *config.Options
-	extractorConfig cfg.Config
-	yaraRules       *yararules.YaraRules
-	pluginName      string
+	HostMountPath, SocketPath string
+	InactiveThreshold         int
+	extractorConfig           cfg.Config
+	yaraRules                 *yararules.YaraRules
+	pluginName                string
 	pb.UnimplementedMalwareScannerServer
 	pb.UnimplementedAgentPluginServer
 	pb.UnimplementedScannersServer
@@ -90,7 +90,7 @@ func (s *gRPCServer) GetName(context.Context, *pb.Empty) (*pb.Name, error) {
 }
 
 func (s *gRPCServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) {
-	return &pb.Uid{Str: fmt.Sprintf("%s-%s", s.pluginName, *s.options.SocketPath)}, nil
+	return &pb.Uid{Str: fmt.Sprintf("%s-%s", s.pluginName, s.SocketPath)}, nil
 }
 
 func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
@@ -101,7 +101,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 		defer jobs.StopScanJob()
 
 		yaraScanner, err := s.yaraRules.NewScanner()
-		scanner := scan.New(s.options, s.extractorConfig, yaraScanner, r.ScanId)
+		scanner := scan.New(s.HostMountPath, s.extractorConfig, yaraScanner, r.ScanId)
 		res, ctx := tasks.StartStatusReporter(
 			r.ScanId,
 			func(status tasks.ScanStatus) error {
@@ -114,7 +114,7 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 				FAILED:      "ERROR",
 				SUCCESS:     "COMPLETE",
 			},
-			time.Duration(*s.options.InactiveThreshold)*time.Second)
+			time.Duration(s.InactiveThreshold)*time.Second)
 		s.scanMap.Store(scanner.ScanID, ctx)
 		defer func() {
 			s.scanMap.Delete(scanner.ScanID)
@@ -152,15 +152,30 @@ func (s *gRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*
 	return &pb.MalwareResult{}, nil
 }
 
-func RunGrpcServer(ctx context.Context, opts *config.Options, config cfg.Config, pluginName string) error {
+func RunGrpcServer(ctx context.Context,
+	hostMoundPath, socketPath, rulesPath string,
+	InactiveThreshold int,
+	failOnCompileWarning bool,
+	config cfg.Config, pluginName string) error {
 
-	lis, err := net.Listen("unix", *opts.SocketPath)
+	lis, err := net.Listen("unix", socketPath)
 	if err != nil {
 		return err
 	}
 	s := grpc.NewServer()
 
-	impl := &gRPCServer{options: opts, pluginName: pluginName, extractorConfig: config}
+	impl := &gRPCServer{
+		HostMountPath:                     hostMoundPath,
+		SocketPath:                        socketPath,
+		InactiveThreshold:                 InactiveThreshold,
+		extractorConfig:                   config,
+		yaraRules:                         &yararules.YaraRules{},
+		pluginName:                        pluginName,
+		UnimplementedMalwareScannerServer: pb.UnimplementedMalwareScannerServer{},
+		UnimplementedAgentPluginServer:    pb.UnimplementedAgentPluginServer{},
+		UnimplementedScannersServer:       pb.UnimplementedScannersServer{},
+		scanMap:                           sync.Map{},
+	}
 	if err != nil {
 		return err
 	}
@@ -168,8 +183,8 @@ func RunGrpcServer(ctx context.Context, opts *config.Options, config cfg.Config,
 	impl.scanMap = sync.Map{}
 
 	// compile yara rules
-	impl.yaraRules = yararules.New(*opts.RulesPath)
-	err = impl.yaraRules.Compile(constants.Filescan, *opts.FailOnCompileWarning)
+	impl.yaraRules = yararules.New(rulesPath)
+	err = impl.yaraRules.Compile(constants.Filescan, failOnCompileWarning)
 	if err != nil {
 		return err
 	}
