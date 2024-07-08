@@ -42,12 +42,12 @@ func init() {
 type GRPCScannerServer struct {
 	HostMountPath, SocketPath string
 	InactiveThreshold         int
-	extractorConfig           cfg.Config
-	yaraRules                 *yararules.YaraRules
+	ExtractorConfig           cfg.Config
+	YaraRules                 *yararules.YaraRules
 	pluginName                string
 	pb.UnimplementedAgentPluginServer
 	pb.UnimplementedScannersServer
-	scanMap sync.Map
+	ScanMap sync.Map
 }
 
 type MalwareRPCServer struct {
@@ -68,7 +68,7 @@ func (s *GRPCScannerServer) StopScan(c context.Context, req *pb.StopScanRequest)
 		Description: "",
 	}
 
-	obj, found := s.scanMap.Load(scanID)
+	obj, found := s.ScanMap.Load(scanID)
 	if !found {
 		msg := "Failed to Stop scan"
 		log.Infof("%s, may have already completed, scan_id: %s", msg, scanID)
@@ -98,7 +98,7 @@ func (s *GRPCScannerServer) GetUID(context.Context, *pb.Empty) (*pb.Uid, error) 
 }
 
 func (s *MalwareRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareRequest) (*pb.MalwareResult, error) {
-	yaraScanner, err := s.yaraRules.NewScanner()
+	yaraScanner, err := s.YaraRules.NewScanner()
 	if err != nil {
 		return &pb.MalwareResult{}, err
 	}
@@ -123,9 +123,9 @@ func (s *MalwareRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareReque
 		DoScan(
 			r.ScanId,
 			s.HostMountPath,
-			s.extractorConfig,
+			s.ExtractorConfig,
 			s.InactiveThreshold,
-			&s.scanMap,
+			&s.ScanMap,
 			namespace,
 			path,
 			image,
@@ -142,9 +142,9 @@ func (s *MalwareRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareReque
 func DoScan(
 	scanID string,
 	hostMountPath string,
-	extractorConfig cfg.Config,
+	ExtractorConfig cfg.Config,
 	inactiveThreshold int,
-	scanMap *sync.Map,
+	ScanMap *sync.Map,
 	namespace,
 	path, image, container string,
 	yaraScanner *yara.Scanner, writeToFile func(res output.IOCFound, scanID string)) {
@@ -152,7 +152,7 @@ func DoScan(
 	jobs.StartScanJob()
 	defer jobs.StopScanJob()
 
-	scanner := scan.New(hostMountPath, extractorConfig, yaraScanner, scanID)
+	scanner := scan.New(hostMountPath, ExtractorConfig, yaraScanner, scanID)
 	res, ctx := tasks.StartStatusReporter(
 		scanID,
 		func(status tasks.ScanStatus) error {
@@ -166,10 +166,10 @@ func DoScan(
 			SUCCESS:     "COMPLETE",
 		},
 		time.Duration(inactiveThreshold)*time.Second)
-	scanMap.Store(scanner.ScanID, ctx)
+	ScanMap.Store(scanner.ScanID, ctx)
 	var err error
 	defer func() {
-		scanMap.Delete(scanner.ScanID)
+		ScanMap.Delete(scanner.ScanID)
 		res <- err
 		close(res)
 	}()
@@ -208,12 +208,12 @@ func NewGRPCScannerServer(
 		HostMountPath:                  hostMoundPath,
 		SocketPath:                     socketPath,
 		InactiveThreshold:              InactiveThreshold,
-		extractorConfig:                config,
-		yaraRules:                      yaraRules,
+		ExtractorConfig:                config,
+		YaraRules:                      yaraRules,
 		pluginName:                     pluginName,
 		UnimplementedAgentPluginServer: pb.UnimplementedAgentPluginServer{},
 		UnimplementedScannersServer:    pb.UnimplementedScannersServer{},
-		scanMap:                        sync.Map{},
+		ScanMap:                        sync.Map{},
 	}
 
 	return res, nil
