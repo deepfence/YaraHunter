@@ -34,8 +34,12 @@ import (
 
 	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/runner"
+	"github.com/deepfence/YaraHunter/pkg/server"
 	cfg "github.com/deepfence/match-scanner/pkg/config"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+
+	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
 )
 
 // Read the regex signatures from config file, options etc.
@@ -91,5 +95,14 @@ func main() {
 		go runner.ScheduleYaraHunterUpdater(ctx, runnerOpts)
 	}
 
-	runner.StartYaraHunter(ctx, runnerOpts, config)
+	runner.StartYaraHunter(ctx, runnerOpts, config,
+		func(base *server.GRPCScannerServer) server.MalwareRPCServer {
+			return server.MalwareRPCServer{
+				GRPCScannerServer:                 base,
+				UnimplementedMalwareScannerServer: pb.UnimplementedMalwareScannerServer{},
+			}
+		},
+		func(s grpc.ServiceRegistrar, impl any) {
+			pb.RegisterMalwareScannerServer(s, impl.(pb.MalwareScannerServer))
+		})
 }

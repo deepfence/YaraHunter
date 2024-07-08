@@ -15,6 +15,7 @@ import (
 	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	cfg "github.com/deepfence/match-scanner/pkg/config"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 type RunnerOptions struct {
@@ -34,20 +35,36 @@ type RunnerOptions struct {
 	InactiveThreshold                                               int
 }
 
-func StartYaraHunter(ctx context.Context, opts RunnerOptions, config cfg.Config) {
+func StartYaraHunter[T any](ctx context.Context,
+	opts RunnerOptions,
+	config cfg.Config,
+	constructServer func(srv *server.GRPCScannerServer) T,
+	attachRegistrar func(s grpc.ServiceRegistrar, impl any)) {
 
 	if opts.SocketPath == "" {
 		runOnce(ctx, opts, config)
 		return
 	}
 
+	base, err := server.NewGRPCScannerServer(
+		opts.HostMountPath,
+		opts.SocketPath,
+		opts.RulesPath,
+		opts.InactiveThreshold,
+		opts.FailOnCompileWarning, config, constants.PluginName,
+	)
+	if err != nil {
+		log.Fatal("Cannot init grpc")
+	}
 	go func() {
+
+		svc := constructServer(base)
+
 		if err := server.RunGrpcServer(ctx,
-			opts.HostMountPath,
 			opts.SocketPath,
-			opts.RulesPath,
-			opts.InactiveThreshold,
-			opts.FailOnCompileWarning, config, constants.PluginName); err != nil {
+			&svc,
+			attachRegistrar,
+		); err != nil {
 			log.Panicf("main: failed to serve: %v", err)
 		}
 	}()
