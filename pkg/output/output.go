@@ -31,8 +31,8 @@ const (
 )
 
 var (
-	scanFilename       = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan/malware_scan.log"
-	scanStatusFilename = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan-log/malware_scan_log.log"
+	ScanFilename       = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan/malware_scan.log"
+	ScanStatusFilename = utils.GetDfInstallDir() + "/var/log/fenced/malware-scan-log/malware_scan_log.log"
 )
 
 type IOCFound struct {
@@ -313,7 +313,7 @@ func WriteScanStatus(status, scanID, scanMessage string) {
 		return
 	}
 
-	err = writeToFile(string(byteJSON), scanStatusFilename)
+	err = writeToFile(string(byteJSON), ScanStatusFilename)
 	if err != nil {
 		log.Errorf("Error in sending data to malware-logs-status to mark in progress: %s", err)
 		return
@@ -338,7 +338,7 @@ func WriteScanData(malwares []*pb.MalwareInfo, scanID string) {
 			log.Errorf("Error marshalling json: %s", err)
 			continue
 		}
-		err = writeToFile(string(byteJSON), scanFilename)
+		err = writeToFile(string(byteJSON), ScanFilename)
 		if err != nil {
 			log.Errorf("Error in writing data to malware scan file: %s", err)
 		}
