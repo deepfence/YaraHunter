@@ -50,6 +50,13 @@ type IOCFound struct {
 	MetaRules map[string]string `json:"rule metadata"`
 	Summary   string            `json:"Summary,omitempty"`
 	Class     string            `json:"Class,omitempty"`
+
+	Matches []StringMatch `json:"matches"`
+}
+
+type StringMatch struct {
+	Offset int
+	Data   string
 }
 
 type JSONDirIOCOutput struct {
@@ -177,10 +184,14 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	out.StringsToMatch = stringsToMatch
 
 	if bool {
+		stringsToMatch := []string{}
+		for _, c := range out.Matches {
+			stringsToMatch = append(stringsToMatch, c.Data)
+		}
 		return &pb.MalwareInfo{
 			ImageLayerId:     out.LayerID,
 			RuleName:         out.RuleName,
-			StringsToMatch:   out.StringsToMatch,
+			StringsToMatch:   stringsToMatch,
 			SeverityScore:    out.SeverityScore,
 			FileSeverity:     out.FileSeverity,
 			FileSevScore:     out.FileSevScore,

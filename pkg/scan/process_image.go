@@ -7,7 +7,6 @@ import (
 	"math"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -42,11 +41,10 @@ type fileMatches struct {
 	updatedSeverity string
 }
 
-func calculateSeverity(inputString []string, severity string, severityScore float64) (string, float64) {
-	updatedSeverity := "low"
-	lenMatch := len(inputString)
-	MinIOCLength := 3
+func calculateSeverity(lenMatch int, severity string, severityScore float64) (string, float64) {
 
+	updatedSeverity := "low"
+	MinIOCLength := 3
 	MaxIOCLength := 6
 
 	if lenMatch < MinIOCLength {
@@ -191,15 +189,17 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 		return err
 	}
 
+	totalMatches := 0
 	iocsFound := make([]output.IOCFound, 0, len(matches))
-	totalMatchesStringData := make([]string, 0)
 	for _, m := range matches {
+		matches := []output.StringMatch{}
 		for _, str := range m.Strings {
-			totalMatchesStringData = append(totalMatchesStringData, BytesToString(str.Data))
+			matches = append(matches, output.StringMatch{
+				Offset: int(str.Base) + int(str.Offset),
+				Data:   BytesToString(str.Data),
+			})
 		}
-
-		slices.Sort(totalMatchesStringData)
-		matchesStringDataSlice := slices.Compact(totalMatchesStringData)
+		totalMatches += len(m.Strings)
 
 		matchesMetaData := make([]string, len(m.Metas))
 		for _, strMeta := range m.Metas {
@@ -209,15 +209,15 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 		iocsFound = append(iocsFound, output.IOCFound{
 			RuleName:         m.Rule,
 			CategoryName:     m.Tags,
-			StringsToMatch:   matchesStringDataSlice,
 			Meta:             matchesMetaData,
 			CompleteFilename: fileName,
+			Matches:          matches,
 		})
 	}
 	var fileMat fileMatches
 	fileMat.fileName = fileName
 	fileMat.iocs = iocsFound
-	updatedSeverity, updatedScore := calculateSeverity(totalMatchesStringData, "low", 0)
+	updatedSeverity, updatedScore := calculateSeverity(totalMatches, "low", 0)
 	fileMat.updatedSeverity = updatedSeverity
 	fileMat.updatedScore = updatedScore
 	if len(matches) > 0 {
