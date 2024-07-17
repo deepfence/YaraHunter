@@ -54,7 +54,7 @@ func StartYaraHunter[T any](ctx context.Context,
 		opts.FailOnCompileWarning, config, constants.PluginName,
 	)
 	if err != nil {
-		log.Fatal("Cannot init grpc")
+		log.Fatalf("Cannot init grpc: %v", err)
 	}
 	go func() {
 

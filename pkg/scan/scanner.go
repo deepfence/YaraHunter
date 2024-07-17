@@ -44,6 +44,7 @@ const (
 	DirScan ScanType = iota
 	ImageScan
 	ContainerScan
+	TarScan
 )
 
 func ScanTypeString(st ScanType) string {
@@ -54,6 +55,8 @@ func ScanTypeString(st ScanType) string {
 		return "image"
 	case ContainerScan:
 		return "container"
+	case TarScan:
+		return "tar"
 	}
 	return ""
 }
@@ -75,6 +78,8 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 		extract, err = extractor.NewImageExtractor(s.Filters, namespace, id)
 	case ContainerScan:
 		extract, err = extractor.NewContainerExtractor(s.Filters, namespace, id)
+	case TarScan:
+		extract, err = extractor.NewTarExtractor(s.Filters, namespace, id)
 	default:
 		err = fmt.Errorf("invalid request")
 	}
