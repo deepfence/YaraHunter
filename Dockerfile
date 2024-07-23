@@ -104,5 +104,5 @@ RUN cd /usr/local/ \
     && tar -xzf yara.tar.gz
 WORKDIR /home/deepfence/output
 
-ENTRYPOINT ["/home/deepfence/usr/YaraHunter", "-config-path", "/home/deepfence/usr", "-rules-path", "/home/deepfence/usr"]
+ENTRYPOINT ["/home/deepfence/usr/YaraHunter", "-config-path", "/home/deepfence/usr/config.yaml", "-rules-path", "/home/deepfence/usr"]
 CMD ["-h"]
