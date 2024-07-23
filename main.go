@@ -64,11 +64,11 @@ func main() {
 
 	opts, err := config.ParseOptions()
 	if err != nil {
-		log.Panicf("main: failed to parse options: %v", err)
+		log.Fatalf("main: failed to parse options: %v", err)
 	}
 	config, err := cfg.ParseConfig(*opts.ConfigPath)
 	if err != nil {
-		log.Panicf("main: failed to parse config: %v", err)
+		log.Fatalf("main: failed to parse config: %v", err)
 	}
 
 	runnerOpts := runner.RunnerOptions{
