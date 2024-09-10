@@ -6,15 +6,16 @@ replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
 
 require (
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20240626143546-e4ec9311fdf9
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20240626143546-e4ec9311fdf9
-	github.com/deepfence/match-scanner v0.0.0-20240717123812-c91c924786f7
-	github.com/gabriel-vasile/mimetype v1.4.4
-	github.com/hillu/go-yara/v4 v4.3.2
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20240807105002-4943c14781c5
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20240807105002-4943c14781c5
+	github.com/deepfence/match-scanner v0.0.0-20240910141915-bc37e8a490c2
+	github.com/gabriel-vasile/mimetype v1.4.5
+	github.com/hillu/go-yara/v4 v4.3.3
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
 	google.golang.org/grpc v1.64.0
 	gopkg.in/yaml.v3 v3.0.1
+
 )
 
 require (
@@ -65,9 +66,9 @@ require (
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto v0.0.0-20240624140628-dc46fd24d27d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240624140628-dc46fd24d27d // indirect
