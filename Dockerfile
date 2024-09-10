@@ -1,4 +1,4 @@
-FROM golang:1.21.1-bookworm AS skopeo-builder
+FROM golang:1.22-bookworm AS skopeo-builder
 
 # Ubuntu (`libbtrfs-dev` requires Ubuntu 18.10 and above):
 RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev pkg-config
@@ -8,7 +8,7 @@ RUN cd $GOPATH/src/github.com/containers/skopeo && DISABLE_DOCS=1 make bin/skope
 RUN cd $GOPATH/src/github.com/containers/skopeo && DISABLE_DOCS=1 make
 RUN cd $GOPATH/src/github.com/containers/skopeo && cp ./bin/skopeo /usr/bin/skopeo
 
-FROM golang:1.21-alpine3.18 AS builder
+FROM golang:1.22-alpine3.18 AS builder
 
 RUN apk add --no-cache \
     git \
