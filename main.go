@@ -140,7 +140,7 @@ func updateRules(ctx context.Context, opts *config.Options) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Debug("rulesInfo: %+v", rulesInfo)
+	log.Debugf("rulesInfo: %+v", rulesInfo)
 
 	// make sure output rules directory exists
 	os.MkdirAll(*opts.RulesPath, fs.ModePerm)
