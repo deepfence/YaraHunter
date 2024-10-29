@@ -52,10 +52,7 @@ RUN cd /root && wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.3.2
 
 WORKDIR /home/deepfence/src/YaraHunter
 COPY . .
-RUN make clean \
-    && make all \
-    && cd /home/deepfence \
-    && git clone https://github.com/deepfence/yara-rules
+RUN make clean && make all
 
 
 FROM debian:bookworm
@@ -95,7 +92,6 @@ EOF
 RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y libgpgme-dev libdevmapper-dev
 
 WORKDIR /home/deepfence/usr
-COPY --from=builder /home/deepfence/yara-rules .
 COPY --from=builder /usr/local/yara.tar.gz /usr/local/yara.tar.gz
 COPY --from=builder /home/deepfence/src/YaraHunter/YaraHunter .
 COPY --from=builder /home/deepfence/src/YaraHunter/config.yaml .

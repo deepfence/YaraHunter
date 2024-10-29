@@ -121,3 +121,11 @@ func GetDfInstallDir() string {
 		return ""
 	}
 }
+
+func GetEnvOrDefault(envVar string, defaultValue string) string {
+	envValue := os.Getenv(envVar)
+	if len(envValue) == 0 {
+		return defaultValue
+	}
+	return envValue
+}

@@ -49,16 +49,36 @@ Pull the image that needs to be scanned for example `metal3d/xmrig` and scan it:
 
 ```
 docker pull metal3d/xmrig
+```
 
+Set Product and Licence and scan it:
+
+```
 docker run -i --rm --name=deepfence-yarahunter \
+     -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
+     -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.3.0 \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:3.0.0 \
      --image-name metal3d/xmrig:latest \
      --output=json > xmrig-scan.json
 ```
 
 This returns, among other things, clear indication of the presence of XMRig. Note that we store the output (`xmrig-scan.json`) for quick and easy manipulation:
+
+Rules can also be cached to use next run by mounting a seperate path and passing `rules-path` argument
+```
+docker run -i --rm --name=deepfence-yarahunter \
+     -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
+     -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
+     -v /var/run/docker.sock:/var/run/docker.sock \
+     -v /tmp:/home/deepfence/output \
+     -v /tmp/rules:/tmp/rules \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:3.0.0 \
+     --image-name metal3d/xmrig:latest \
+     --output=json \
+     --rules-path=/tmp/rules > xmrig-scan.json
+```
 
 ```
 # Extract the IOC array values.  From these, extract the values of the 'Matched Rule Name' key

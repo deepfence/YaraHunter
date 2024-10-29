@@ -25,16 +25,22 @@ package main
 // ------------------------------------------------------------------------------
 
 import (
+	"archive/tar"
 	"context"
+	"encoding/json"
+	"io"
+	"io/fs"
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 
 	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/runner"
 	"github.com/deepfence/YaraHunter/pkg/server"
+	"github.com/deepfence/YaraHunter/pkg/threatintel"
 	cfg "github.com/deepfence/match-scanner/pkg/config"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -45,6 +51,13 @@ import (
 // Read the regex signatures from config file, options etc.
 // and setup the session to start scanning for IOC
 // var session = core.GetSession()
+
+var (
+	version         string
+	checksumFile    = "checksum.txt"
+	sourceRuleFile  = "df-malware.json"
+	malwareRuleFile = "malware.yar"
+)
 
 func main() {
 	log.SetOutput(os.Stderr)
@@ -58,6 +71,8 @@ func main() {
 			return "", " " + path.Base(f.File) + ":" + strconv.Itoa(f.Line)
 		},
 	})
+
+	log.Infof("version: %s", version)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
@@ -95,6 +110,11 @@ func main() {
 		go runner.ScheduleYaraHunterUpdater(ctx, runnerOpts)
 	}
 
+	// update rules required for cli mode
+	if *opts.SocketPath == "" {
+		updateRules(ctx, opts)
+	}
+
 	runner.StartYaraHunter(ctx, runnerOpts, config,
 		func(base *server.GRPCScannerServer) server.MalwareRPCServer {
 			return server.MalwareRPCServer{
@@ -105,4 +125,63 @@ func main() {
 		func(s grpc.ServiceRegistrar, impl any) {
 			pb.RegisterMalwareScannerServer(s, impl.(pb.MalwareScannerServer))
 		})
+
+}
+
+func updateRules(ctx context.Context, opts *config.Options) {
+	log.Infof("check and update malware rules")
+
+	listing, err := threatintel.FetchThreatIntelListing(ctx, version, *opts.Product, *opts.License)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rulesInfo, err := listing.GetLatest(version, threatintel.MalwareDBType)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Debug("rulesInfo: %+v", rulesInfo)
+
+	// make sure output rules directory exists
+	os.MkdirAll(*opts.RulesPath, fs.ModePerm)
+
+	// check if update required
+	if threatintel.SkipRulesUpdate(filepath.Join(*opts.RulesPath, checksumFile), rulesInfo.Checksum) {
+		log.Info("skip rules update")
+		return
+	}
+
+	log.Info("download new rules")
+	content, err := threatintel.DownloadFile(ctx, rulesInfo.URL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Infof("rules file size: %d bytes", content.Len())
+
+	// write new checksum
+	if err := os.WriteFile(
+		filepath.Join(*opts.RulesPath, checksumFile), []byte(rulesInfo.Checksum), fs.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	// write rules file
+	outRuleFile := filepath.Join(*opts.RulesPath, malwareRuleFile)
+	threatintel.ProcessTarGz(content.Bytes(), sourceRuleFile, outRuleFile, processMalwareRules)
+}
+
+func processMalwareRules(header *tar.Header, reader io.Reader, outPath string) error {
+
+	var fb threatintel.FeedsBundle
+	if err := json.NewDecoder(reader).Decode(&fb); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	if err := threatintel.ExportYaraRules(outPath, fb.ScannerFeeds.MalwareRules, fb.Extra); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
 }
