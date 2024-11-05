@@ -1,4 +1,4 @@
-FROM golang:1.22-bookworm AS skopeo-builder
+FROM golang:1.23-bookworm AS skopeo-builder
 
 # Ubuntu (`libbtrfs-dev` requires Ubuntu 18.10 and above):
 RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev pkg-config
@@ -8,7 +8,7 @@ RUN cd $GOPATH/src/github.com/containers/skopeo && DISABLE_DOCS=1 make bin/skope
 RUN cd $GOPATH/src/github.com/containers/skopeo && DISABLE_DOCS=1 make
 RUN cd $GOPATH/src/github.com/containers/skopeo && cp ./bin/skopeo /usr/bin/skopeo
 
-FROM golang:1.22-alpine3.18 AS builder
+FROM golang:1.23-alpine3.20 AS builder
 
 RUN apk add --no-cache \
     git \
@@ -40,9 +40,9 @@ RUN apk add --no-cache -t .build-deps py-setuptools \
     libmagic-static \
     linux-headers
 
-RUN cd /root && wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.3.2.tar.gz \
-    && tar -zxf v4.3.2.tar.gz \
-    && cd yara-4.3.2 \
+RUN cd /root && wget https://github.com/VirusTotal/yara/archive/refs/tags/v4.5.2.tar.gz \
+    && tar -zxf v4.5.2.tar.gz \
+    && cd yara-4.5.2 \
     && ./bootstrap.sh \
     && ./configure --prefix=/usr/local/yara --disable-dotnet --enable-magic --enable-cuckoo --disable-shared --enable-static\
     && make \
@@ -62,7 +62,7 @@ LABEL deepfence.role=system
 COPY --from=skopeo-builder /usr/bin/skopeo /usr/bin/skopeo
 
 ENV LD_LIBRARY_PATH=/usr/local/yara/lib \
-    DOCKERVERSION=24.0.6
+    DOCKERVERSION=27.3.1
 
 RUN apt-get update && apt-get -qq -y --no-install-recommends install libjansson4 libssl3 libmagic1 libstdc++6 jq bash curl ca-certificates
 
@@ -70,7 +70,7 @@ ARG TARGETARCH
 
 RUN <<EOF
 set -eux
-nerdctl_version=1.6.0
+nerdctl_version=1.7.7
 curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v${nerdctl_version}/nerdctl-${nerdctl_version}-linux-${TARGETARCH}.tar.gz
 tar Cxzvvf /usr/local/bin nerdctl-${nerdctl_version}-linux-${TARGETARCH}.tar.gz
 rm nerdctl-${nerdctl_version}-linux-${TARGETARCH}.tar.gz

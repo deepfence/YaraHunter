@@ -37,13 +37,22 @@ Images may be compromised with the installation of a cryptominer such as XMRig. 
 Pull the official **yarahunter** image:
 
 ```
-docker pull quay.io/deepfenceio/deepfence_malware_scanner_ce:2.3.0
+docker pull quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0
 ```
 
 or Build it from source clone this repo and run below command
 ```
 make docker
 ```
+
+### Generate License Key
+
+Run this command to generate a license key. Work/official email id has to be used.
+```shell
+curl https://license.deepfence.io/threatmapper/generate-license?first_name=<FIRST_NAME>&last_name=<LAST_NAME>&email=<EMAIL>&company=<ORGANIZATION_NAME>&resend_email=true
+```
+
+### Scan
 
 Pull the image that needs to be scanned for example `metal3d/xmrig` and scan it:
 
@@ -59,7 +68,7 @@ docker run -i --rm --name=deepfence-yarahunter \
      -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     quay.io/deepfenceio/deepfence_malware_scanner_ce:3.0.0 \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0 \
      --image-name metal3d/xmrig:latest \
      --output=json > xmrig-scan.json
 ```
@@ -74,7 +83,7 @@ docker run -i --rm --name=deepfence-yarahunter \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
      -v /tmp/rules:/tmp/rules \
-     quay.io/deepfenceio/deepfence_malware_scanner_ce:3.0.0 \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0 \
      --image-name metal3d/xmrig:latest \
      --output=json \
      --rules-path=/tmp/rules > xmrig-scan.json
