@@ -7,14 +7,14 @@ title: Command-Line Options
 Display the command line options:
 
 ```bash
-$ docker run -it --rm quay.io/deepfenceio/deepfence_malware_scanner_ce:2.3.0 --help
+$ docker run -it --rm quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0 --help
 ```
 
 Note that all files and directories used in YaraHunter configuration are local to the container, not the host filesystem. The examples given illustrate how to map host directories to the container when needed.
 
 ### General Configuration
 
- * `--log-level string`: one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG (default "ERROR"); print messages of this severity or higher.
+ * `--debug-level string`: one of FATAL, ERROR, IMPORTANT, WARN, INFO, DEBUG (default "ERROR"); print messages of this severity or higher.
  * `--threads int`: Number of concurrent threads to use during scan (default number of logical CPUs).
  * `--temp-directory string`: temporary storage for working data (default "/tmp")
 

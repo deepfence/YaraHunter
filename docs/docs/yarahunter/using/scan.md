@@ -15,8 +15,10 @@ Pull the image to your local repository, then scan it
 docker pull node:latest
 
 docker run -it --rm --name=yara-hunter \
+    -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
+    -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
     -v /var/run/docker.sock:/var/run/docker.sock \
-    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.3.0 \
+    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0 \
 # highlight-next-line
     --image-name node:latest
 
@@ -29,10 +31,12 @@ Mount the root directory into the YaraHunter container at a location of your cho
 
 ```bash
 docker run -it --rm --name=yara-hunter \
+    -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
+    -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
     -v /var/run/docker.sock:/var/run/docker.sock \
 # highlight-next-line
     -v /:/deepfence/mnt \
-    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.3.0 \
+    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0 \
 # highlight-next-line
     --host-mount-path /deepfence/mnt --container-id 69221b948a73
 ```
@@ -43,9 +47,11 @@ Mount the filesystem within the YaraHunter container and scan it:
 
 ```bash
 docker run -it --rm --name=yara-hunter \
+    -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
+    -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
 # highlight-next-line
     -v ~/src/YARA-RULES:/tmp/YARA-RULES \
-    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.3.0 \
+    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0 \
 # highlight-next-line
     --local /tmp/YARA-RULES --host-mount-path /tmp/YARA-RULES
 ```
