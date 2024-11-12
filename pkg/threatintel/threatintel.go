@@ -26,6 +26,7 @@ func FetchThreatIntelListing(ctx context.Context, version, project, license stri
 	var listing Listing
 
 	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.Proxy = http.ProxyFromEnvironment
 	tr.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: true,
 	}

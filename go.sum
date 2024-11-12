@@ -40,10 +40,10 @@ github.com/containerd/typeurl/v2 v2.1.1/go.mod h1:IDp2JFvbwZ31H8dQbEIY7sDl2L3o3H
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20241104185440-230d22a0d173 h1:B6ZSc/dXVg+5zloz1BbBalITTLx3h807ZU/XBAooIWY=
-github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20241104185440-230d22a0d173/go.mod h1:UkHg/qLuPVnTqx4fPwmc2DhlNp5isdYwIxQ63B9JB4o=
-github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20241104185440-230d22a0d173 h1:nAT8FbII+IDgdYQFZV/UaaH3L5k6wexa9haegI4d5fI=
-github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20241104185440-230d22a0d173/go.mod h1:QdyXNUGNYGPMj8ls9R4N1y/IzmM7LrBQSBC/QuYCX+U=
+github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20241112090544-f42aabb5dc7f h1:XI49+zaunyxw7tlUzS8DHzf9PTvDp+/CQDF/xcyaxVU=
+github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20241112090544-f42aabb5dc7f/go.mod h1:UkHg/qLuPVnTqx4fPwmc2DhlNp5isdYwIxQ63B9JB4o=
+github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20241112090544-f42aabb5dc7f h1:819FVayVu5J10JSXfIxl75kiQDF73/aTxkOrImtviNU=
+github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20241112090544-f42aabb5dc7f/go.mod h1:QdyXNUGNYGPMj8ls9R4N1y/IzmM7LrBQSBC/QuYCX+U=
 github.com/deepfence/match-scanner v0.0.0-20241104190155-00799508ab6c h1:0nXgsUJAvP3tgENagcuKlzb92AZFbBAONSE1QmEJzYc=
 github.com/deepfence/match-scanner v0.0.0-20241104190155-00799508ab6c/go.mod h1:mrnCFKtEOzLlNUkagkwQeWWdPtrVIZLc7nbEX/7PbaU=
 github.com/deepfence/vessel v0.13.0 h1:QRtjtuvSXdjrFt4Nb0SE8FO4n7aUtblFY6am/c9oeIQ=
@@ -283,8 +283,7 @@ google.golang.org/protobuf v1.23.1-0.20200526195155-81db48ad09cc/go.mod h1:EGpAD
 google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlbajtzgsN7c=
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.27.1/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
-google.golang.org/protobuf v1.34.2 h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=
-google.golang.org/protobuf v1.34.2/go.mod h1:qYOHts0dSfpeUzUFpOMr/WGzszTmLH+DiWniOlNbLDw=
+google.golang.org/protobuf v1.35.1 h1:m3LfL6/Ca+fqnjnlqQXNpFPABW1UD7mjh8KO2mKFytA=
 google.golang.org/protobuf v1.35.1/go.mod h1:9fA7Ob0pmnwhb644+1+CVWFRbNajQ6iRojtC/QF5bRE=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 h1:YR8cESwS4TdDjEe65xsg0ogRM/Nc3DYOhEAlW+xobZo=
