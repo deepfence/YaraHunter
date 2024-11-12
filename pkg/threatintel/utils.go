@@ -55,6 +55,7 @@ func ExportYaraRules(outFile string, rules []DeepfenceRule, extra []string) erro
 func DownloadFile(ctx context.Context, url string) (*bytes.Buffer, error) {
 
 	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.Proxy = http.ProxyFromEnvironment
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := http.Client{Timeout: 600 * time.Second}
