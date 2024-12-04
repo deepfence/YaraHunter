@@ -3,6 +3,7 @@ package scan
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"os/exec"
@@ -10,8 +11,6 @@ import (
 	"strings"
 	"syscall"
 	"unsafe"
-
-	"fmt"
 
 	"github.com/gabriel-vasile/mimetype"
 
@@ -32,13 +31,6 @@ type manifestItem struct {
 	RepoTags []string
 	Layers   []string
 	LayerIds []string `json:",omitempty"`
-}
-
-type fileMatches struct {
-	fileName        string
-	iocs            []output.IOCFound
-	updatedScore    float64
-	updatedSeverity string
 }
 
 func calculateSeverity(lenMatch int, severity string, severityScore float64) (string, float64) {
@@ -214,12 +206,11 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 			Matches:          matches,
 		})
 	}
-	var fileMat fileMatches
-	fileMat.fileName = fileName
-	fileMat.iocs = iocsFound
 	updatedSeverity, updatedScore := calculateSeverity(totalMatches, "low", 0)
-	fileMat.updatedSeverity = updatedSeverity
-	fileMat.updatedScore = updatedScore
+	if updatedSeverity == "low" {
+		// Ignore low severity malwares
+		return nil
+	}
 	if len(matches) > 0 {
 		for _, m := range iocsFound {
 			m.FileSeverity = updatedSeverity
