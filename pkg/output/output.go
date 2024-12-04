@@ -3,18 +3,17 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
+	"time"
+	"unicode/utf8"
 
 	"github.com/deepfence/YaraHunter/utils"
 	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
 	log "github.com/sirupsen/logrus"
 
 	// "github.com/fatih/color"
-
-	"os"
-	"strings"
-	"time"
-	"unicode/utf8"
 
 	tw "github.com/olekukonko/tablewriter"
 )
