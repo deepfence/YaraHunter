@@ -9,7 +9,7 @@ Pull the latest YaraHunter image, and use it to scan a `node:latest` container.
 ## Pull the latest YaraHunter image
 
 ```bash
-docker pull quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0
+docker pull quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.2
 ```
 
 ## Generate License Key
@@ -30,7 +30,7 @@ docker run -i --rm --name=yara-hunter \
     -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
     -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
     -v /var/run/docker.sock:/var/run/docker.sock \
-    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0 \
+    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.2 \
     --image-name node:latest
 
 docker rmi node:latest
@@ -46,7 +46,7 @@ docker run -i --rm --name=yara-hunter \
     -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v /tmp:/home/deepfence/output \
-    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.0 \
+    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.2 \
     --image-name node:latest \
     --output=json > node-latest.json
 
