@@ -207,6 +207,10 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 		})
 	}
 	updatedSeverity, updatedScore := calculateSeverity(totalMatches, "low", 0)
+	if updatedSeverity == "low" {
+		// Ignore low severity malwares
+		return nil
+	}
 	if len(matches) > 0 {
 		for _, m := range iocsFound {
 			m.FileSeverity = updatedSeverity
