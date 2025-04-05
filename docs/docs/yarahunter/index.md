@@ -37,7 +37,7 @@ docker run -i --rm --name=deepfence-yarahunter \
      -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.2 \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.6 \
      --image-name metal3d/xmrig:latest \
      --output=json > xmrig-scan.json
 ```
@@ -59,7 +59,7 @@ docker run -i --rm --name=deepfence-yarahunter \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
      -v /tmp/rules:/tmp/rules \
-     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.2 \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.6 \
      --image-name metal3d/xmrig:latest \
      --output=json \
      --rules-path=/tmp/rules > xmrig-scan.json

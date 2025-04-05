@@ -27,7 +27,7 @@ docker run -it --rm --name=deepfence-malwarescanner \
 	-v $(pwd):/home/deepfence/output \
 	-v /var/run/docker.sock:/var/run/docker.sock \
 	-v /tmp/sock:/tmp/sock \
-	quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.2 \
+	quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.6 \
 	-socket-path /tmp/sock/s.sock
 ```
 
