@@ -33,6 +33,22 @@ type manifestItem struct {
 	LayerIds []string `json:",omitempty"`
 }
 
+var (
+	severityToScore = map[string]float64{
+		"critical": 10.0,
+		"high":     8.0,
+		"medium":   5.0,
+		"low":      2.0,
+	}
+)
+
+func getSeverityScore(severity string) float64 {
+	if score, ok := severityToScore[severity]; ok {
+		return score
+	}
+	return 0.0
+}
+
 func calculateSeverity(lenMatch int, severity string, severityScore float64) (string, float64) {
 
 	updatedSeverity := "low"
@@ -223,13 +239,17 @@ func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]o
 			class := "Undefined"
 			m.MetaRules = make(map[string]string)
 			for _, c := range m.Meta {
-				var metaSplit = strings.Split(c, " : ")
+				var metaSplit = strings.Split(c, " = ")
 				if len(metaSplit) > 1 {
 
 					m.MetaRules[metaSplit[0]] = strings.ReplaceAll(metaSplit[1], "\n", "")
 					if metaSplit[0] == "description" {
 						str := []string{"The file has a rule match that ", strings.ReplaceAll(metaSplit[1], "\n", "") + "."}
 						summary += strings.Join(str, " ")
+					} else if metaSplit[0] == "sev" {
+						// If severity is present in the rule, set that
+						m.FileSeverity = strings.TrimSpace(strings.ReplaceAll(metaSplit[1], "\n", ""))
+						m.FileSevScore = getSeverityScore(m.FileSeverity)
 					} else {
 						if metaSplit[0] == "info" {
 							class = strings.TrimSpace(strings.ReplaceAll(metaSplit[1], "\n", ""))

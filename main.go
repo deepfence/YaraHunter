@@ -61,7 +61,6 @@ var (
 
 func main() {
 	log.SetOutput(os.Stderr)
-	log.SetLevel(log.InfoLevel)
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: false,
@@ -72,8 +71,6 @@ func main() {
 		},
 	})
 
-	log.Infof("version: %s", version)
-
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
@@ -81,6 +78,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("main: failed to parse options: %v", err)
 	}
+
+	level, err := log.ParseLevel(*opts.LogLevel)
+	if err != nil {
+		log.Warnf("Invalid log level '%s', defaulting to 'info': %v", *opts.LogLevel, err)
+		level = log.InfoLevel
+	}
+	log.SetLevel(level)
+
+	log.Infof("version: %s", version)
+
 	config, err := cfg.ParseConfig(*opts.ConfigPath)
 	if err != nil {
 		log.Fatalf("main: failed to parse config: %v", err)
