@@ -47,10 +47,12 @@ type Options struct {
 	Product              *string
 	Version              *string
 	License              *string
+	LogLevel             *string
 }
 
 func ParseOptions() (*Options, error) {
 	options := &Options{
+		LogLevel:             flag.String("log-level", "info", "Log levels are one of error, warn, info, debug. Only levels higher than the log-level are displayed"),
 		RulesPath:            flag.String("rules-path", "/home/deepfence/usr", "All .yar and .yara files in the given directory will be compiled"),
 		FailOnCompileWarning: flag.Bool("fail-on-rule-compile-warn", false, "Fail if yara rule compilation has warnings"),
 		Threads:              flag.Int("threads", 0, "Number of concurrent threads (default number of logical CPUs)"),
