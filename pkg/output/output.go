@@ -228,21 +228,21 @@ func printColoredIOCJsonObject(ioc IOCFound, isFirstIOC *bool, fileScore float64
 	if ioc.LayerID != "" {
 		fmt.Fprintf(os.Stdout, Indent3+"\"Image Layer ID\": %s,\n", jsonMarshal(ioc.LayerID))
 	}
-	fmt.Fprintf(os.Stdout, Indent3+"\"Matched Rule Name\": %s,\n", jsonMarshal(ioc.RuleName))
-	fmt.Fprintf(os.Stdout, Indent3+"\"Strings to match are\": [\n")
+	fmt.Fprintf(os.Stdout, "%s\"Matched Rule Name\": %s,\n", Indent3, jsonMarshal(ioc.RuleName))
+	fmt.Fprintf(os.Stdout, "%s\"Strings to match are\": [\n", Indent3)
 	var count = 0
 	for _, c := range ioc.StringsToMatch {
 		if len(c) > 0 {
 			if count == 0 {
-				fmt.Fprintf(os.Stdout, Indent3+Indent3+jsonMarshal(c)+"\n")
+				fmt.Fprintf(os.Stdout, "%s%s%s\n", Indent3, Indent3, jsonMarshal(c))
 			} else {
-				fmt.Fprintf(os.Stdout, Indent3+Indent3+","+jsonMarshal(c)+"\n")
+				fmt.Fprintf(os.Stdout, "%s%s,%s\n", Indent3, Indent3, jsonMarshal(c))
 			}
 
 			count++
 		}
 	}
-	fmt.Fprintf(os.Stdout, Indent3+"],\n")
+	fmt.Fprintf(os.Stdout, "%s],\n", Indent3)
 	summary := ""
 	class := "Undefined"
 	categoryName := "["
@@ -266,7 +266,7 @@ func printColoredIOCJsonObject(ioc IOCFound, isFirstIOC *bool, fileScore float64
 	for _, c := range ioc.Meta {
 		var metaSplit = strings.Split(c, " : ")
 		if len(metaSplit) > 1 {
-			fmt.Fprintf(os.Stdout, Indent3+jsonMarshal(metaSplit[0])+":"+jsonMarshal(strings.ReplaceAll(metaSplit[1], "\n", ""))+",\n")
+			fmt.Fprintf(os.Stdout, "%s%s:%s,\n", Indent3, jsonMarshal(metaSplit[0]), jsonMarshal(strings.ReplaceAll(metaSplit[1], "\n", "")))
 			if metaSplit[0] == "description" {
 				str := []string{"The file has a rule match that ", strings.ReplaceAll(metaSplit[1], "\n", "") + "."}
 				summary += strings.Join(str, " ")
