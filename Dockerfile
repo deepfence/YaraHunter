@@ -1,4 +1,4 @@
-FROM golang:1.25-bookworm AS skopeo-builder
+FROM golang:1.25-trixie AS skopeo-builder
 
 # Ubuntu (`libbtrfs-dev` requires Ubuntu 18.10 and above):
 RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev pkg-config
@@ -67,7 +67,7 @@ RUN cd /home/deepfence/src/YaraHunter && \
 	go run ./cmd/convert-rules/main.go /home/deepfence/rules/df-malware.json /home/deepfence/rules/malware.yar
 
 
-FROM debian:bookworm
+FROM debian:trixie
 LABEL MAINTAINER="Deepfence"
 LABEL deepfence.role=system
 

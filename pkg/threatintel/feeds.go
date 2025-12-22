@@ -8,6 +8,7 @@ type FeedsBundle struct {
 
 type ScannerFeeds struct {
 	MalwareRules []DeepfenceRule `json:"malware_rules"`
+	SecretRules  []DeepfenceRule `json:"secret_rules"`
 }
 
 type DeepfenceRule struct {

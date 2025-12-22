@@ -25,6 +25,16 @@ func RulesURL(version string) string {
 	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/malware/malware_%s.tar.gz", version)
 }
 
+// SecretRulesURL returns the URL for downloading secret rules for the given version
+func SecretRulesURL(version string) string {
+	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/secret/secret_%s.tar.gz", version)
+}
+
+// VulnerabilityRulesURL returns the URL for downloading vulnerability db for the given version
+func VulnerabilityRulesURL(version string) string {
+	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/vulnerability/vulnerability_%s.tar.gz", version)
+}
+
 func ExportYaraRules(outFile string, rules []DeepfenceRule, extra []string) error {
 	file, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.ModePerm)
 	if err != nil {
