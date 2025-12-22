@@ -5,14 +5,13 @@ import (
 	"encoding/hex"
 	"math"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/deepfence/YaraHunter/constants"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 // CreateRecursiveDir Create directory structure recursively, if they do not exist
@@ -22,14 +21,14 @@ import (
 // Error - Errors if any. Otherwise, returns nil
 func CreateRecursiveDir(completePath string) error {
 	if _, err := os.Stat(completePath); os.IsNotExist(err) {
-		log.Debugf("Folder does not exist. Creating folder... %s", completePath)
+		log.Debug().Str("path", completePath).Msg("Folder does not exist. Creating folder...")
 		err = os.MkdirAll(completePath, os.ModePerm)
 		if err != nil {
-			log.Errorf("createRecursiveDir %q: %s", completePath, err)
+			log.Error().Err(err).Str("path", completePath).Msg("createRecursiveDir failed")
 		}
 		return err
 	} else if err != nil {
-		log.Errorf("createRecursiveDir %q: %s. Deleting temp dir", completePath, err)
+		log.Error().Err(err).Str("path", completePath).Msg("createRecursiveDir failed, deleting temp dir")
 		_ = DeleteTmpDir(completePath)
 		return err
 	}
@@ -66,12 +65,12 @@ func GetJSONFilepath(jsonFilename, outputPath string) (string, error) {
 	if outputDir != "" && !PathExists(outputDir) {
 		err := CreateRecursiveDir(outputDir)
 		if err != nil {
-			log.Errorf("GetJsonFilepath: Could not create output dir: %s", err)
+			log.Error().Err(err).Msg("GetJsonFilepath: Could not create output dir")
 			return "", err
 		}
 	}
 	jsonFilePath := filepath.Join(outputDir, jsonFilename)
-	log.Infof("Complete json file path and name: %s", jsonFilePath)
+	log.Info().Str("path", jsonFilePath).Msg("Complete json file path and name")
 	return jsonFilePath, nil
 }
 
@@ -91,11 +90,11 @@ func GetTmpDir(imageName, tempDirectory string) (string, error) {
 	//	tempPath = dir + "\temp\Deepfence\IOCScanning\df_" + scanId
 	//}
 
-	completeTempPath := path.Join(tempPath, constants.ExtractedImageFilesDir)
+	completeTempPath := filepath.Join(tempPath, constants.ExtractedImageFilesDir)
 
 	err := CreateRecursiveDir(completeTempPath)
 	if err != nil {
-		log.Errorf("getTmpDir: Could not create temp dir%s", err)
+		log.Error().Err(err).Msg("getTmpDir: Could not create temp dir")
 		return "", err
 	}
 
@@ -108,13 +107,13 @@ func GetTmpDir(imageName, tempDirectory string) (string, error) {
 // @returns
 // Error - Errors if any. Otherwise, returns nil
 func DeleteTmpDir(outputDir string) error {
-	log.Infof("Deleting temporary dir %s", outputDir)
+	log.Info().Str("dir", outputDir).Msg("Deleting temporary dir")
 	// Output dir will be empty string in case of error, don't delete
 	if outputDir != "" {
 		// deleteFiles(outputDir+"/", "*")
 		err := os.RemoveAll(outputDir)
 		if err != nil {
-			log.Errorf("deleteTmpDir: Could not delete temp dir: %s", err)
+			log.Error().Err(err).Msg("deleteTmpDir: Could not delete temp dir")
 			return err
 		}
 	}
@@ -170,7 +169,7 @@ func PathExists(path string) bool {
 
 func LogIfError(text string, err error) {
 	if err != nil {
-		log.Errorf("%s (%s", text, err.Error())
+		log.Error().Err(err).Msg(text)
 	}
 }
 

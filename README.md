@@ -1,7 +1,6 @@
 [<img src="https://img.shields.io/badge/documentation-read-green">](https://docs.deepfence.io/yarahunter/)
 [![GitHub license](https://img.shields.io/github/license/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/blob/master/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/stargazers)
-[![Hacktoberfest](https://img.shields.io/github/hacktoberfest/2022/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/issues)
 [![GitHub issues](https://img.shields.io/github/issues/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/issues)
 [![Slack](https://img.shields.io/badge/slack-@deepfence-blue.svg?logo=slack)](https://join.slack.com/t/deepfence-community/shared_invite/zt-podmzle9-5X~qYx8wMaLt9bGWwkSdgQ)
 
@@ -37,19 +36,12 @@ Images may be compromised with the installation of a cryptominer such as XMRig. 
 Pull the official **yarahunter** image:
 
 ```
-docker pull quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.7
+docker pull quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.8
 ```
 
 or Build it from source clone this repo and run below command
 ```
 make docker
-```
-
-### Generate License Key
-
-Run this command to generate a license key. Work/official email id has to be used.
-```shell
-curl https://license.deepfence.io/threatmapper/generate-license?first_name=<FIRST_NAME>&last_name=<LAST_NAME>&email=<EMAIL>&company=<ORGANIZATION_NAME>&resend_email=true
 ```
 
 ### Scan
@@ -60,30 +52,26 @@ Pull the image that needs to be scanned for example `metal3d/xmrig` and scan it:
 docker pull metal3d/xmrig
 ```
 
-Set Product and Licence and scan it:
+Scan the image:
 
 ```
 docker run -i --rm --name=deepfence-yarahunter \
-     -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
-     -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.7 \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.8 \
      --image-name metal3d/xmrig:latest \
      --output=json > xmrig-scan.json
 ```
 
 This returns, among other things, clear indication of the presence of XMRig. Note that we store the output (`xmrig-scan.json`) for quick and easy manipulation:
 
-Rules can also be cached to use next run by mounting a seperate path and passing `rules-path` argument
+Rules can also be cached to use next run by mounting a separate path and passing `rules-path` argument
 ```
 docker run -i --rm --name=deepfence-yarahunter \
-     -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
-     -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
      -v /tmp/rules:/tmp/rules \
-     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.7 \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.8 \
      --image-name metal3d/xmrig:latest \
      --output=json \
      --rules-path=/tmp/rules > xmrig-scan.json

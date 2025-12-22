@@ -18,13 +18,6 @@ Key capabilities:
 
 ![Yadare in Action](img/yarahunter.svg)
 
-## Generate License Key
-
-Run this command to generate a license key. Work/official email id has to be used.
-```shell
-curl https://license.deepfence.io/threatmapper/generate-license?first_name=<FIRST_NAME>&last_name=<LAST_NAME>&email=<EMAIL>&company=<ORGANIZATION_NAME>&resend_email=true
-```
-
 ## Example: Finding Indicators of Compromise in a Container Image
 
 Images may be compromised with the installation of a cryptominer such as XMRig.  In the following example, we'll scan a legitimiate cryptominer image that contains the same xmrig software that is often installed through an exploit:
@@ -33,11 +26,9 @@ Images may be compromised with the installation of a cryptominer such as XMRig. 
 docker pull metal3d/xmrig
 
 docker run -i --rm --name=deepfence-yarahunter \
-     -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
-     -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
-     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.7 \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.8 \
      --image-name metal3d/xmrig:latest \
      --output=json > xmrig-scan.json
 ```
@@ -51,15 +42,13 @@ cat /tmp/xmrig-scan.json | jq '.IOC[] | ."Matched Rule Name"'
 
 This returns a list of the IOCs identified in the container we scanned.
 
-Rules can also be cached to use next run by mounting a seperate path and passing `rules-path` argument
+Rules can also be cached to use next run by mounting a separate path and passing `rules-path` argument
 ```bash
 docker run -i --rm --name=deepfence-yarahunter \
-     -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
-     -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
      -v /var/run/docker.sock:/var/run/docker.sock \
      -v /tmp:/home/deepfence/output \
      -v /tmp/rules:/tmp/rules \
-     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.7 \
+     quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.8 \
      --image-name metal3d/xmrig:latest \
      --output=json \
      --rules-path=/tmp/rules > xmrig-scan.json

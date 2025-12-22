@@ -17,7 +17,7 @@ import (
 	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
 	tasks "github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	"github.com/hillu/go-yara/v4"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 
 	cfg "github.com/deepfence/match-scanner/pkg/config"
@@ -71,13 +71,13 @@ func (s *GRPCScannerServer) StopScan(c context.Context, req *pb.StopScanRequest)
 	obj, found := s.ScanMap.Load(scanID)
 	if !found {
 		msg := "Failed to Stop scan"
-		log.Infof("%s, may have already completed, scan_id: %s", msg, scanID)
+		log.Info().Str("scan_id", scanID).Msg(msg + ", may have already completed")
 		result.Success = false
 		result.Description = "Failed to Stop scan"
 		return result, nil
 	} else {
 		msg := "Stop request submitted"
-		log.Infof("%s, scan_id: %s", msg, scanID)
+		log.Info().Str("scan_id", scanID).Msg(msg)
 		result.Success = true
 		result.Description = msg
 	}
@@ -104,7 +104,7 @@ func (s *MalwareRPCServer) FindMalwareInfo(c context.Context, r *pb.MalwareReque
 	}
 
 	go func() {
-		log.Infof("request to scan %+v", r)
+		log.Info().Interface("request", r).Msg("request to scan")
 
 		namespace := ""
 		container := ""
@@ -176,20 +176,20 @@ func DoScan(
 
 	switch {
 	case path != "":
-		log.Infof("scan for malwares in path %s", path)
+		log.Info().Str("path", path).Msg("scan for malwares in path")
 		err = scanner.Scan(ctx, scan.DirScan, "", path, scanID, writeToFile)
 	case image != "":
-		log.Infof("scan for malwares in image %s", image)
+		log.Info().Str("image", image).Msg("scan for malwares in image")
 		err = scanner.Scan(ctx, scan.ImageScan, "", image, scanID, writeToFile)
 	case container != "":
-		log.Infof("scan for malwares in container %s", container)
+		log.Info().Str("container", container).Msg("scan for malwares in container")
 		err = scanner.Scan(ctx, scan.ContainerScan, namespace, container, scanID, writeToFile)
 	default:
 		err = fmt.Errorf("invalid request")
 	}
 
 	if err != nil {
-		log.Errorf("err: %v", err)
+		log.Error().Err(err).Msg("scan error")
 	}
 }
 
@@ -239,16 +239,16 @@ func RunGrpcServer(ctx context.Context,
 	pb.RegisterScannersServer(s, impl.(pb.ScannersServer))
 	customImpl(s, impl)
 
-	log.Info("main: server listening at ", lis.Addr())
+	log.Info().Str("addr", lis.Addr().String()).Msg("main: server listening")
 	go func() {
 		if err := s.Serve(lis); err != nil {
-			log.Errorf("server: %v", err)
+			log.Error().Err(err).Msg("server error")
 		}
 	}()
 
 	<-ctx.Done()
 	s.GracefulStop()
 
-	log.Info("main: exiting gracefully")
+	log.Info().Msg("main: exiting gracefully")
 	return nil
 }

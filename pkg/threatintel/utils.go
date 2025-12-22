@@ -17,14 +17,18 @@ import (
 	"time"
 
 	"github.com/VirusTotal/gyp"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
-func ExportYaraRules(outFile string, rules []DeepfenceRule, extra []string) error {
+// RulesURL returns the URL for downloading malware rules for the given version
+func RulesURL(version string) string {
+	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/malware/malware_%s.tar.gz", version)
+}
 
+func ExportYaraRules(outFile string, rules []DeepfenceRule, extra []string) error {
 	file, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fs.ModePerm)
 	if err != nil {
-		log.Errorf("failed to open file: %s, skipping", err)
+		log.Error().Err(err).Str("file", outFile).Msg("failed to open file, skipping")
 		return err
 	}
 	defer file.Close()
@@ -36,12 +40,12 @@ func ExportYaraRules(outFile string, rules []DeepfenceRule, extra []string) erro
 	for _, rule := range rules {
 		decoded, err := base64.StdEncoding.DecodeString(rule.Payload)
 		if err != nil {
-			log.Errorf("err on base64 decode: %v", err)
+			log.Error().Err(err).Msg("err on base64 decode")
 			continue
 		}
 		rs, err := gyp.ParseString(string(decoded))
 		if err != nil {
-			log.Errorf("err on parse: %v", err)
+			log.Error().Err(err).Msg("err on parse")
 			continue
 		}
 		for _, r := range rs.Rules {
@@ -53,12 +57,11 @@ func ExportYaraRules(outFile string, rules []DeepfenceRule, extra []string) erro
 }
 
 func DownloadFile(ctx context.Context, url string) (*bytes.Buffer, error) {
-
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.Proxy = http.ProxyFromEnvironment
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := http.Client{Timeout: 600 * time.Second}
+	client := http.Client{Timeout: 600 * time.Second, Transport: tr}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -86,27 +89,23 @@ func DownloadFile(ctx context.Context, url string) (*bytes.Buffer, error) {
 
 func ProcessTarGz(content []byte, sourceFile string, outPath string,
 	processFile func(header *tar.Header, reader io.Reader, outPath string) error) error {
-	// Uncompress the gzipped content
 	gzipReader, err := gzip.NewReader(bytes.NewReader(content))
 	if err != nil {
 		return fmt.Errorf("failed to create gzip reader: %w", err)
 	}
 	defer gzipReader.Close()
 
-	// Create a tar reader to read the uncompressed data
 	tarReader := tar.NewReader(gzipReader)
 
-	// Iterate over the files in the tar archive
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
-			break // End of tar archive
+			break
 		}
 		if err != nil {
 			return fmt.Errorf("failed to read tar file: %w", err)
 		}
 
-		// skip some files
 		if header.FileInfo().IsDir() {
 			continue
 		}
@@ -115,24 +114,10 @@ func ProcessTarGz(content []byte, sourceFile string, outPath string,
 			continue
 		}
 
-		// Run the provided callback function on the current file
 		if err := processFile(header, tarReader, outPath); err != nil {
 			return fmt.Errorf("failed to process file %s: %w", header.Name, err)
 		}
 	}
 
 	return nil
-}
-
-func SkipRulesUpdate(checksumFilePath, checksum string) bool {
-	sum, err := os.ReadFile(checksumFilePath)
-	if err != nil && os.IsNotExist(err) {
-		return false
-	}
-
-	if string(sum) == checksum {
-		return true
-	}
-
-	return false
 }

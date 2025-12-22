@@ -14,14 +14,13 @@ import (
 	"github.com/deepfence/YaraHunter/pkg/yararules"
 	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	cfg "github.com/deepfence/match-scanner/pkg/config"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
 type RunnerOptions struct {
 	SocketPath                                                      string
 	RulesPath                                                       string
-	RulesListingURL                                                 string
 	HostMountPath                                                   string
 	FailOnCompileWarning                                            bool
 	Local                                                           string
@@ -54,7 +53,7 @@ func StartYaraHunter[T any](ctx context.Context,
 		opts.FailOnCompileWarning, config, constants.PluginName,
 	)
 	if err != nil {
-		log.Fatalf("Cannot init grpc: %v", err)
+		log.Fatal().Err(err).Msg("Cannot init grpc")
 	}
 	go func() {
 
@@ -65,7 +64,7 @@ func StartYaraHunter[T any](ctx context.Context,
 			&svc,
 			attachRegistrar,
 		); err != nil {
-			log.Panicf("main: failed to serve: %v", err)
+			log.Panic().Err(err).Msg("main: failed to serve")
 		}
 	}()
 
@@ -78,13 +77,13 @@ func runOnce(ctx context.Context, opts RunnerOptions, extractorConfig cfg.Config
 	yaraRules := yararules.New(opts.RulesPath)
 	err := yaraRules.Compile(constants.Filescan, opts.FailOnCompileWarning)
 	if err != nil {
-		log.Errorf("error in runOnce compiling yara rules: %s", err)
+		log.Error().Err(err).Msg("error in runOnce compiling yara rules")
 		return
 	}
 
 	yaraScanner, err := yaraRules.NewScanner()
 	if err != nil {
-		log.Error("error in runOnce creating yara scanner:", err)
+		log.Error().Err(err).Msg("error in runOnce creating yara scanner")
 		return
 	}
 
@@ -107,19 +106,19 @@ func runOnce(ctx context.Context, opts RunnerOptions, extractorConfig cfg.Config
 	case len(opts.Local) > 0:
 		st = scan.DirScan
 		nodeID = opts.Local
-		log.Infof("scan for malwares in path %s", nodeID)
+		log.Info().Str("path", nodeID).Msg("scan for malwares in path")
 		err = scanner.Scan(&scanCtx, st, "", opts.Local, "", writeToArray)
 		results = &output.JSONDirIOCOutput{DirName: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	case len(opts.ImageName) > 0:
 		st = scan.ImageScan
 		nodeID = opts.ImageName
-		log.Infof("Scanning image %s for IOC...", nodeID)
+		log.Info().Str("image", nodeID).Msg("Scanning image for IOC...")
 		err = scanner.Scan(&scanCtx, st, "", opts.ImageName, "", writeToArray)
 		results = &output.JSONImageIOCOutput{ImageID: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	case len(opts.ContainerID) > 0:
 		st = scan.ContainerScan
 		nodeID = opts.ContainerID
-		log.Infof("scan for malwares in container %s", nodeID)
+		log.Info().Str("container", nodeID).Msg("scan for malwares in container")
 		err = scanner.Scan(&scanCtx, st, "", nodeID, "", writeToArray)
 		results = &output.JSONImageIOCOutput{ContainerID: nodeID, IOC: removeDuplicateIOCs(outputs)}
 	default:
@@ -136,7 +135,7 @@ func runOnce(ctx context.Context, opts RunnerOptions, extractorConfig cfg.Config
 	if len(opts.ConsoleURL) != 0 && len(opts.DeepfenceKey) != 0 {
 		pub, err := output.NewPublisher(opts.ConsoleURL, strconv.Itoa(opts.ConsolePort), opts.DeepfenceKey)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error().Err(err).Msg("failed to create publisher")
 		}
 
 		pub.SendReport(output.GetHostname(), opts.ImageName, opts.ContainerID, scan.ScanTypeString(st))
@@ -145,18 +144,18 @@ func runOnce(ctx context.Context, opts RunnerOptions, extractorConfig cfg.Config
 			scanID = fmt.Sprintf("%s-%d", nodeID, time.Now().UnixMilli())
 		}
 		if err := pub.IngestSecretScanResults(scanID, results.GetIOC()); err != nil {
-			log.Errorf("IngestSecretScanResults: %v", err)
+			log.Error().Err(err).Msg("IngestSecretScanResults failed")
 		}
-		log.Infof("scan id %s", scanID)
+		log.Info().Str("scan_id", scanID).Msg("scan completed")
 	}
 
 	counts := output.CountBySeverity(results.GetIOC())
 
 	if opts.OutFormat == "json" {
-		log.Infof("result severity counts: %+v", counts)
+		log.Info().Interface("counts", counts).Msg("result severity counts")
 		err = results.WriteJSON()
 		if err != nil {
-			log.Errorf("error while writing IOC: %s", err)
+			log.Error().Err(err).Msg("error while writing IOC")
 			return
 		}
 	} else {
@@ -165,13 +164,13 @@ func runOnce(ctx context.Context, opts RunnerOptions, extractorConfig cfg.Config
 			counts.Total, counts.High, counts.Medium, counts.Low)
 		err = results.WriteTable()
 		if err != nil {
-			log.Errorf("error while writing IOC: %s", err)
+			log.Error().Err(err).Msg("error while writing IOC")
 			return
 		}
 	}
 
 	if results == nil {
-		log.Error("set either -local or -image-name flag")
+		log.Error().Msg("set either -local or -image-name flag")
 		return
 	}
 

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type MatchFile struct {
@@ -19,16 +19,16 @@ type MatchFile struct {
 func IsSkippableDir(excludedPaths []string, path, baseDir string) bool {
 	for _, skippablePathIndicator := range excludedPaths {
 		if strings.HasPrefix(path, skippablePathIndicator) || strings.HasPrefix(path, filepath.Join(baseDir, skippablePathIndicator)) {
-			log.Debugf("Path %s is skippable", path)
+			log.Debug().Str("path", path).Msg("Path is skippable")
 			return true
 		}
 		if strings.Contains(path, skippablePathIndicator) || strings.Contains(path, filepath.Join(baseDir, skippablePathIndicator)) {
-			log.Debugf("Path %s is skippable", path)
+			log.Debug().Str("path", path).Msg("Path is skippable")
 			return true
 		}
 	}
 
-	log.Debugf("Path %s is not skippable", path)
+	log.Debug().Str("path", path).Msg("Path is not skippable")
 	return false
 }
 
@@ -55,7 +55,7 @@ func UpdateDirsPermissionsRW(dir string) error {
 		if f.IsDir() {
 			err := os.Chmod(path, 0700)
 			if err != nil {
-				log.Errorf("Error updating permissions for dir %s: %s", path, err)
+				log.Error().Err(err).Str("path", path).Msg("Error updating permissions for dir")
 			}
 		}
 		return nil

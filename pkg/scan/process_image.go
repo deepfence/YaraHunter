@@ -16,7 +16,7 @@ import (
 
 	"github.com/deepfence/YaraHunter/pkg/output"
 	yr "github.com/hillu/go-yara/v4"
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -84,7 +84,7 @@ func calculateSeverity(lenMatch int, severity string, severityScore float64) (st
 func isSharedLibrary(filePath string) bool {
 	mtype, err := mimetype.DetectFile(filePath)
 	if err != nil {
-		logrus.Errorf("Error: %v", err)
+		log.Error().Err(err).Str("file", filePath).Msg("failed to detect mimetype")
 		return false
 	}
 	for _, execType := range sharedMimeTypesList {
@@ -98,7 +98,7 @@ func isSharedLibrary(filePath string) bool {
 func fileMimetypeCheck(filePath string, mimeTypesList []string) bool {
 	mtype, err := mimetype.DetectFile(filePath)
 	if err != nil {
-		logrus.Errorf("Error: %v", err)
+		log.Error().Err(err).Str("file", filePath).Msg("failed to detect mimetype")
 		return false
 	}
 
@@ -159,7 +159,7 @@ func (s *Iterator) Next() *yr.MemoryBlock {
 }
 
 func ScanFile(s *Scanner, fileName string, f io.ReadSeeker, fsize int, iocs *[]output.IOCFound, layer string) error {
-	logrus.Debugf("Scanning file %s", fileName)
+	log.Debug().Str("file", fileName).Msg("Scanning file")
 	var (
 		matches yr.MatchRules
 		err     error
@@ -297,7 +297,7 @@ func runCommand(name string, args ...string) (stdout string, stderr string, exit
 			// in this situation, exit code could not be get, and stderr will be
 			// empty string very likely, so we use the default fail code, and format err
 			// to string and set to stderr
-			logrus.Debugf("Could not get exit code for failed program: %v, %v", name, args)
+			log.Debug().Str("name", name).Interface("args", args).Msg("Could not get exit code for failed program")
 			exitCode = defaultFailedCode
 			if stderr == "" {
 				stderr = err.Error()

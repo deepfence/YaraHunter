@@ -10,7 +10,7 @@ import (
 	cfg "github.com/deepfence/match-scanner/pkg/config"
 	"github.com/deepfence/match-scanner/pkg/extractor"
 	"github.com/hillu/go-yara/v4"
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 
 	genscan "github.com/deepfence/match-scanner/pkg/scanner"
 )
@@ -114,13 +114,13 @@ func (s *Scanner) Scan(ctx *tasks.ScanContext, stype ScanType, namespace, id str
 		}
 
 		if s.Filters.SkipNonExecutable && !IsExecAll(f.FilePermissions) {
-			logrus.Debugf("Skipping non-executable file: %v", f.Filename)
+			log.Debug().Str("file", f.Filename).Msg("Skipping non-executable file")
 			return
 		}
 
 		err = ScanFile(s, f.Filename, f.Content, f.ContentSize, &m[i], "")
 		if err != nil {
-			logrus.Warnf("file: %v, err: %v", f.Filename, err)
+			log.Warn().Err(err).Str("file", f.Filename).Msg("scan file error")
 		}
 
 		results <- m[i]

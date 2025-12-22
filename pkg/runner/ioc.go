@@ -2,7 +2,7 @@ package runner
 
 import (
 	"github.com/deepfence/YaraHunter/pkg/output"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 func removeDuplicateIOCs(iocs []output.IOCFound) []output.IOCFound {
@@ -14,7 +14,7 @@ func removeDuplicateIOCs(iocs []output.IOCFound) []output.IOCFound {
 			keys[uniqueKey] = true
 			list = append(list, entry)
 		} else {
-			log.Infof("Duplicate IOC found: %s", entry.CompleteFilename)
+			log.Info().Str("file", entry.CompleteFilename).Msg("Duplicate IOC found")
 		}
 	}
 	return list
