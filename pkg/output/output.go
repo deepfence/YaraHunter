@@ -11,7 +11,7 @@ import (
 
 	"github.com/deepfence/YaraHunter/utils"
 	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 
 	// "github.com/fatih/color"
 
@@ -123,7 +123,7 @@ func (dirOutput JSONDirIOCOutput) WriteTable() error {
 func printIOCToJSON(iocJSON interface{}) error {
 	file, err := json.MarshalIndent(iocJSON, "", Indent)
 	if err != nil {
-		log.Errorf("printIOCToJsonFile: Couldn't format json output: %s", err)
+		log.Error().Err(err).Msg("printIOCToJsonFile: Couldn't format json output")
 		return err
 	}
 
@@ -134,13 +134,13 @@ func printIOCToJSON(iocJSON interface{}) error {
 
 func MalwaresToMalwareInfos(out []IOCFound) []*pb.MalwareInfo {
 	res := make([]*pb.MalwareInfo, 0)
-	// log.Error("reached everywhere here", out)
+	// log.Error(\"reached everywhere here\", out)
 	for _, v := range out {
-		// log.Error("did it reach to this point 1", v)
+		// log.Error(\"did it reach to this point 1\", v)
 		if MalwaresToMalwareInfo(v) != nil {
 			res = append(res, MalwaresToMalwareInfo(v))
 		}
-		// log.Error("did it reach to this point", v)
+		// log.Error(\"did it reach to this point\", v)
 	}
 	return res
 }
@@ -157,7 +157,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 	stringsToMatch := make([]string, 0)
 	for i := range out.Meta {
 		if !utf8.ValidString(out.Meta[i]) && bool {
-			log.Debugf("reached the meta point %s : %t", out.Meta[i], utf8.ValidString(out.Meta[i]))
+			log.Debug().Str("meta", out.Meta[i]).Bool("valid", utf8.ValidString(out.Meta[i])).Msg("reached the meta point")
 		} else if len(out.Meta[i]) > 0 {
 			meta = append(meta, out.Meta[i])
 		}
@@ -166,7 +166,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 
 	for k, v := range out.MetaRules {
 		if !utf8.ValidString(v) && bool {
-			log.Debugf("reached the meta point %s : %t", v, utf8.ValidString(v))
+			log.Debug().Str("value", v).Bool("valid", utf8.ValidString(v)).Msg("reached the meta point")
 		} else {
 			metaRules[k] = v
 		}
@@ -175,7 +175,7 @@ func MalwaresToMalwareInfo(out IOCFound) *pb.MalwareInfo {
 
 	for i := range out.StringsToMatch {
 		if !utf8.ValidString(out.StringsToMatch[i]) && bool {
-			log.Debugf("reached the meta point %s : %t", out.StringsToMatch[i], utf8.ValidString(out.StringsToMatch[i]))
+			log.Debug().Str("string", out.StringsToMatch[i]).Bool("valid", utf8.ValidString(out.StringsToMatch[i])).Msg("reached the meta point")
 		} else {
 			stringsToMatch = append(stringsToMatch, out.StringsToMatch[i])
 		}
@@ -258,9 +258,9 @@ func printColoredIOCJsonObject(ioc IOCFound, isFirstIOC *bool, fileScore float64
 	}
 	categoryName += "]"
 
-	// fmt.Fprintf(os.Stdout, Indent3+"\"String to Match\": %s,\n", IOC.StringsToMatch)
-	// fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity\": %s,\n", jsonMarshal(severity))
-	// fmt.Fprintf(os.Stdout, Indent3+"\"File Match Severity Score\": %.2f,\n", fileScore)
+	// fmt.Fprintf(os.Stdout, Indent3+\"\\\"String to Match\\\": %s,\\n\", IOC.StringsToMatch)
+	// fmt.Fprintf(os.Stdout, Indent3+\"\\\"File Match Severity\\\": %s,\\n\", jsonMarshal(severity))
+	// fmt.Fprintf(os.Stdout, Indent3+\"\\\"File Match Severity Score\\\": %.2f,\\n\", fileScore)
 	fmt.Fprintf(os.Stdout, Indent3+"\"Category\": %s,\n", categoryName)
 	fmt.Fprintf(os.Stdout, Indent3+"\"File Name\": %s,\n", jsonMarshal(ioc.CompleteFilename))
 	for _, c := range ioc.Meta {
@@ -319,13 +319,13 @@ func WriteScanStatus(status, scanID, scanMessage string) {
 
 	byteJSON, err := json.Marshal(scanLogDoc)
 	if err != nil {
-		log.Errorf("Error marshalling json for malware-logs-status: %s", err)
+		log.Error().Err(err).Msg("Error marshalling json for malware-logs-status")
 		return
 	}
 
 	err = writeToFile(string(byteJSON), ScanStatusFilename)
 	if err != nil {
-		log.Errorf("Error in sending data to malware-logs-status to mark in progress: %s", err)
+		log.Error().Err(err).Msg("Error in sending data to malware-logs-status to mark in progress")
 		return
 	}
 }
@@ -345,34 +345,24 @@ func WriteScanData(malwares []*pb.MalwareInfo, scanID string) {
 		}
 		byteJSON, err := json.Marshal(&doc)
 		if err != nil {
-			log.Errorf("Error marshalling json: %s", err)
+			log.Error().Err(err).Msg("Error marshalling json")
 			continue
 		}
 		err = writeToFile(string(byteJSON), ScanFilename)
 		if err != nil {
-			log.Errorf("Error in writing data to malware scan file: %s", err)
+			log.Error().Err(err).Msg("Error in writing data to malware scan file")
 		}
 	}
 }
 
 func WriteTableOutput(report *[]IOCFound) error {
 	table := tw.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Rule Name", "Class", "Severity", "Matched Part", "File Name"})
-	table.SetHeaderLine(true)
-	table.SetBorder(true)
-	table.SetAutoWrapText(true)
-	table.SetAutoFormatHeaders(true)
-	table.SetColMinWidth(0, 10)
-	table.SetColMinWidth(1, 10)
-	table.SetColMinWidth(2, 10)
-	table.SetColMinWidth(3, 20)
-	table.SetColMinWidth(4, 20)
+	table.Header("Rule Name", "Class", "Severity", "Matched Part", "File Name")
 
 	for _, r := range *report {
-		table.Append([]string{r.RuleName, r.Class, r.FileSeverity, strings.Join(r.StringsToMatch, ","), r.CompleteFilename})
+		table.Append(r.RuleName, r.Class, r.FileSeverity, strings.Join(r.StringsToMatch, ","), r.CompleteFilename)
 	}
-	table.Render()
-	return nil
+	return table.Render()
 }
 
 type SevCount struct {
@@ -401,15 +391,14 @@ func CountBySeverity(report []IOCFound) SevCount {
 }
 
 func ExitOnSeverity(severity string, count int, failOnCount int) {
-	log.Debugf("ExitOnSeverity severity=%s count=%d failOnCount=%d",
-		severity, count, failOnCount)
+	log.Debug().Str("severity", severity).Int("count", count).Int("failOnCount", failOnCount).Msg("ExitOnSeverity")
 	if count >= failOnCount {
 		if len(severity) > 0 {
-			msg := "Exit malware scan. Number of %s malwares (%d) reached/exceeded the limit (%d).\n"
-			log.Fatalf(msg, severity, count, failOnCount)
+			log.Fatal().Str("severity", severity).Int("count", count).Int("limit", failOnCount).
+				Msg("Exit malware scan. Number of malwares reached/exceeded the limit")
 		}
-		msg := "Exit malware scan. Number of malwares (%d) reached/exceeded the limit (%d).\n"
-		log.Fatalf(msg, count, failOnCount)
+		log.Fatal().Int("count", count).Int("limit", failOnCount).
+			Msg("Exit malware scan. Number of malwares reached/exceeded the limit")
 	}
 }
 

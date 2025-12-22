@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	logrus "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 // create file create a file if it does not exist
@@ -37,7 +37,7 @@ func PathExists(filename string) bool {
 		return false
 	} else {
 		// Schrodinger: file may or may not exist. See err for details.
-		logrus.Error(err)
+		log.Error().Err(err).Msg("failed to check path existence")
 		return false
 	}
 }

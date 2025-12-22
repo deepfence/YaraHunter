@@ -15,12 +15,10 @@ You can mount the rules directory over the existing one (using `-v $(pwd)/my-rul
 mkdir ./my-rules
 
 docker run -it --rm --name=yara-hunter \
-    -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> \
-    -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> \
     -v /var/run/docker.sock:/var/run/docker.sock \
 # highlight-next-line
     -v $(pwd)/my-rules:/tmp/my-rules \
-    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.7 --image-name node:latest \
+    quay.io/deepfenceio/deepfence_malware_scanner_ce:2.5.8 --image-name node:latest \
 # highlight-next-line
     --rules-path /tmp/my-rules
 ```

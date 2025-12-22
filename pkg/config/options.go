@@ -3,13 +3,6 @@ package config
 import (
 	"flag"
 	"os"
-
-	"github.com/deepfence/YaraHunter/utils"
-)
-
-var (
-	product string = utils.GetEnvOrDefault("DEEPFENCE_PRODUCT", "ThreatMapper")
-	license string = utils.GetEnvOrDefault("DEEPFENCE_LICENSE", "")
 )
 
 const (
@@ -42,11 +35,7 @@ type Options struct {
 	FailOnHighCount      *int
 	FailOnMediumCount    *int
 	FailOnLowCount       *int
-	RulesListingURL      *string
 	EnableUpdater        *bool
-	Product              *string
-	Version              *string
-	License              *string
 	LogLevel             *string
 }
 
@@ -77,10 +66,7 @@ func ParseOptions() (*Options, error) {
 		FailOnHighCount:      flag.Int("fail-on-high-count", -1, "Exit with status 1 if number of high malwares found is >= this value (Default: -1)"),
 		FailOnMediumCount:    flag.Int("fail-on-medium-count", -1, "Exit with status 1 if number of medium malwares found is >= this value (Default: -1)"),
 		FailOnLowCount:       flag.Int("fail-on-low-count", -1, "Exit with status 1 if number of low malwares found is >= this value (Default: -1)"),
-		RulesListingURL:      flag.String("rules-listing-url", "https://threat-intel.deepfence.io/yara-rules/listing.json", "Deepfence threat intel yara rules listing (Default: threat-intel.deepfence.io/yara-rules/listing.json)"),
-		EnableUpdater:        flag.Bool("enable-updater", true, "Enable rules updater (Default: true)"),
-		Product:              flag.String("product", product, "Deepfence Product type can be ThreatMapper or ThreatStryker, also supports env var DEEPFENCE_PRODUCT"),
-		License:              flag.String("license", license, "TheratMapper or ThreatStryker license, also supports env var DEEPFENCE_LICENSE"),
+		EnableUpdater:        flag.Bool("enable-updater", false, "Download rules at runtime if not present (Default: false)"),
 	}
 	flag.Parse()
 	return options, nil
@@ -113,7 +99,5 @@ func NewDefaultOptions() *Options {
 		ContainerID:          &emptyValue,
 		ContainerNS:          &emptyValue,
 		SocketPath:           &emptyValue,
-		Product:              &product,
-		License:              &license,
 	}
 }

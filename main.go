@@ -32,17 +32,17 @@ import (
 	"io/fs"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/deepfence/YaraHunter/pkg/config"
 	"github.com/deepfence/YaraHunter/pkg/runner"
 	"github.com/deepfence/YaraHunter/pkg/server"
 	"github.com/deepfence/YaraHunter/pkg/threatintel"
 	cfg "github.com/deepfence/match-scanner/pkg/config"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 
 	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
@@ -54,49 +54,42 @@ import (
 
 var (
 	version         string
-	checksumFile    = "checksum.txt"
 	sourceRuleFile  = "df-malware.json"
 	malwareRuleFile = "malware.yar"
 )
 
 func main() {
-	log.SetOutput(os.Stderr)
-	log.SetReportCaller(true)
-	log.SetFormatter(&log.TextFormatter{
-		DisableColors: false,
-		ForceColors:   true,
-		FullTimestamp: true,
-		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			return "", " " + path.Base(f.File) + ":" + strconv.Itoa(f.Line)
-		},
-	})
+	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
+		return filepath.Base(file) + ":" + strconv.Itoa(line)
+	}
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006-01-02T15:04:05Z07:00"}).
+		With().Timestamp().Caller().Logger()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	opts, err := config.ParseOptions()
 	if err != nil {
-		log.Fatalf("main: failed to parse options: %v", err)
+		log.Fatal().Err(err).Msg("main: failed to parse options")
 	}
 
-	level, err := log.ParseLevel(*opts.LogLevel)
+	level, err := zerolog.ParseLevel(strings.ToLower(*opts.LogLevel))
 	if err != nil {
-		log.Warnf("Invalid log level '%s', defaulting to 'info': %v", *opts.LogLevel, err)
-		level = log.InfoLevel
+		log.Warn().Str("level", *opts.LogLevel).Err(err).Msg("Invalid log level, defaulting to 'info'")
+		level = zerolog.InfoLevel
 	}
-	log.SetLevel(level)
+	zerolog.SetGlobalLevel(level)
 
-	log.Infof("version: %s", version)
+	log.Info().Str("version", version).Msg("starting")
 
-	config, err := cfg.ParseConfig(*opts.ConfigPath)
+	extractorConfig, err := cfg.ParseConfig(*opts.ConfigPath)
 	if err != nil {
-		log.Fatalf("main: failed to parse config: %v", err)
+		log.Fatal().Err(err).Msg("main: failed to parse config")
 	}
 
 	runnerOpts := runner.RunnerOptions{
 		SocketPath:           *opts.SocketPath,
 		RulesPath:            *opts.RulesPath,
-		RulesListingURL:      *opts.RulesListingURL,
 		HostMountPath:        *opts.HostMountPath,
 		FailOnCompileWarning: *opts.FailOnCompileWarning,
 		Local:                *opts.Local,
@@ -113,16 +106,12 @@ func main() {
 		InactiveThreshold:    *opts.InactiveThreshold,
 	}
 
-	if *opts.EnableUpdater {
-		go runner.ScheduleYaraHunterUpdater(ctx, runnerOpts)
+	// Download rules if updater is enabled and in CLI mode
+	if *opts.SocketPath == "" && *opts.EnableUpdater {
+		downloadRules(ctx, opts)
 	}
 
-	// update rules required for cli mode
-	if *opts.SocketPath == "" {
-		updateRules(ctx, opts)
-	}
-
-	runner.StartYaraHunter(ctx, runnerOpts, config,
+	runner.StartYaraHunter(ctx, runnerOpts, extractorConfig,
 		func(base *server.GRPCScannerServer) server.MalwareRPCServer {
 			return server.MalwareRPCServer{
 				GRPCScannerServer:                 base,
@@ -135,58 +124,48 @@ func main() {
 
 }
 
-func updateRules(ctx context.Context, opts *config.Options) {
-	log.Infof("check and update malware rules")
+func downloadRules(ctx context.Context, opts *config.Options) {
+	log.Info().Msg("downloading malware rules")
 
-	listing, err := threatintel.FetchThreatIntelListing(ctx, version, *opts.Product, *opts.License)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	rulesInfo, err := listing.GetLatest(version, threatintel.MalwareDBType)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Debugf("rulesInfo: %+v", rulesInfo)
-
-	// make sure output rules directory exists
-	os.MkdirAll(*opts.RulesPath, fs.ModePerm)
-
-	// check if update required
-	if threatintel.SkipRulesUpdate(filepath.Join(*opts.RulesPath, checksumFile), rulesInfo.Checksum) {
-		log.Info("skip rules update")
+	// Check if rules already exist
+	rulesFile := filepath.Join(*opts.RulesPath, malwareRuleFile)
+	if _, err := os.Stat(rulesFile); err == nil {
+		log.Info().Str("file", rulesFile).Msg("rules file already exists, skipping download")
 		return
 	}
 
-	log.Info("download new rules")
-	content, err := threatintel.DownloadFile(ctx, rulesInfo.URL)
+	// Make sure output rules directory exists
+	os.MkdirAll(*opts.RulesPath, fs.ModePerm)
+
+	// Download rules from versioned URL
+	rulesURL := threatintel.RulesURL(version)
+	log.Info().Str("url", rulesURL).Msg("downloading rules")
+
+	content, err := threatintel.DownloadFile(ctx, rulesURL)
 	if err != nil {
-		log.Fatal(err)
+		log.Error().Err(err).Msg("failed to download rules, continuing with bundled rules if available")
+		return
 	}
 
-	log.Infof("rules file size: %d bytes", content.Len())
+	log.Info().Int("bytes", content.Len()).Msg("rules file size")
 
-	// write new checksum
-	if err := os.WriteFile(
-		filepath.Join(*opts.RulesPath, checksumFile), []byte(rulesInfo.Checksum), fs.ModePerm); err != nil {
-		log.Fatal(err)
-	}
-
-	// write rules file
+	// Process and write rules file
 	outRuleFile := filepath.Join(*opts.RulesPath, malwareRuleFile)
-	threatintel.ProcessTarGz(content.Bytes(), sourceRuleFile, outRuleFile, processMalwareRules)
+	err = threatintel.ProcessTarGz(content.Bytes(), sourceRuleFile, outRuleFile, processMalwareRules)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to process rules")
+	}
 }
 
 func processMalwareRules(header *tar.Header, reader io.Reader, outPath string) error {
-
 	var fb threatintel.FeedsBundle
 	if err := json.NewDecoder(reader).Decode(&fb); err != nil {
-		log.Error(err)
+		log.Error().Err(err).Msg("failed to decode feeds bundle")
 		return err
 	}
 
 	if err := threatintel.ExportYaraRules(outPath, fb.ScannerFeeds.MalwareRules, fb.Extra); err != nil {
-		log.Error(err)
+		log.Error().Err(err).Msg("failed to export yara rules")
 		return err
 	}
 

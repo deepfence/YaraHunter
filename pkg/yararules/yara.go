@@ -11,7 +11,7 @@ import (
 
 	"github.com/deepfence/YaraHunter/constants"
 	yara "github.com/hillu/go-yara/v4"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 var extvars = map[int]map[string]interface{}{
@@ -56,7 +56,7 @@ func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) error {
 
 	paths, err := getRuleFiles(yr.RulesPath)
 	if err != nil {
-		log.Error(err)
+		log.Error().Err(err).Msg("failed to get rule files")
 		return err
 	}
 
@@ -68,9 +68,9 @@ func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) error {
 		// We use the include callback function to actually read files
 		// because yr_compiler_add_string() does not accept a file
 		// name.
-		log.Infof("including yara rule file %s", path)
+		log.Info().Str("file", path).Msg("including yara rule file")
 		if err = c.AddString(fmt.Sprintf(`include "%s"`, path), ""); err != nil {
-			log.Errorf("error obtained %s", err)
+			log.Error().Err(err).Msg("error adding yara rule")
 			return err
 		}
 	}
@@ -79,8 +79,8 @@ func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) error {
 	yr.rules, err = c.GetRules()
 	if err != nil {
 		for _, e := range c.Errors {
-			log.Errorf("YARA compiler error in %s ruleset: %s:%d %s",
-				purposeStr, e.Filename, e.Line, e.Text)
+			log.Error().Str("ruleset", purposeStr).Str("filename", e.Filename).Int("line", e.Line).Str("text", e.Text).
+				Msg("YARA compiler error")
 		}
 		return fmt.Errorf("%d YARA compiler errors(s) found, rejecting %s ruleset",
 			len(c.Errors), purposeStr)
@@ -88,8 +88,8 @@ func (yr *YaraRules) Compile(purpose int, failOnCompileWarning bool) error {
 
 	if len(c.Warnings) > 0 {
 		for _, w := range c.Warnings {
-			log.Warnf("YARA compiler warning in %s ruleset: %s:%d %s",
-				purposeStr, w.Filename, w.Line, w.Text)
+			log.Warn().Str("ruleset", purposeStr).Str("filename", w.Filename).Int("line", w.Line).Str("text", w.Text).
+				Msg("YARA compiler warning")
 		}
 		if failOnCompileWarning {
 			return fmt.Errorf("%d YARA compiler warning(s) found, rejecting %s ruleset",
