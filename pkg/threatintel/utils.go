@@ -32,7 +32,7 @@ func SecretRulesURL(version string) string {
 
 // VulnerabilityRulesURL returns the URL for downloading vulnerability db for the given version
 func VulnerabilityRulesURL(version string) string {
-	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/vulnerability/vulnerability_%s.tar.gz", version)
+	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/vulnerability/v6/vulnerability_%s.tar.gz", version)
 }
 
 func ExportYaraRules(outFile string, rules []DeepfenceRule, extra []string) error {
