@@ -32,6 +32,10 @@ func SecretRulesURL(version string) string {
 
 // VulnerabilityRulesURL returns the URL for downloading vulnerability db for the given version
 func VulnerabilityRulesURL(version string) string {
+	// Ensure version has 'v' prefix to match S3 key naming convention
+	if !strings.HasPrefix(version, "v") {
+		version = "v" + version
+	}
 	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/vulnerability/v6/vulnerability_%s.tar.gz", version)
 }
 
