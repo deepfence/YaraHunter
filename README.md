@@ -1,4 +1,4 @@
-[<img src="https://img.shields.io/badge/documentation-read-green">](https://docs.deepfence.io/yarahunter/)
+[<img src="https://img.shields.io/badge/documentation-read-green">](https://threatmapper.org/docs/yarahunter/)
 [![GitHub license](https://img.shields.io/github/license/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/blob/master/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/issues)
@@ -25,7 +25,7 @@ YaraHunter is a work-in-progress (check the [Roadmap](https://github.com/deepfen
 
 ## Quick Start
 
-For full instructions, refer to the [YaraHunter Documentation](https://docs.deepfence.io/docs/yarahunter/).
+For full instructions, refer to the [YaraHunter Documentation](https://threatmapper.org/docs/yarahunter/).
 
 ![demo gif](demo.gif)
 
@@ -90,7 +90,7 @@ To get table formatted output omit `--output=json` flag
 
 Thank you for using YaraHunter.
 
-- [<img src="https://img.shields.io/badge/documentation-read-green">](https://docs.deepfence.io/docs/yarahunter/) Start with the documentation
+- [<img src="https://img.shields.io/badge/documentation-read-green">](https://threatmapper.org/docs/yarahunter/) Start with the documentation
 - [<img src="https://img.shields.io/badge/slack-@deepfence-blue.svg?logo=slack">](https://join.slack.com/t/deepfence-community/shared_invite/zt-podmzle9-5X~qYx8wMaLt9bGWwkSdgQ) Got a question, need some help? Find the Deepfence team on Slack
 - [![GitHub issues](https://img.shields.io/github/issues/deepfence/YaraHunter)](https://github.com/deepfence/YaraHunter/issues) Got a feature request or found a bug? Raise an issue
 - [productsecurity _at_ deepfence _dot_ io](SECURITY.md): Found a security issue? Share it in confidence
