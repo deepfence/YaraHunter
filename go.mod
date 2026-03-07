@@ -13,8 +13,8 @@ replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
 require (
 	github.com/VirusTotal/gyp v0.9.0
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20251220185839-eab97c9c3b76
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20251220185839-eab97c9c3b76
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20260307093138-2d84281ebdea
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20260307093138-2d84281ebdea
 	github.com/deepfence/match-scanner v0.0.0-20251221162150-7979dbfc1852
 	github.com/gabriel-vasile/mimetype v1.4.12
 	github.com/hillu/go-yara/v4 v4.3.4
