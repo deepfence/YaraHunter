@@ -64,11 +64,6 @@ const config = {
             docId: 'yarahunter/index',
             label: 'YaraHunter Documentation',
           },
-          { 
-            to: 'https://deepfence.io/',
-            label: 'deepfence.io',
-            position: 'right',
-          },
           {
             href: 'https://github.com/deepfence',
             label: 'GitHub',

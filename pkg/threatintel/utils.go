@@ -22,17 +22,21 @@ import (
 
 // RulesURL returns the URL for downloading malware rules for the given version
 func RulesURL(version string) string {
-	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/malware/malware_%s.tar.gz", version)
+	return fmt.Sprintf("https://artifacts.threatmapper.org/threat-intel/malware/malware_%s.tar.gz", version)
 }
 
 // SecretRulesURL returns the URL for downloading secret rules for the given version
 func SecretRulesURL(version string) string {
-	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/secret/secret_%s.tar.gz", version)
+	return fmt.Sprintf("https://artifacts.threatmapper.org/threat-intel/secret/secret_%s.tar.gz", version)
 }
 
 // VulnerabilityRulesURL returns the URL for downloading vulnerability db for the given version
 func VulnerabilityRulesURL(version string) string {
-	return fmt.Sprintf("https://threat-intel.threatmapper.org/threat-intel/vulnerability/vulnerability_%s.tar.gz", version)
+	// Ensure version has 'v' prefix to match S3 key naming convention
+	if !strings.HasPrefix(version, "v") {
+		version = "v" + version
+	}
+	return fmt.Sprintf("https://artifacts.threatmapper.org/threat-intel/vulnerability/v6/vulnerability_%s.tar.gz", version)
 }
 
 func ExportYaraRules(outFile string, rules []DeepfenceRule, extra []string) error {
